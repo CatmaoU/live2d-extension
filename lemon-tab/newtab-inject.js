@@ -58,7 +58,7 @@
         // 注意：只有当 userConfig 中明确定义了某个属性时才覆盖，否则保留现有值
         var settingsData = {
             modelSource: modelSource,
-            cdnPath: baseUrl + 'live2d-static-api/', // 确保有正确的CDN路径
+            cdnPath: baseUrl + 'live2d-static-api/indexes/', // 确保有正确的CDN路径
             localModel: userConfig.localModel || '',
             cubism3Model: userConfig.cubism3Model || '',
             useCubism3: useCubism3, // 使用用户设置的 Cubism3 选项
