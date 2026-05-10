@@ -1,0 +1,17 @@
+{
+	"modelIntroduce": "Audrey",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Strinova/Audrey/奥黛丽(付费委托限制).moc3",
+	"textures": [
+		"../../../models_Cubism3/Strinova/Audrey/奥黛丽(付费委托限制).8192/texture_00.png"
+	],
+	"physics": "../../../models_Cubism3/Strinova/Audrey/奥黛丽(付费委托限制).physics3.json",
+	"motions": {
+		"Idle": [
+			{}
+		],
+		"TapBody": [
+			{}
+		]
+	}
+}

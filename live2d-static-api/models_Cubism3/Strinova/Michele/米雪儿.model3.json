@@ -1,0 +1,23 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "米雪儿.moc3",
+		"Textures": [
+			"米雪儿.8192/texture_00.png"
+		],
+		"Physics": "米雪儿.physics3.json",
+		"DisplayInfo": "米雪儿.cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		}
+	]
+}

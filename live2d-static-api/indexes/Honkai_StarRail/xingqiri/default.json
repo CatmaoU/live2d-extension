@@ -1,0 +1,23 @@
+{
+	"modelIntroduce": "Moc",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Honkai_StarRail/xingqiri/Moc.moc3",
+	"textures": [
+		"../../../models_Cubism3/Honkai_StarRail/xingqiri/Textures_.png"
+	],
+	"physics": "../../../models_Cubism3/Honkai_StarRail/xingqiri/Physics.json",
+	"motions": {
+		"Idle": [
+			{}
+		],
+		"TapBody": [
+			{}
+		],
+		"Tap脸": [
+			{}
+		],
+		"Tap光环": [
+			{}
+		]
+	}
+}

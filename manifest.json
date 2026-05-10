@@ -1,0 +1,94 @@
+{
+  "manifest_version": 3,
+  "name": "Live2D 看板娘",
+  "version": "1.0.4",
+  "description": "在浏览器中添加Live2D看板娘喵~",
+  "icons": {
+    "16": "icon_512.ico",
+    "48": "icon_512.ico",
+    "128": "icon_512.ico"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon_512.ico",
+      "48": "icon_512.ico",
+      "128": "icon_512.ico"
+    }
+  },
+  "permissions": [
+    "storage",
+    "activeTab",
+    "webNavigation",
+    "tabs"
+  ],
+  "background": {
+    "service_workers": ["background.js"]
+  },
+  "host_permissions": [
+    "https://v1.hitokoto.cn/",
+    "https://api.deepseek.com/*",
+    "https://api.siliconflow.cn/*",
+    "https://api.univibe.cc/*",
+    "https://api.longcat.chat/*",
+    "https://dashscope.aliyuncs.com/*",
+    "https://hunyuan.cloud.tencent.com/*",
+    "https://tokenhub.tencentmaas.com/*",
+    "https://qianfan.baidubce.com/*",
+    "https://ark.cn-beijing.volces.com/*",
+    "https://spark-api.xf-yun.com/*",
+    "https://open.bigmodel.cn/*",
+    "https://api.moonshot.cn/*",
+    "https://api.minimax.chat/*",
+    "https://raw.githubusercontent.com/*",
+    "https://gitee.com/*",
+    "https://cdn.jsdelivr.net/*",
+    "https://raw.fastgit.org/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "dist/*",
+        "inject.js",
+        "live2d.min.js",
+        "live2d-static-api/*",
+        "live2d-static-api/**/*",
+        "live2d-static-api/model_list.json",
+        "live2d-static-api/models.json",
+        "live2d-moc3/**/*",
+        "live2d-ai/**/*",
+        "mouse-features/**/*",
+        "lemon-tab/**/*",
+        "newtab-inject.js",
+        "sakana-widget/**/*"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'self'; connect-src 'self' https://v1.hitokoto.cn https://api.deepseek.com https://api.siliconflow.cn https://api.univibe.cc https://api.longcat.chat https://dashscope.aliyuncs.com https://hunyuan.cloud.tencent.com https://tokenhub.tencentmaas.com https://qianfan.baidubce.com https://ark.cn-beijing.volces.com https://spark-api.xf-yun.com https://open.bigmodel.cn https://api.moonshot.cn https://api.minimax.chat https://raw.githubusercontent.com https://gitee.com https://cdn.jsdelivr.net https://raw.fastgit.org http://localhost:*"
+  },
+  "browser_specific_settings": {
+      "gecko": {
+        "id": "live2d-widget@example.com",
+        "strict_min_version": "109.0"
+      }
+    },
+    "chrome_url_overrides": {
+      "newtab": "lemon-tab/index.html"
+    }
+  }
