@@ -1,0 +1,61 @@
+{
+	"modelIntroduce": "Moc",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Zenless_Zone_Zero/nangongyu/Moc.moc3",
+	"textures": [
+		"../../../models_Cubism3/Zenless_Zone_Zero/nangongyu/Textures_.png"
+	],
+	"physics": "../../../models_Cubism3/Zenless_Zone_Zero/nangongyu/Physics.json",
+	"motions": {
+		"Idle": [
+			{
+				"file": "../../../models_Cubism3/Zenless_Zone_Zero/nangongyu/Motions_Idle_0.json"
+			}
+		],
+		"TapBody": [
+			{}
+		],
+		"Tap脸1": [
+			{}
+		],
+		"Tap脸2": [
+			{}
+		],
+		"Tap光环1": [
+			{}
+		],
+		"Tap光环2": [
+			{}
+		],
+		"Tap身体1": [
+			{}
+		],
+		"Tap身体2": [
+			{}
+		],
+		"TapA腿L1": [
+			{}
+		],
+		"TapA腿L2": [
+			{}
+		],
+		"TapA腿R1": [
+			{}
+		],
+		"TapA腿R2": [
+			{}
+		],
+		"TapB腿L1": [
+			{}
+		],
+		"TapB腿L2": [
+			{}
+		],
+		"TapB腿R1": [
+			{}
+		],
+		"TapB腿R2": [
+			{}
+		]
+	}
+}

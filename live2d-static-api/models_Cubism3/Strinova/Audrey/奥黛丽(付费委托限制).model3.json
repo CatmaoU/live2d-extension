@@ -1,0 +1,23 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "奥黛丽(付费委托限制).moc3",
+		"Textures": [
+			"奥黛丽(付费委托限制).8192/texture_00.png"
+		],
+		"Physics": "奥黛丽(付费委托限制).physics3.json",
+		"DisplayInfo": "奥黛丽(付费委托限制).cdi3.json"
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		}
+	]
+}

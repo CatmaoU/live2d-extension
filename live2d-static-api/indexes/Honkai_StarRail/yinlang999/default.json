@@ -1,0 +1,27 @@
+{
+	"modelIntroduce": "Moc",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Honkai_StarRail/yinlang999/Moc.moc3",
+	"textures": [
+		"../../../models_Cubism3/Honkai_StarRail/yinlang999/Textures_.png"
+	],
+	"physics": "../../../models_Cubism3/Honkai_StarRail/yinlang999/Physics.json",
+	"motions": {
+		"Idle": [
+			{}
+		],
+		"TapBody": [
+			{}
+		],
+		"Tap眼镜": [
+			{
+				"sound": "../../../models_Cubism3/Honkai_StarRail/yinlang999/Motions_Tap眼镜_0.mp3"
+			}
+		],
+		"Tap脸": [
+			{
+				"sound": "../../../models_Cubism3/Honkai_StarRail/yinlang999/Motions_Tap脸_0.mp3"
+			}
+		]
+	}
+}

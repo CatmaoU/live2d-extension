@@ -1,0 +1,57 @@
+{
+	"modelIntroduce": "Moc",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Moc.moc3",
+	"textures": [
+		"../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Textures_.png",
+		"../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Textures_.png",
+		"../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Textures_.png"
+	],
+	"physics": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Physics.json",
+	"motions": {
+		"Idle": [
+			{
+				"file": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Motions_Idle_0.json"
+			}
+		],
+		"TapBody": [
+			{}
+		],
+		"TapTO夜晚": [
+			{}
+		],
+		"TapTO白天": [
+			{}
+		],
+		"Tap爱芮1": [
+			{
+				"sound": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Motions_Tap爱芮1_0.mp3"
+			}
+		],
+		"Tap爱芮2": [
+			{
+				"sound": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Motions_Tap爱芮1_0.mp3"
+			}
+		],
+		"Tap南宫1": [
+			{
+				"sound": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Motions_Tap南宫1_0.mp3"
+			}
+		],
+		"Tap南宫2": [
+			{
+				"sound": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Motions_Tap南宫1_0.mp3"
+			}
+		],
+		"Tap千夏1": [
+			{
+				"sound": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Motions_Tap千夏1_0.mp3"
+			}
+		],
+		"Tap千夏2": [
+			{
+				"sound": "../../../models_Cubism3/Zenless_Zone_Zero/3xiaozhi/Motions_Tap千夏1_0.mp3"
+			}
+		]
+	}
+}

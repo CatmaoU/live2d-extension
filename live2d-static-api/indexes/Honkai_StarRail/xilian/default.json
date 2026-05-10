@@ -1,0 +1,37 @@
+{
+	"modelIntroduce": "Moc",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Honkai_StarRail/xilian/Moc.moc3",
+	"textures": [
+		"../../../models_Cubism3/Honkai_StarRail/xilian/Textures_.png"
+	],
+	"physics": "../../../models_Cubism3/Honkai_StarRail/xilian/Physics.json",
+	"motions": {
+		"Idle": [
+			{}
+		],
+		"TapBody": [
+			{}
+		],
+		"TapArtMesh35": [
+			{
+				"sound": "../../../models_Cubism3/Honkai_StarRail/xilian/Motions_TapArtMesh35_0.mp3"
+			}
+		],
+		"TapArtMesh70": [
+			{
+				"sound": "../../../models_Cubism3/Honkai_StarRail/xilian/Motions_TapArtMesh70_0.mp3"
+			}
+		],
+		"TapArtMesh61": [
+			{
+				"sound": "../../../models_Cubism3/Honkai_StarRail/xilian/Motions_TapArtMesh61_0.mp3"
+			}
+		],
+		"TapArtMesh62": [
+			{
+				"sound": "../../../models_Cubism3/Honkai_StarRail/xilian/Motions_TapArtMesh61_0.mp3"
+			}
+		]
+	}
+}
