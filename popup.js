@@ -444,7 +444,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     'localModel', 'cubism3Model', 'useCubism3', 'aiEnabled', 'aiApiKey', 'aiConnected',
     'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled',
     'selectedCursor', 'mouseCursorSize', 'theme', 'dragLimit', 'followSystemTheme',
-    'freezeModelEnabled', 'freezeMode', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved'
+    'freezeModelEnabled', 'freezeMode', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
+    'positionAutoRefresh'
   ]);
 
   // 同步所有设置到 localStorage
@@ -665,6 +666,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
   dragCheckbox.checked = config.drag || false;
   dragLimitCheckbox.checked = config.dragLimit !== false; // 默认开启
+  
+  const positionAutoRefreshCheckbox = document.getElementById('positionAutoRefresh');
+  positionAutoRefreshCheckbox.checked = config.positionAutoRefresh || false; // 默认关闭
+  
   const currentPosition = config.position || 'left-bottom';
   positionButtons.forEach(btn => {
     btn.classList.remove('selected');
@@ -1108,6 +1113,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  positionAutoRefreshCheckbox.addEventListener('change', async () => {
+    await storage.set({ positionAutoRefresh: positionAutoRefreshCheckbox.checked });
+    console.log('[Live2D Popup] Position auto-refresh setting saved:', positionAutoRefreshCheckbox.checked);
+  });
+
   positionButtons.forEach(btn => {
     btn.addEventListener('click', async () => {
       if (btn.classList.contains('disabled-btn')) return;
@@ -1127,8 +1137,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       });
       
-      const positionAutoRefresh = document.getElementById('positionAutoRefresh');
-      if (positionAutoRefresh && positionAutoRefresh.checked) {
+      if (positionAutoRefreshCheckbox && positionAutoRefreshCheckbox.checked) {
         const [tab] = await tabs.query({ active: true, currentWindow: true });
         if (tab && tab.id) {
           await tabs.reload(tab.id);
