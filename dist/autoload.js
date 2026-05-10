@@ -185,10 +185,9 @@ function loadExternalResource(url, type) {
         drag: drag,
     };
 
-    // For local models, pass widgetModels directly
+    // For local models, pass widgetModels directly without cdnPath
     if (modelSource === 'local' && widgetModels.length > 0) {
         console.log('[Live2D] Using local models with direct widgetModels');
-        // Don't set cdnPath for local models, instead pass widgetModels as second argument
         window.initWidget(widgetConfig, widgetModels);
     } else {
         // Use CDN
