@@ -444,8 +444,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     'localModel', 'cubism3Model', 'useCubism3', 'aiEnabled', 'aiApiKey', 'aiConnected',
     'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled',
     'selectedCursor', 'mouseCursorSize', 'theme', 'dragLimit', 'followSystemTheme',
-    'freezeModelEnabled', 'freezeMode', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
-    'positionAutoRefresh'
+    'pageSummaryEnabled', 'freezeMode', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
+    'positionAutoRefresh', 'atriApiKey',
+    'dailyImageEnabled', 'dailyImageCustomApi', 'dailyImageApiList',
   ]);
 
   // 同步所有设置到 localStorage
@@ -455,6 +456,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   settings.aiEnabled = config.aiEnabled || false;
   settings.aiApiKey = config.aiApiKey || settings.aiApiKey;
   settings.siliconflowApiKey = config.siliconflowApiKey || settings.siliconflowApiKey;
+  settings.atriApiKey = config.atriApiKey || settings.atriApiKey;
   settings.aiProvider = config.aiProvider || settings.aiProvider;
   settings.aiConnected = config.aiConnected || false;
   
@@ -498,6 +500,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   const mouseCursorSizeContainer = document.getElementById('mouseCursorSizeContainer');
   const themeToggle = document.getElementById('themeToggle');
   const aiConfigHint = document.getElementById('aiConfigHint');
+  const pageSummarySection = document.getElementById('pageSummarySection');
+  const quickSummaryBtn = document.getElementById('quickSummaryBtn');
   const freezeModelEnabledCheckbox = document.getElementById('freezeModelEnabled');
   const newTabEnabledCheckbox = document.getElementById('newTabEnabled');
   const sakanaWidgetEnabledCheckbox = document.getElementById('sakanaWidgetEnabled');
@@ -512,6 +516,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   const browserMemoryProgressBar = document.getElementById('browserMemoryProgressBar');
   const pluginMemoryPercent = document.getElementById('pluginMemoryPercent');
   const memoryPieChart = document.getElementById('memoryPieChart');
+  const dailyImageEnabledCheckbox = document.getElementById('dailyImageEnabled');
+  const dailyImageApiSection = document.getElementById('dailyImageApiSection');
+  const dailyImageCustomApiCheckbox = document.getElementById('dailyImageCustomApi');
+  const dailyImageApiList = document.getElementById('dailyImageApiList');
   const systemTotalMemoryDisplay = document.getElementById('systemTotalMemoryDisplay');
   
   // 估算浏览器进程内存（默认 500MB）
@@ -736,6 +744,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     aiConnectionDisplay.style.display = 'none';
   }
   
+  // 初始化页面总结区域可见性
+  if (pageSummarySection) {
+    pageSummarySection.style.display = (aiEnabledCheckbox.checked && config.aiConnected) ? 'block' : 'none';
+  }
+  
   // 根据开关状态设置跳转按钮状态
   if (goToPopup2Btn) {
     if (aiEnabledCheckbox.checked) {
@@ -930,6 +943,156 @@ document.addEventListener('DOMContentLoaded', async () => {
   } else {
     mouseCursorSelectContainer.style.display = 'none';
     mouseCursorSizeContainer.style.display = 'none';
+  }
+
+  // ─── 每日一图初始化 ───
+  const dailyImageEnabled = experimentalEnabled ? (config.dailyImageEnabled || false) : false;
+  if (dailyImageEnabledCheckbox) {
+    dailyImageEnabledCheckbox.checked = dailyImageEnabled;
+    dailyImageEnabledCheckbox.disabled = !experimentalEnabled;
+    dailyImageApiSection.style.display = dailyImageEnabled ? 'block' : 'none';
+  }
+  const customApiEnabled = experimentalEnabled && dailyImageEnabled ? (config.dailyImageCustomApi || false) : false;
+  if (dailyImageCustomApiCheckbox) {
+    dailyImageCustomApiCheckbox.checked = customApiEnabled;
+    dailyImageCustomApiCheckbox.disabled = !(experimentalEnabled && dailyImageEnabled);
+    dailyImageApiList.style.display = customApiEnabled ? 'block' : 'none';
+  }
+  // 初始化 API 列表
+  var savedApiList = config.dailyImageApiList || [
+    { url: 'https://api.yppp.net/api.php', enabled: true },
+    { url: '', enabled: false }
+  ];
+  function renderApiList() {
+    if (!dailyImageApiList) return;
+    // 清空只保留 #dailyApiAddBtn
+    var addBtn = document.getElementById('dailyApiAddBtn');
+    dailyImageApiList.innerHTML = '';
+    savedApiList.forEach(function(item) {
+      var row = document.createElement('div');
+      row.className = 'daily-api-row';
+      row.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
+      row.innerHTML = '<button type="button" class="daily-api-del" style="background:#3a1a1a;border:1px solid #663333;color:#f88;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;">−</button>' +
+        '<input type="text" class="daily-api-input" value="' + (item.url || '').replace(/"/g, '&quot;') + '" placeholder="请输入 API 地址" style="flex:1;background:#1a1a2e;border:1px solid #555;border-radius:4px;padding:4px 8px;color:#fff;font-size:12px;">' +
+        '<label class="switch small-switch" style="margin:0;flex-shrink:0;"><input type="checkbox" class="daily-api-toggle" ' + (item.enabled ? 'checked' : '') + '><span class="slider"></span></label>';
+      dailyImageApiList.appendChild(row);
+    });
+    // 重新添加 + 按钮
+    if (addBtn) {
+      dailyImageApiList.appendChild(addBtn);
+    } else {
+      var newBtn = document.createElement('button');
+      newBtn.type = 'button';
+      newBtn.id = 'dailyApiAddBtn';
+      newBtn.textContent = '+ 添加';
+      newBtn.style.cssText = 'width:100%;margin-top:4px;background:#2a5a2a;border:1px solid #3a7a3a;color:#8f8;padding:4px;border-radius:4px;cursor:pointer;font-size:12px;';
+      dailyImageApiList.appendChild(newBtn);
+    }
+    attachDailyImageEvents();
+  }
+  function attachDailyImageEvents() {
+    // 删除按钮
+    dailyImageApiList.querySelectorAll('.daily-api-del').forEach(function(btn) {
+      btn.onclick = function() {
+        var row = btn.closest('.daily-api-row');
+        if (row) row.remove();
+        saveDailyImageApiList();
+      };
+    });
+    // 添加按钮（独立）
+    var addBtn = document.getElementById('dailyApiAddBtn');
+    if (addBtn) {
+      addBtn.onclick = function() {
+        var row = document.createElement('div');
+        row.className = 'daily-api-row';
+        row.style.cssText = 'display:flex;align-items:center;gap:4px;margin-bottom:4px;';
+        row.innerHTML = '<button type="button" class="daily-api-del" style="background:#3a1a1a;border:1px solid #663333;color:#f88;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;">−</button>' +
+          '<input type="text" class="daily-api-input" value="" placeholder="请输入 API 地址" style="flex:1;background:#1a1a2e;border:1px solid #555;border-radius:4px;padding:4px 8px;color:#fff;font-size:12px;">' +
+          '<label class="switch small-switch" style="margin:0;flex-shrink:0;"><input type="checkbox" class="daily-api-toggle"><span class="slider"></span></label>';
+        dailyImageApiList.insertBefore(row, addBtn);
+        attachDailyImageEvents();
+        saveDailyImageApiList();
+      };
+    }
+  }
+  function saveDailyImageApiList() {
+    var rows = dailyImageApiList.querySelectorAll('.daily-api-row');
+    var list = [];
+    rows.forEach(function(row) {
+      var input = row.querySelector('.daily-api-input');
+      var toggle = row.querySelector('.daily-api-toggle');
+      if (input) {
+        list.push({ url: input.value, enabled: toggle ? toggle.checked : true });
+      }
+    });
+    if (list.length === 0) {
+      list = [{ url: 'https://api.yppp.net/api.php', enabled: true }];
+    }
+    savedApiList = list;
+    storage.set({ dailyImageApiList: list });
+  }
+  renderApiList();
+
+  // 每日一图开关
+  if (dailyImageEnabledCheckbox) {
+    dailyImageEnabledCheckbox.addEventListener('change', async function() {
+      var val = dailyImageEnabledCheckbox.checked;
+      await storage.set({ dailyImageEnabled: val });
+      if (dailyImageApiSection) dailyImageApiSection.style.display = val ? 'block' : 'none';
+      if (dailyImageCustomApiCheckbox) dailyImageCustomApiCheckbox.disabled = !val;
+      // 通知 content.js
+      browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          browserAPI.tabs.sendMessage(tabs[0].id, {
+            type: 'updateDailyImageSettings',
+            dailyImageEnabled: val,
+            dailyImageCustomApi: dailyImageCustomApiCheckbox ? dailyImageCustomApiCheckbox.checked : false,
+            dailyImageApiList: savedApiList
+          }).catch(() => {});
+        }
+      });
+    });
+  }
+  // 调用 API 子开关
+  if (dailyImageCustomApiCheckbox) {
+    dailyImageCustomApiCheckbox.addEventListener('change', async function() {
+      var val = dailyImageCustomApiCheckbox.checked;
+      await storage.set({ dailyImageCustomApi: val });
+      if (dailyImageApiList) dailyImageApiList.style.display = val ? 'block' : 'none';
+      browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          browserAPI.tabs.sendMessage(tabs[0].id, {
+            type: 'updateDailyImageSettings',
+            dailyImageEnabled: dailyImageEnabledCheckbox ? dailyImageEnabledCheckbox.checked : false,
+            dailyImageCustomApi: val,
+            dailyImageApiList: savedApiList
+          }).catch(() => {});
+        }
+      });
+    });
+    // 输入框/开关变化时保存
+    dailyImageApiList.addEventListener('change', function(e) {
+      if (e.target.classList.contains('daily-api-input') || e.target.classList.contains('daily-api-toggle')) {
+        saveDailyImageApiList();
+        browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]) {
+            var rows = dailyImageApiList.querySelectorAll('.daily-api-row');
+            var list = [];
+            rows.forEach(function(row) {
+              var inp = row.querySelector('.daily-api-input');
+              var tog = row.querySelector('.daily-api-toggle');
+              if (inp) list.push({ url: inp.value, enabled: tog ? tog.checked : true });
+            });
+            browserAPI.tabs.sendMessage(tabs[0].id, {
+              type: 'updateDailyImageSettings',
+              dailyImageEnabled: dailyImageEnabledCheckbox.checked,
+              dailyImageCustomApi: dailyImageCustomApiCheckbox.checked,
+              dailyImageApiList: list
+            }).catch(() => {});
+          }
+        });
+      }
+    });
   }
 
   const savedMouseCursorSize = config.mouseCursorSize || 150;
@@ -1263,6 +1426,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       localStorage.setItem('live2dExtensionSettings', JSON.stringify(offSettings));
       updateConnectionStatus(false);
     }
+
+    // 显示/隐藏页面总结区域
+    const showPageSummary = aiEnabledCheckbox.checked && config.aiConnected;
+    if (pageSummarySection) {
+      pageSummarySection.style.display = showPageSummary ? 'block' : 'none';
+    }
     
     // 根据开关状态更新跳转按钮状态
     if (goToPopup2Btn) {
@@ -1280,6 +1449,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       aiConfigHint.style.display = aiEnabledCheckbox.checked ? 'block' : 'none';
     }
   });
+
+  // 页面总结功能始终默认开启，移除切换开关
+  // 确保 storage 中 pageSummaryEnabled 始终为 true
+  (async () => {
+    await storage.set({ pageSummaryEnabled: true });
+    const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+    settings.pageSummaryEnabled = true;
+    localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+  })();
+  
+  // 一键总结按钮事件
+  if (quickSummaryBtn) {
+    quickSummaryBtn.addEventListener('click', () => {
+      browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]) {
+          browserAPI.tabs.sendMessage(tabs[0].id, {
+            type: 'pageSummary'
+          }).catch(err => {
+            console.log('[Live2D Popup] Could not send pageSummary message:', err);
+          });
+        }
+      });
+    });
+  }
 
   // 实验功能总开关
   experimentalEnabledCheckbox.addEventListener('change', async () => {
@@ -1643,6 +1836,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (areaName === 'local' && changes.aiConnected) {
       updateConnectionStatus(changes.aiConnected.newValue);
     }
+    // 监听 aiConnected 变化，更新页面总结区域可见性
+    if (areaName === 'local' && changes.aiConnected && pageSummarySection) {
+      pageSummarySection.style.display = (aiEnabledCheckbox.checked && changes.aiConnected.newValue) ? 'block' : 'none';
+    }
   });
 
   // ==============================
@@ -1793,6 +1990,290 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 初始化浏览器内存检测
   detectBrowserMemory();
   
+  // ─── 按键绑定系统 ───
+  
+  const DEFAULT_KEYBINDINGS = {
+    pageSummary:       { ctrl: true, shift: true,  alt: false, key: 'V' },
+    screenshot:        { ctrl: true, shift: false, alt: true,  key: 'V' },
+    screenshotNoMascot:{ ctrl: true, shift: false, alt: true,  key: 'B' },
+    dailyImage:        { ctrl: true, shift: false, alt: true,  key: 'G' }
+  };
+
+  let currentKeybindings = {};
+  let recordingAction = null;
+  let slotRebinding = null; // { action: string, type: 'key'|'ctrl'|'shift'|'alt' } 表示正在等待按键的小格子
+
+  function formatBinding(b) {
+    if (!b || !b.key) return '未绑定';
+    var parts = [];
+    if (b.ctrl) parts.push('Ctrl');
+    if (b.shift) parts.push('Shift');
+    if (b.alt) parts.push('Alt');
+    parts.push(b.key.toUpperCase());
+    return parts.join('+');
+  }
+
+  function kbdStyle(extra) {
+    return 'background:#2a2a2a;padding:1px 5px;border-radius:3px;border:1px solid #555;font-size:11px;color:#4fa3ff;cursor:pointer;' + (extra || '');
+  }
+
+  function renderKeySlots() {
+    document.querySelectorAll('.key-slot').forEach(function(slot) {
+      var action = slot.dataset.action;
+      var bind = currentKeybindings[action];
+      // 清除旧内容
+      slot.innerHTML = '';
+      slot.onclick = null;
+
+      if (bind && bind.key) {
+        // Ctrl badge
+        if (bind.ctrl) {
+          var ctrlKbd = document.createElement('kbd');
+          ctrlKbd.textContent = 'Ctrl';
+          ctrlKbd.style.cssText = kbdStyle();
+          ctrlKbd.dataset.modifier = 'ctrl';
+          ctrlKbd.title = '点击切换 Ctrl';
+          slot.appendChild(ctrlKbd);
+          slot.appendChild(document.createTextNode(' + '));
+        }
+        // Shift badge
+        if (bind.shift) {
+          var shiftKbd = document.createElement('kbd');
+          shiftKbd.textContent = 'Shift';
+          shiftKbd.style.cssText = kbdStyle();
+          shiftKbd.dataset.modifier = 'shift';
+          shiftKbd.title = '点击切换 Shift';
+          slot.appendChild(shiftKbd);
+          slot.appendChild(document.createTextNode(' + '));
+        }
+        // Alt badge
+        if (bind.alt) {
+          var altKbd = document.createElement('kbd');
+          altKbd.textContent = 'Alt';
+          altKbd.style.cssText = kbdStyle();
+          altKbd.dataset.modifier = 'alt';
+          altKbd.title = '点击切换 Alt';
+          slot.appendChild(altKbd);
+          slot.appendChild(document.createTextNode(' + '));
+        }
+        // Key badge（可点击修改键位）
+        var keyKbd = document.createElement('kbd');
+        keyKbd.textContent = bind.key.toUpperCase();
+        keyKbd.style.cssText = kbdStyle('color:#ffc107;');
+        keyKbd.dataset.keyBadge = action;
+        keyKbd.title = '点击修改按键';
+        slot.appendChild(keyKbd);
+      } else {
+        // 未绑定，显示占位
+        var placeholder = document.createElement('span');
+        placeholder.textContent = '点击绑定';
+        placeholder.style.cssText = 'color:#666;font-size:11px;cursor:pointer;';
+        slot.appendChild(placeholder);
+        placeholder.onclick = function() { openKeybindDialog(action); };
+      }
+    });
+
+    // 绑定单个 badge 的点击事件（事件委托）
+    attachSlotBadgeEvents();
+  }
+
+  function attachSlotBadgeEvents() {
+    // 修饰键 badge 点击：切换该修饰键
+    document.querySelectorAll('.key-slot kbd[data-modifier]').forEach(function(el) {
+      el.onclick = function(e) {
+        e.stopPropagation();
+        var slot = el.closest('.key-slot');
+        if (!slot) return;
+        var action = slot.dataset.action;
+        var bind = currentKeybindings[action];
+        if (!bind) return;
+        var mod = el.dataset.modifier;
+        bind[mod] = !bind[mod];
+        // 确保至少有一个修饰键或键位
+        if (!bind.ctrl && !bind.shift && !bind.alt && !bind.key) bind.key = 'V';
+        saveKeybindings();
+      };
+    });
+
+    // key badge 点击：进入「等待按键」模式
+    document.querySelectorAll('.key-slot kbd[data-key-badge]').forEach(function(el) {
+      el.onclick = function(e) {
+        e.stopPropagation();
+        var action = el.dataset.keyBadge;
+        slotRebinding = { action: action, type: 'key' };
+        el.textContent = '...';
+        el.style.color = '#ff8800';
+        el.style.borderColor = '#ff8800';
+        console.log('[Keybind] Waiting for key press for', action);
+      };
+    });
+  }
+
+  function renderDialogBindings() {
+    document.querySelectorAll('.kbd-recorder').forEach(function(el) {
+      var action = el.dataset.action;
+      var bind = currentKeybindings[action];
+      el.textContent = bind && bind.key ? formatBinding(bind) : '点击绑定';
+    });
+  }
+
+  function openKeybindDialog(highlightAction) {
+    var overlay = document.getElementById('keybindOverlay');
+    if (overlay) overlay.style.display = 'flex';
+    renderDialogBindings();
+    recordingAction = null;
+    slotRebinding = null; // 关闭小格子录制状态
+    // 如果有高亮 action，自动激活录制
+    if (highlightAction) {
+      startRecording(highlightAction);
+    }
+  }
+
+  function startRecording(action) {
+    recordingAction = action;
+    document.querySelectorAll('.kbd-recorder').forEach(function(el) {
+      if (el.dataset.action === action) {
+        el.textContent = '按下按键...';
+        el.style.color = '#ffc107';
+      } else {
+        el.style.color = '#4fa3ff';
+      }
+    });
+  }
+
+  function saveKeybindings() {
+    chrome.storage.local.set({ keybindings: currentKeybindings }, function() {
+      // 同步到 localStorage（供 page 脚本读取）
+      try { localStorage.setItem('live2dKeybindings', JSON.stringify(currentKeybindings)); } catch(e) {}
+      renderKeySlots();
+    });
+    // 通知当前页面 content.js 更新绑定
+    browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]) {
+        browserAPI.tabs.sendMessage(tabs[0].id, {
+          type: 'updateKeybindings',
+          keybindings: currentKeybindings
+        }).catch(() => {});
+      }
+    });
+  }
+
+  // 按键绑定按钮
+  var keyBindBtn = document.getElementById('keyBindBtn');
+  if (keyBindBtn) {
+    keyBindBtn.addEventListener('click', function() { openKeybindDialog(); });
+  }
+
+  // 关闭按钮
+  var keybindCloseBtn = document.getElementById('keybindCloseBtn');
+  if (keybindCloseBtn) {
+    keybindCloseBtn.addEventListener('click', function() {
+      document.getElementById('keybindOverlay').style.display = 'none';
+      recordingAction = null;
+      slotRebinding = null;
+    });
+  }
+
+  // 重置按钮
+  var keybindResetBtn = document.getElementById('keybindResetBtn');
+  if (keybindResetBtn) {
+    keybindResetBtn.addEventListener('click', function() {
+      currentKeybindings = JSON.parse(JSON.stringify(DEFAULT_KEYBINDINGS));
+      saveKeybindings();
+      renderDialogBindings();
+      renderKeySlots();
+    });
+  }
+
+  // 录制键盘事件
+  document.addEventListener('keydown', function(e) {
+    // 1️⃣ 处理小格子 key 重新绑定（slotRebinding）
+    if (slotRebinding) {
+      e.preventDefault();
+      var isModifier = e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta';
+      if (isModifier) return; // 忽略单独的修饰键
+
+      if (e.key === 'Escape') {
+        slotRebinding = null;
+        renderKeySlots();
+        return;
+      }
+
+      var action = slotRebinding.action;
+      var bind = currentKeybindings[action];
+      if (bind) {
+        bind.key = e.key.length === 1 ? e.key.toUpperCase() : e.key;
+        saveKeybindings();
+      }
+      slotRebinding = null;
+      return;
+    }
+
+    // 2️⃣ 处理绑定对话框（完整录制）
+    var overlay = document.getElementById('keybindOverlay');
+    if (!overlay || overlay.style.display !== 'flex') return;
+    
+    if (recordingAction) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // 检查是否按了 Escape（取消录制）
+      if (e.key === 'Escape') {
+        recordingAction = null;
+        renderDialogBindings();
+        return;
+      }
+      
+      // 检查是否按了 Delete 或 Backspace（清除绑定）
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        currentKeybindings[recordingAction] = { ctrl: false, shift: false, alt: false, key: '' };
+        saveKeybindings();
+        recordingAction = null;
+        renderDialogBindings();
+        return;
+      }
+      
+      // 只记录修饰键 + 一个普通键
+      var isModifier = e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta';
+      if (isModifier) return;
+      
+      var bind = {
+        ctrl: e.ctrlKey || false,
+        shift: e.shiftKey || false,
+        alt: e.altKey || false,
+        key: e.key.length === 1 ? e.key.toUpperCase() : e.key
+      };
+      
+      currentKeybindings[recordingAction] = bind;
+      saveKeybindings();
+      recordingAction = null;
+      renderDialogBindings();
+      return;
+    }
+  });
+
+  // 点击 dialog 中的 .kbd-recorder 开始录制（独立的 click 事件）
+  document.getElementById('keybindDialogList').addEventListener('click', function(e) {
+    var target = e.target;
+    if (target.classList.contains('kbd-recorder')) {
+      e.preventDefault();
+      var action = target.dataset.action;
+      startRecording(action);
+    }
+  });
+
+  // 加载已保存的绑定
+  chrome.storage.local.get('keybindings', function(result) {
+    currentKeybindings = result.keybindings || JSON.parse(JSON.stringify(DEFAULT_KEYBINDINGS));
+    // 确保所有 action 都有默认值
+    Object.keys(DEFAULT_KEYBINDINGS).forEach(function(act) {
+      if (!currentKeybindings[act]) currentKeybindings[act] = DEFAULT_KEYBINDINGS[act];
+    });
+    saveKeybindings(); // 同步到 localStorage
+  });
+
+  // ─── 结束按键绑定系统 ───
+
   // 立即更新一次
   updateMemoryUsage();
 
@@ -1803,4 +2284,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('beforeunload', () => {
     clearInterval(memoryUpdateInterval);
   });
-});
+});                                                                                                                                                                                                                                                         

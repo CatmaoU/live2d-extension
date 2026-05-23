@@ -307,6 +307,7 @@
           <option value="zhipu">智谱 AI</option>
           <option value="moonshot">Kimi (月之暗面)</option>
           <option value="minimax">MiniMax</option>
+          <option value="atri">ATRI</option>
         </select>
         
         <div id="deepseekConfig">
@@ -414,10 +415,31 @@
           <small>获取 API Key: <a href="https://www.minimax.chat/" target="_blank">MiniMax</a></small>
           <small style="color: #666; margin-top: 5px;">模型服务网址：api.minimax.chat</small>
         </div>
+
+        <div id="atriConfig" style="display: none;">
+          <label for="atriApiKey">ATRI API Key</label>
+          <input type="password" id="atriApiKey" placeholder="sk-..." style="width: 100%;">
+          <label for="atriModel" style="margin-top: 10px;">选择模型</label>
+          <select id="atriModel"></select>
+          <small>API 文档: <a href="https://ai.zkmjnic.tech/docs/getting-started" target="_blank">Getting Started</a></small>
+          <small style="color: #666; margin-top: 5px;">Base URL: https://ai.zkmjnic.tech/v1</small>
+        </div>
         
         <button type="button" id="connectBtn" class="connect-btn">连接并验证</button>
         <div id="connectStatus" class="connect-status"></div>
       </div>
+    </div>
+
+    <div class="setting-item">
+      <div class="section-title">总结规则</div>
+      <small style="color: #888; display: block; margin-bottom: 8px;">
+        总结要点，留空则默认
+      </small>
+      <textarea id="summaryRules" placeholder="主要功能和特性
+产品优势和价值
+技术细节和创新点
+代码功能和用途
+安装和使用说明" style="width: 100%; height: 100px; resize: vertical; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; line-height: 1.6;"></textarea>
     </div>
 
     <div class="setting-item">

@@ -83,6 +83,7 @@
             zhipuApiKey: userConfig.zhipuApiKey,
             moonshotApiKey: userConfig.moonshotApiKey,
             minimaxApiKey: userConfig.minimaxApiKey,
+            atriApiKey: userConfig.atriApiKey,
             aiProvider: userConfig.aiProvider,
             // 优先保留现有连接状态（特别是 'reconnecting' 状态）
             aiConnected: userConfig.aiConnected !== undefined ? userConfig.aiConnected : existingSettings.aiConnected,
@@ -773,6 +774,7 @@
         'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey', 
         'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey',
         'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey',
+        'atriApiKey',
         'aiProvider', 'aiConnected',
         'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled',
         'selectedCursor', 'mouseCursorSize',
@@ -890,6 +892,7 @@
             'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey',
             'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey',
             'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey',
+            'atriApiKey',
             'aiProvider', 'aiConnected',
             'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled',
             'selectedCursor', 'mouseCursorSize',

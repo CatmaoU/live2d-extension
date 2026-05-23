@@ -463,6 +463,12 @@
     body.dark-theme .toggle-switch label {
       color: #ffffff;
     }
+    body.dark-theme .theme-hint {
+      color: #888;
+    }
+    .theme-hint {
+      color: #999;
+    }
     body.dark-theme .format-label {
       color: #ffffff;
     }
@@ -695,6 +701,73 @@
           连接状态: <span id="aiConnectionStatus" style="color: #ffc107;">未连接</span>
         </div>
       </div>
+      
+      <!-- 页面总结 -->
+      <div id="pageSummarySection" style="display: none; margin-top: 12px; padding-top: 12px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+          <span style="font-weight: bold; color: #bbb; font-size: 13px;">页面总结</span>
+          <button type="button" id="quickSummaryBtn" class="reset-btn" style="width: auto;">一键总结</button>
+        </div>
+      </div>
+
+      <!-- 快捷键 -->
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #333;">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-weight: bold; color: #bbb; font-size: 13px;">快捷键</span>
+            <span class="theme-hint" style="font-size: 10px;">蓝色点击取消，黄色点击更改</span>
+          </div>
+          <button id="keyBindBtn" style="background: #2a2a2a; border: 1px solid #555; color: #aaa; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">按键绑定</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px;" id="keybindList">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #999;">
+            <span class="key-slot" data-action="pageSummary" style="cursor: pointer; user-select: none; display: inline-flex; gap: 3px; flex-wrap: wrap; align-items: center;"></span>
+            <span>快速总结当前页面</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #999;">
+            <span class="key-slot" data-action="screenshot" style="cursor: pointer; user-select: none; display: inline-flex; gap: 3px; flex-wrap: wrap; align-items: center;"></span>
+            <span>快速截图</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #999;">
+            <span class="key-slot" data-action="screenshotNoMascot" style="cursor: pointer; user-select: none; display: inline-flex; gap: 3px; flex-wrap: wrap; align-items: center;"></span>
+            <span>快速截图（不截看板娘）</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #999;">
+            <span class="key-slot" data-action="dailyImage" style="cursor: pointer; user-select: none; display: inline-flex; gap: 3px; flex-wrap: wrap; align-items: center;"></span>
+            <span>每日一图</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 按键绑定蒙层 -->
+    <div id="keybindOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center;">
+      <div style="background: #1e1e1e; border: 1px solid #444; border-radius: 12px; padding: 20px; width: 320px; max-width: 90%;">
+        <div style="font-weight: bold; color: #ddd; font-size: 14px; margin-bottom: 16px;">按键绑定</div>
+        <div style="display: flex; flex-direction: column; gap: 10px;" id="keybindDialogList">
+          <div class="kbd-row" data-action="pageSummary" style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #bbb; font-size: 12px;">快速总结当前页面</span>
+            <span class="kbd-recorder" style="background: #2a2a2a; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; min-width: 80px; text-align: center; color: #4fa3ff; font-size: 12px; cursor: pointer;" data-action="pageSummary">点击绑定</span>
+          </div>
+          <div class="kbd-row" data-action="screenshot" style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #bbb; font-size: 12px;">快速截图</span>
+            <span class="kbd-recorder" style="background: #2a2a2a; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; min-width: 80px; text-align: center; color: #4fa3ff; font-size: 12px; cursor: pointer;" data-action="screenshot">点击绑定</span>
+          </div>
+          <div class="kbd-row" data-action="screenshotNoMascot" style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #bbb; font-size: 12px;">快速截图（不截看板娘）</span>
+            <span class="kbd-recorder" style="background: #2a2a2a; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; min-width: 80px; text-align: center; color: #4fa3ff; font-size: 12px; cursor: pointer;" data-action="screenshotNoMascot">点击绑定</span>
+          </div>
+          <div class="kbd-row" data-action="dailyImage" style="display: flex; align-items: center; justify-content: space-between;">
+            <span style="color: #bbb; font-size: 12px;">每日一图</span>
+            <span class="kbd-recorder" style="background: #2a2a2a; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; min-width: 80px; text-align: center; color: #4fa3ff; font-size: 12px; cursor: pointer;" data-action="dailyImage">点击绑定</span>
+          </div>
+        </div>
+        <div style="font-size: 11px; color: #666; margin-top: 12px;">点击按键格子后按下键盘按键或组合键</div>
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button id="keybindResetBtn" style="flex: 1; background: #2a1a1a; border: 1px solid #553333; color: #cc8888; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px;">重置</button>
+          <button id="keybindCloseBtn" style="flex: 1; background: #333; border: 1px solid #555; color: #ccc; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px;">关闭</button>
+        </div>
+      </div>
     </div>
 
     <div class="experimental-section">
@@ -772,6 +845,44 @@
                 </label>
               </div>
               <small id="clickEffectStatus">检查资源中...</small>
+            </div>
+          </div>
+        </div>
+        <div class="experimental-item">
+          <div class="toggle-switch">
+            <label for="dailyImageEnabled">每日一图</label>
+            <label class="switch">
+              <input type="checkbox" id="dailyImageEnabled">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <small class="cursor-size-hint">通过模型气泡随机显示图片，大小自动适应</small>
+          <div id="dailyImageApiSection" style="display: none; margin-top: 10px; padding-left: 8px; border-left: 2px solid #555;">
+            <div class="toggle-switch" style="margin-bottom: 8px;">
+              <label for="dailyImageCustomApi" style="font-size: 12px;">调用 API</label>
+              <label class="switch">
+                <input type="checkbox" id="dailyImageCustomApi">
+                <span class="slider"></span>
+              </label>
+            </div>
+            <div id="dailyImageApiList" style="display: none;">
+              <div class="daily-api-row" style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+                <button type="button" class="daily-api-del" style="background:#3a1a1a; border:1px solid #663333; color:#f88; border-radius:4px; width:26px; height:26px; cursor:pointer; font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center; flex-shrink:0;">−</button>
+                <input type="text" class="daily-api-input" value="https://api.yppp.net/api.php" style="flex:1; background:#1a1a2e; border:1px solid #555; border-radius:4px; padding:4px 8px; color:#fff; font-size:12px;">
+                <label class="switch small-switch" style="margin:0; flex-shrink:0;">
+                  <input type="checkbox" class="daily-api-toggle" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <div class="daily-api-row" style="display: flex; align-items: center; gap: 4px; margin-bottom: 4px;">
+                <button type="button" class="daily-api-del" style="background:#3a1a1a; border:1px solid #663333; color:#f88; border-radius:4px; width:26px; height:26px; cursor:pointer; font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center; flex-shrink:0;">−</button>
+                <input type="text" class="daily-api-input" value="" placeholder="请输入 API 地址" style="flex:1; background:#1a1a2e; border:1px solid #555; border-radius:4px; padding:4px 8px; color:#fff; font-size:12px;">
+                <label class="switch small-switch" style="margin:0; flex-shrink:0;">
+                  <input type="checkbox" class="daily-api-toggle">
+                  <span class="slider"></span>
+                </label>
+              </div>
+              <button type="button" id="dailyApiAddBtn" style="width:100%; margin-top:4px; background:#2a5a2a; border:1px solid #3a7a3a; color:#8f8; padding:4px; border-radius:4px; cursor:pointer; font-size:12px;">+ 添加</button>
             </div>
           </div>
         </div>
@@ -905,9 +1016,9 @@
     <button class="btn" id="refresh">刷新页面</button>
 
     <div class="footer">
-      基于 <a href="https://github.com/stevenjoezhang/live2d-widget" target="_blank">live2d-widget</a> 制作 | v1.0.4 <span style="color: #ff6b6b;">(beta-2)</span>
+      基于 <a href="https://github.com/stevenjoezhang/live2d-widget" target="_blank">live2d-widget</a> 制作 | v1.0.5 <span style="color: #ff6b6b;">(beta-1)</span>
     </div>
   </div>
   <script src="popup.js"></script>
 </body>
-</html>
+</html>                                                                           

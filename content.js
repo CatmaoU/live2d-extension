@@ -12,13 +12,18 @@
             const result = await new Promise((resolve) => {
                 browserAPI.storage.local.get([
                     'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'aiProvider', 'aiConnected',
+                    'pageSummaryEnabled',
+                    'dailyImageEnabled', 'dailyImageCustomApi', 'dailyImageApiList',
+                    'theme',
                     'longcatApiKey', 'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey',
                     'doubaoApiKey', 'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey',
+                    'atriApiKey',
                     'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit',
+                    'summaryRules',
                     // 模型选择字段
                     'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel',
                     'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel',
-                    'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel'
+                    'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel'
                 ], (data) => {
                     resolve(data || {});
                 });
@@ -64,17 +69,37 @@
             if (result.minimaxApiKey) {
                 settings.minimaxApiKey = result.minimaxApiKey;
             }
+            if (result.atriApiKey) {
+                settings.atriApiKey = result.atriApiKey;
+            }
             if (result.aiProvider) {
                 settings.aiProvider = result.aiProvider;
             }
             if (result.aiConnected !== undefined) {
                 settings.aiConnected = result.aiConnected;
             }
+            if (result.pageSummaryEnabled !== undefined) {
+                settings.pageSummaryEnabled = result.pageSummaryEnabled;
+            }
+            if (result.dailyImageEnabled !== undefined) {
+                settings.dailyImageEnabled = result.dailyImageEnabled;
+            }
+            if (result.dailyImageCustomApi !== undefined) {
+                settings.dailyImageCustomApi = result.dailyImageCustomApi;
+            }
+            if (result.dailyImageApiList !== undefined) {
+                settings.dailyImageApiList = result.dailyImageApiList;
+            }
+            
+            // 同步主题设置到 localStorage（用于 isDarkMode 检测）
+            if (result.theme !== undefined) {
+                localStorage.setItem('live2d-manual-theme', result.theme);
+            }
             
             // 同步模型选择设置
             const modelFields = ['deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel',
                                   'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel',
-                                  'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel'];
+                                  'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel'];
             modelFields.forEach(field => {
                 if (result[field] !== undefined) {
                     settings[field] = result[field];
@@ -96,6 +121,9 @@
             }
             if (result.characterLimit !== undefined) {
                 settings.characterLimit = result.characterLimit;
+            }
+            if (result.summaryRules !== undefined) {
+                settings.summaryRules = result.summaryRules;
             }
             
             localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
@@ -121,6 +149,15 @@
     // 定期同步设置（每 5 秒，减少日志频率）
     setInterval(syncSettingsFromStorage, 5000);
 
+    // 即时同步：当 browser.storage 发生变化时立即同步到 localStorage
+    if (browserAPI.storage.onChanged) {
+        browserAPI.storage.onChanged.addListener((changes, areaName) => {
+            if (areaName === 'local') {
+                syncSettingsFromStorage();
+            }
+        });
+    }
+
     // 监听来自popup的消息
     browserAPI.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.type === 'showPopupAchievement') {
@@ -136,6 +173,8 @@
             browserAPI.storage.local.get(
                 [
                     'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'aiProvider', 'aiConnected',
+                    'pageSummaryEnabled',
+                    'atriApiKey',
                     'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit'
                 ],
                 (result) => {
@@ -340,11 +379,575 @@
                 
                 console.log('[Live2D] Estimated memory usage:', memoryMB.toFixed(1), 'MB');
                 sendResponse({ memoryMB: memoryMB });
+            } else if (message.type === 'pageSummary') {
+                // 触发页面总结
+                triggerPageSummary();
+                sendResponse({ success: true });
+            } else if (message.type === 'updateKeybindings') {
+                // 更新按键绑定
+                if (message.keybindings) {
+                    keyBindings = message.keybindings;
+                    Object.keys(KB_DEFAULTS).forEach(function(k) {
+                        if (!keyBindings[k]) keyBindings[k] = KB_DEFAULTS[k];
+                    });
+                    try { localStorage.setItem('live2dKeybindings', JSON.stringify(keyBindings)); } catch(e) {}
+                }
+                sendResponse({ success: true });
+            } else if (message.type === 'updateDailyImageSettings') {
+                // 更新每日一图设置
+                const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                settings.dailyImageEnabled = !!message.dailyImageEnabled;
+                settings.dailyImageCustomApi = !!message.dailyImageCustomApi;
+                settings.dailyImageApiList = message.dailyImageApiList || [{ url: 'https://api.yppp.net/api.php', enabled: true }];
+                localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+                // 通知页面脚本刷新
+                window.dispatchEvent(new CustomEvent('live2dUpdateSettings'));
+                sendResponse({ success: true });
             }
         return true;
     });
 
-    // 显示成就通知（来自popup的成就显示）
+    // 页面总结功能（带缓存）
+    let __lastSummaryResult = null;
+
+    function triggerPageSummary() {
+        // 如果有缓存，直接显示弹窗，不重新调用 API
+        if (__lastSummaryResult) {
+            showSummaryModal(__lastSummaryResult);
+            return;
+        }
+        // 获取页面文本内容
+        let pageText = document.body.innerText || '';
+        if (pageText.length > 8000) {
+            pageText = pageText.substring(0, 8000) + '\n...（内容过长已截断）';
+        }
+        
+        // 通过 CustomEvent 通知 autoload-cubism3.js 执行总结
+        const event = new CustomEvent('live2dPageSummary', { 
+            detail: { pageContent: pageText } 
+        });
+        window.dispatchEvent(event);
+    }
+
+    // 监听总结结果事件，缓存并弹窗显示
+    window.addEventListener('live2dShowSummary', function(e) {
+        const summary = e.detail?.summary || '';
+        if (!summary) return;
+        __lastSummaryResult = summary;
+        showSummaryModal(summary);
+    });
+
+    // 页面刷新时清除缓存
+    window.addEventListener('beforeunload', function() {
+        __lastSummaryResult = null;
+    });
+
+    // 创建/显示总结弹窗
+    let summaryModalOverlay = null;
+    let summaryModalTextarea = null;
+    let __isSummaryResizing = false;
+    let __summaryBtnTheme = { btnBg: '#fff', btnColor: '#667eea', isDark: false };
+
+    function showSummaryModal(summaryText) {
+        const isDark = isDarkMode();
+        const theme = {
+            overlayBg: isDark ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.45)',
+            boxBg: isDark ? '#1a1a2e' : '#fff',
+            boxShadow: isDark ? '0 12px 48px rgba(0,0,0,0.6)' : '0 12px 48px rgba(0,0,0,0.25)',
+            borderColor: isDark ? '#333' : '#eee',
+            headerColor: isDark ? '#eee' : '#333',
+            textareaBg: isDark ? '#0e0e24' : '#f5f5f5',
+            textareaColor: isDark ? '#ddd' : '#333',
+            footerColor: isDark ? '#888' : '#999',
+            footerBorder: isDark ? '#333' : '#eee',
+            btnBg: isDark ? '#2a2a4e' : '#fff',
+            btnColor: '#667eea',
+        };
+        
+        // 更新共享按钮主题（用于 hover 事件）
+        __summaryBtnTheme = { btnBg: theme.btnBg, btnColor: theme.btnColor, isDark };
+
+        // 如果弹窗已存在，直接显示并更新主题
+        if (summaryModalOverlay) {
+            summaryModalTextarea.value = summaryText;
+            summaryModalOverlay.style.background = theme.overlayBg;
+            // 恢复保存的大小
+            const savedW = localStorage.getItem('live2dSummaryWidth');
+            const savedH = localStorage.getItem('live2dSummaryHeight');
+            const box = document.getElementById('live2d-summary-box');
+            if (box) {
+                if (savedW) box.style.width = savedW + 'px';
+                if (savedH) box.style.height = savedH + 'px';
+                box.style.background = theme.boxBg;
+                box.style.boxShadow = theme.boxShadow;
+                // 更新子元素主题
+                const hdr = box.querySelector('.summary-header');
+                if (hdr) { hdr.style.color = theme.headerColor; hdr.style.borderBottomColor = theme.borderColor; }
+                const ta = box.querySelector('.summary-textarea');
+                if (ta) { ta.style.background = theme.textareaBg; ta.style.color = theme.textareaColor; }
+                const ftr = box.querySelector('.summary-footer');
+                if (ftr) { ftr.style.color = theme.footerColor; ftr.style.borderTopColor = theme.footerBorder; }
+                // 更新按钮主题
+                __summaryBtnTheme = { btnBg: theme.btnBg, btnColor: theme.btnColor, isDark };
+                const rBtn = box.querySelector('.summary-btn-refresh');
+                if (rBtn) { rBtn.style.background = theme.btnBg; rBtn.style.color = theme.btnColor; rBtn.style.borderColor = theme.btnColor; }
+                const cBtn = box.querySelector('.summary-btn-copy');
+                if (cBtn) { cBtn.style.background = theme.btnBg; cBtn.style.color = theme.btnColor; cBtn.style.borderColor = theme.btnColor; }
+                const xBtn = box.querySelector('.summary-btn-close');
+                if (xBtn) { xBtn.style.background = isDark ? '#3a3a5c' : '#f0f0f0'; xBtn.style.color = isDark ? '#ccc' : '#666'; }
+            }
+            summaryModalOverlay.style.display = 'flex';
+            return;
+        }
+        
+        // 创建遮罩层
+        summaryModalOverlay = document.createElement('div');
+        summaryModalOverlay.id = 'live2d-summary-overlay';
+        summaryModalOverlay.style.cssText = `
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: ${theme.overlayBg};
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: live2dSummaryFadeIn 0.2s ease;
+        `;
+        
+        // 点击遮罩层关闭
+        summaryModalOverlay.addEventListener('click', function(e) {
+            if (__isSummaryResizing) {
+                __isSummaryResizing = false;
+                return;
+            }
+            if (e.target === summaryModalOverlay) {
+                hideSummaryModal();
+            }
+        });
+        
+        // 弹窗容器（读取保存的大小）
+        const savedWidth = localStorage.getItem('live2dSummaryWidth') || '700';
+        const savedHeight = localStorage.getItem('live2dSummaryHeight') || '';
+        const modalBox = document.createElement('div');
+        modalBox.id = 'live2d-summary-box';
+        modalBox.style.cssText = `
+            background: ${theme.boxBg};
+            border-radius: 12px;
+            width: ${savedWidth}px;
+            ${savedHeight ? 'height: ' + savedHeight + 'px;' : 'min-height: 300px; max-height: 80vh;'}
+            display: flex;
+            flex-direction: column;
+            box-shadow: ${theme.boxShadow};
+            overflow: hidden;
+            position: relative;
+        `;
+        
+        // 标题栏
+        const header = document.createElement('div');
+        header.className = 'summary-header';
+        header.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid ${theme.borderColor};
+            font-size: 15px;
+            font-weight: 600;
+            color: ${theme.headerColor};
+        `;
+        header.innerHTML = '<span>页面总结</span>';
+        
+        // 按钮组
+        const btnGroup = document.createElement('div');
+        btnGroup.style.cssText = 'display: flex; gap: 8px;';
+        
+        // 刷新按钮（重新总结）
+        const refreshBtn = document.createElement('button');
+        refreshBtn.className = 'summary-btn-refresh';
+        refreshBtn.textContent = '刷新';
+        refreshBtn.style.cssText = `
+            padding: 6px 14px;
+            background: ${theme.btnBg};
+            color: ${theme.btnColor};
+            border: 1px solid ${theme.btnColor};
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        `;
+        refreshBtn.addEventListener('mouseenter', () => { refreshBtn.style.background = __summaryBtnTheme.btnColor; refreshBtn.style.color = '#fff'; });
+        refreshBtn.addEventListener('mouseleave', () => { refreshBtn.style.background = __summaryBtnTheme.btnBg; refreshBtn.style.color = __summaryBtnTheme.btnColor; });
+        refreshBtn.addEventListener('click', function() {
+            // 清缓存，更新 textarea 内容，获取最新页面内容重新总结
+            __lastSummaryResult = null;
+            summaryModalTextarea.value = '正在重新总结喵~';
+            let freshPageText = document.body.innerText || '';
+            if (freshPageText.length > 8000) {
+                freshPageText = freshPageText.substring(0, 8000) + '\n...（内容过长已截断）';
+            }
+            const event = new CustomEvent('live2dPageSummary', {
+                detail: { pageContent: freshPageText }
+            });
+            window.dispatchEvent(event);
+        });
+        
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'summary-btn-copy';
+        copyBtn.textContent = '复制';
+        copyBtn.style.cssText = `
+            padding: 6px 14px;
+            background: ${theme.btnBg};
+            color: ${theme.btnColor};
+            border: 1px solid ${theme.btnColor};
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+        `;
+        copyBtn.addEventListener('mouseenter', () => { copyBtn.style.background = __summaryBtnTheme.btnColor; copyBtn.style.color = '#fff'; });
+        copyBtn.addEventListener('mouseleave', () => { copyBtn.style.background = __summaryBtnTheme.btnBg; copyBtn.style.color = __summaryBtnTheme.btnColor; });
+        copyBtn.addEventListener('click', async function() {
+            try {
+                await navigator.clipboard.writeText(summaryModalTextarea.value);
+                copyBtn.textContent = '✅ 已复制';
+                setTimeout(() => { copyBtn.textContent = '复制'; }, 2000);
+            } catch (e) {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = summaryModalTextarea.value;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                copyBtn.textContent = '✅ 已复制';
+                setTimeout(() => { copyBtn.textContent = '复制'; }, 2000);
+            }
+        });
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'summary-btn-close';
+        closeBtn.textContent = '✕';
+        closeBtn.style.cssText = `
+            padding: 6px 12px;
+            background: ${isDark ? '#3a3a5c' : '#f0f0f0'};
+            color: ${isDark ? '#ccc' : '#666'};
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        `;
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = __summaryBtnTheme.isDark ? '#4a4a6c' : '#e0e0e0'; });
+        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = __summaryBtnTheme.isDark ? '#3a3a5c' : '#f0f0f0'; });
+        closeBtn.addEventListener('click', hideSummaryModal);
+        
+        btnGroup.appendChild(refreshBtn);
+        btnGroup.appendChild(copyBtn);
+        btnGroup.appendChild(closeBtn);
+        header.appendChild(btnGroup);
+        modalBox.appendChild(header);
+        
+        // 可编辑内容区域
+        summaryModalTextarea = document.createElement('textarea');
+        summaryModalTextarea.className = 'summary-textarea';
+        summaryModalTextarea.value = summaryText;
+        summaryModalTextarea.style.cssText = `
+            flex: 1;
+            min-height: 200px;
+            padding: 16px 20px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+            line-height: 1.7;
+            color: ${theme.textareaColor};
+            background: ${theme.textareaBg};
+            resize: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        modalBox.appendChild(summaryModalTextarea);
+        
+        // 底部提示
+        const footer = document.createElement('div');
+        footer.className = 'summary-footer';
+        footer.style.cssText = `
+            padding: 8px 20px;
+            border-top: 1px solid ${theme.footerBorder};
+            font-size: 12px;
+            color: ${theme.footerColor};
+            text-align: center;
+        `;
+        footer.textContent = '内容可编辑修改 · 点击空白处关闭';
+        modalBox.appendChild(footer);
+
+        // 拖拽缩放手柄
+        const resizeHandle = document.createElement('div');
+        resizeHandle.style.cssText = `
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 20px;
+            height: 20px;
+            cursor: nwse-resize;
+            z-index: 10;
+        `;
+        // 右下角三角形图标
+        resizeHandle.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" style="position:absolute;right:3px;bottom:3px;"><path d="M0 12 L12 12 L12 0" fill="none" stroke="#bbb" stroke-width="2"/></svg>';
+        modalBox.appendChild(resizeHandle);
+
+        // 拖拽缩放逻辑
+        let isResizing = false;
+        resizeHandle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            __isSummaryResizing = true;
+            e.preventDefault();
+            e.stopPropagation();
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const startW = modalBox.offsetWidth;
+            const startH = modalBox.offsetHeight;
+
+            function onMouseMove(ev) {
+                if (!isResizing) return;
+                const newW = Math.max(350, startW + (ev.clientX - startX));
+                const newH = Math.max(250, startH + (ev.clientY - startY));
+                modalBox.style.width = newW + 'px';
+                modalBox.style.height = newH + 'px';
+            }
+            function onMouseUp(ev) {
+                isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                // 保存大小
+                localStorage.setItem('live2dSummaryWidth', Math.round(modalBox.offsetWidth));
+                localStorage.setItem('live2dSummaryHeight', Math.round(modalBox.offsetHeight));
+            }
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+
+        summaryModalOverlay.appendChild(modalBox);
+        document.body.appendChild(summaryModalOverlay);
+        
+        // 添加淡入动画样式
+        if (!document.getElementById('live2d-summary-style')) {
+            const style = document.createElement('style');
+            style.id = 'live2d-summary-style';
+            style.textContent = `
+                @keyframes live2dSummaryFadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    function hideSummaryModal() {
+        if (summaryModalOverlay) {
+            summaryModalOverlay.style.display = 'none';
+        }
+    }
+
+    // ─── 按键绑定系统 ───
+    // 尝试从 localStorage 读取；若无则从 chrome.storage 读并同步到 localStorage
+    const KB_DEFAULTS = {
+        pageSummary: { ctrl: true, shift: true, alt: false, key: 'V' },
+        screenshot: { ctrl: true, shift: false, alt: true, key: 'V' },
+        screenshotNoMascot: { ctrl: true, shift: false, alt: true, key: 'B' },
+        dailyImage: { ctrl: true, shift: false, alt: true, key: 'G' }
+    };
+
+    function loadBindings() {
+        let b = {};
+        try {
+            const stored = localStorage.getItem('live2dKeybindings');
+            if (stored) b = JSON.parse(stored);
+        } catch(e) {}
+        Object.keys(KB_DEFAULTS).forEach(function(k) {
+            if (!b[k]) b[k] = KB_DEFAULTS[k];
+        });
+        // 写回 localStorage 确保 page 脚本也能读取
+        try { localStorage.setItem('live2dKeybindings', JSON.stringify(b)); } catch(e) {}
+        return b;
+    }
+
+    let keyBindings = loadBindings();
+
+    // 从 chrome.storage 读取最新绑定（第一次加载时覆盖 localStorage）
+    browserAPI.storage.local.get('keybindings', function(result) {
+        if (result.keybindings) {
+            keyBindings = result.keybindings;
+            Object.keys(KB_DEFAULTS).forEach(function(k) {
+                if (!keyBindings[k]) keyBindings[k] = KB_DEFAULTS[k];
+            });
+            try { localStorage.setItem('live2dKeybindings', JSON.stringify(keyBindings)); } catch(e) {}
+        }
+    });
+
+    function matchBinding(e, b) {
+        if (!b || !b.key) return false;
+        return (!!e.ctrlKey === !!b.ctrl) &&
+               (!!e.shiftKey === !!b.shift) &&
+               (!!e.altKey === !!b.alt) &&
+               (e.key.toUpperCase() === b.key.toUpperCase());
+    }
+
+    document.addEventListener('keydown', function(e) {
+        // 页面总结快捷键
+        if (matchBinding(e, keyBindings.pageSummary)) {
+            // 如果弹窗已打开，则关闭
+            if (summaryModalOverlay && summaryModalOverlay.style.display !== 'none') {
+                e.preventDefault();
+                hideSummaryModal();
+                return;
+            }
+            // 检查页面总结功能是否启用
+            const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+            if (settings.pageSummaryEnabled && settings.aiEnabled && settings.aiConnected) {
+                e.preventDefault();
+                triggerPageSummary();
+            } else if (settings.pageSummaryEnabled) {
+                e.preventDefault();
+                // API 未连接，通知模型气泡显示提示
+                const tipEvent = new CustomEvent('live2dShowTips', {
+                    detail: { text: '未连接api喵！无法总结喵！' }
+                });
+                window.dispatchEvent(tipEvent);
+            }
+        }
+    });
+
+    // 主题变化时刷新弹窗主题
+    document.addEventListener('live2dSettingsUpdated', function() {
+        if (summaryModalOverlay && summaryModalOverlay.style.display !== 'none' && __lastSummaryResult) {
+            showSummaryModal(__lastSummaryResult);
+        }
+    });
+
+    // ─── AI API 网络代理桥接 ───
+     // 注入脚本在页面上下文 (main world)，无法直接访问 chrome.runtime
+     // content.js 在隔离世界 (isolated world)，可以通过 runtime.sendMessage 转发到 background
+     // CustomEvent 桥接链路：页面脚本 ↔ content.js ↔ background ↔ content.js ↔ 页面脚本
+
+    window.addEventListener('live2dFetchProxy', function(e) {
+         const detail = e.detail || {};
+         const requestId = detail.requestId;
+         const url = detail.url;
+         const opts = detail.options;
+         if (!requestId || !url) return;
+
+         if (!browserAPI.runtime || !browserAPI.runtime.sendMessage) {
+             window.dispatchEvent(new CustomEvent('live2dFetchProxyResult', {
+                 detail: { requestId, success: false, error: 'runtime not available' }
+             }));
+             return;
+         }
+
+         browserAPI.runtime.sendMessage(
+             { action: 'fetchApi', url, options: opts },
+             (response) => {
+                 const err = browserAPI.runtime.lastError;
+                 if (err) {
+                     window.dispatchEvent(new CustomEvent('live2dFetchProxyResult', {
+                         detail: { requestId, success: false, error: err.message || 'Runtime error' }
+                     }));
+                     return;
+                 }
+                 if (response && response.success) {
+                     window.dispatchEvent(new CustomEvent('live2dFetchProxyResult', {
+                         detail: { requestId, success: true, data: response.data }
+                     }));
+                 } else {
+                     window.dispatchEvent(new CustomEvent('live2dFetchProxyResult', {
+                         detail: { requestId, success: false, error: response?.error || 'Proxy request failed' }
+                     }));
+                 }
+             }
+         );
+    });
+
+     // ─── 截图下载桥接 ───
+     // 注入脚本 → content.js → background → chrome.downloads.download()
+     window.addEventListener('live2dDownloadScreenshot', function(e) {
+         const detail = e.detail || {};
+         const dataUrl = detail.dataUrl;
+         const fileName = detail.fileName || 'screenshot.png';
+         if (!dataUrl) return;
+
+         browserAPI.runtime.sendMessage(
+             { action: 'downloadFile', dataUrl: dataUrl, filename: fileName },
+             function() { browserAPI.runtime.lastError; }
+         );
+     });
+
+     // ─── 每日一图：两步走（content 取 JSON → background 取图片 → data URL）───
+     window.addEventListener('live2dDailyImageFetch', async function(e) {
+         const detail = e.detail || {};
+         const requestId = detail.requestId;
+         const apiUrl = detail.url;
+         if (!requestId || !apiUrl) return;
+
+         console.log('[Live2D Bridge] Step 1: fetch JSON from', apiUrl);
+
+         try {
+             // Step 1: 从 JSON API 获取 acgurl 直链
+             const sep = apiUrl.includes('?') ? '&' : '?';
+             const jsonUrl = apiUrl.replace(/\/api\.php/, '/pc.php') + sep + 'return=json';
+             
+             const jsonResp = await fetch(jsonUrl, { cache: 'no-cache' });
+             if (!jsonResp.ok) throw new Error('JSON HTTP ' + jsonResp.status);
+             const json = await jsonResp.json();
+             
+             let acgurl = json.acgurl || json.img || json.image || json.url || json.pic || json.picUrl || json.imgurl;
+             if (!acgurl) throw new Error('no acgurl in response');
+             
+             if (acgurl.startsWith('//')) acgurl = 'https:' + acgurl;
+             else if (acgurl.startsWith('/')) acgurl = new URL(acgurl, jsonUrl).href;
+
+             console.log('[Live2D Bridge] Step 1 OK, acgurl:', acgurl);
+
+             // Step 2: 让 background 取图片转 data URL（有 host_permissions，绕过 CORS）
+             console.log('[Live2D Bridge] Step 2: background fetch image');
+             browserAPI.runtime.sendMessage(
+                 { action: 'fetchDailyImage', url: acgurl },
+                 function(response) {
+                     const err = browserAPI.runtime.lastError;
+                     if (err) {
+                         console.log('[Live2D Bridge] Background error:', err.message);
+                         window.dispatchEvent(new CustomEvent('live2dDailyImageResult', {
+                             detail: { requestId, success: true, imageUrl: acgurl }
+                         }));
+                         return;
+                     }
+                     if (response && response.success) {
+                         if (response.dataUrl) {
+                             console.log('[Live2D Bridge] Got data URL from background, length:', response.dataUrl.length);
+                             window.dispatchEvent(new CustomEvent('live2dDailyImageResult', {
+                                 detail: { requestId, success: true, dataUrl: response.dataUrl }
+                             }));
+                         } else {
+                             console.log('[Live2D Bridge] Got image URL from background:', response.imageUrl);
+                             window.dispatchEvent(new CustomEvent('live2dDailyImageResult', {
+                                 detail: { requestId, success: true, imageUrl: response.imageUrl || acgurl }
+                             }));
+                         }
+                     } else {
+                         console.log('[Live2D Bridge] Background failed:', response?.error);
+                         window.dispatchEvent(new CustomEvent('live2dDailyImageResult', {
+                             detail: { requestId, success: true, imageUrl: acgurl }
+                         }));
+                     }
+                 }
+             );
+         } catch(err) {
+             console.log('[Live2D Bridge] All failed:', err.message);
+             window.dispatchEvent(new CustomEvent('live2dDailyImageResult', {
+                 detail: { requestId, success: true, imageUrl: apiUrl }
+             }));
+         }
+     });
+
+     // 显示成就通知（来自popup的成就显示）
     function showPopupAchievement(title, message) {
         const existingNotification = document.getElementById('popup-achievement-notification');
         if (existingNotification) existingNotification.remove();

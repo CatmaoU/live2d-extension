@@ -53,7 +53,7 @@ async function checkRemoteUpdate() {
         cachedVersion = newVersion;
         
         // 刷新所有模型下拉框
-        const providers = ['deepseek', 'siliconflow', 'univibe', 'longcat', 'qwen', 'hunyuan', 'ernie', 'doubao', 'spark', 'zhipu', 'moonshot', 'minimax'];
+        const providers = ['deepseek', 'siliconflow', 'univibe', 'longcat', 'qwen', 'hunyuan', 'ernie', 'doubao', 'spark', 'zhipu', 'moonshot', 'minimax', 'atri'];
         for (const provider of providers) {
           await populateModelSelect(provider);
         }
@@ -86,7 +86,8 @@ function getDefaultModelConfig() {
       spark: { models: [{ id: 'generalv3', name: '星火 V3' }] },
       zhipu: { models: [{ id: 'glm-4', name: 'GLM-4' }] },
       moonshot: { models: [{ id: 'moonshot-v1-8k', name: 'Kimi 8K' }] },
-      minimax: { models: [{ id: 'MiniMax-Text-01', name: 'MiniMax Text' }] }
+      minimax: { models: [{ id: 'MiniMax-Text-01', name: 'MiniMax Text' }] },
+      atri: { models: [{ id: 'gpt-5.4', name: 'GPT-5.4' }] }
     }
   };
 }
@@ -866,8 +867,58 @@ async function testMinimaxApi(apiKey) {
   }
 }
 
+// ATRI（OpenAI Compatible）API 测试函数
+async function testAtriApi(apiKey, modelToTest = 'gpt-5.4') {
+  try {
+    const response = await fetch('https://ai.zkmjnic.tech/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: modelToTest,
+        messages: [
+          { role: 'user', content: 'hi' }
+        ],
+        max_tokens: 5
+      })
+    });
+
+    if (response.ok) {
+      return { success: true };
+    } else {
+      const errorData = await response.json().catch(() => null);
+      let errorMsg = errorData?.error?.message || `请求失败 (${response.status})`;
+      const lowerErrorMsg = errorMsg.toLowerCase();
+
+      if (response.status === 401 || lowerErrorMsg.includes('invalid') || lowerErrorMsg.includes('authentication') || lowerErrorMsg.includes('unauthorized')) {
+        errorMsg = 'API Key 无效，请检查输入喵~';
+      } else if (lowerErrorMsg.includes('insufficient') || lowerErrorMsg.includes('balance') || lowerErrorMsg.includes('quota')) {
+        errorMsg = 'API Key 有效，但账户余额或额度不足，请前往 ATRI 控制台检查喵~';
+      } else if (response.status === 429 || lowerErrorMsg.includes('rate limit') || lowerErrorMsg.includes('too many') || lowerErrorMsg.includes('throttling')) {
+        errorMsg = 'API 调用频率超限，请稍后再试喵~';
+      } else if (response.status === 403 || lowerErrorMsg.includes('forbidden') || lowerErrorMsg.includes('access denied')) {
+        errorMsg = 'API Key 权限不足或被拒绝访问，请检查 API Key 权限喵~';
+      } else if (response.status === 500 || response.status === 502 || response.status === 503) {
+        errorMsg = 'ATRI API 服务器暂时不可用，请稍后再试喵~';
+      } else if (lowerErrorMsg.includes('model') || lowerErrorMsg.includes('not found')) {
+        errorMsg = '模型 ID 无效，请检查选择的模型或账户权限喵~';
+      }
+
+      return { success: false, error: errorMsg };
+    }
+  } catch (e) {
+    console.error('[Live2D Popup2] ATRI Test Error:', e);
+    if (e.name === 'TypeError' && e.message.includes('Failed to fetch')) {
+      return { success: false, error: '网络连接失败，请检查网络或防火墙设置喵~' };
+    }
+    return { success: false, error: '网络连接失败，请检查网络喵~' };
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-  const config = await storage.get(['theme', 'followSystemTheme', 'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey', 'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey', 'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey', 'aiProvider', 'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit', 'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel', 'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel', 'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel']);
+  const config = await storage.get(['theme', 'followSystemTheme', 'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey', 'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey', 'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey', 'atriApiKey', 'aiProvider', 'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit', 'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel', 'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel', 'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel', 'summaryRules']);
   const followSystemThemeCheckbox = document.getElementById('followSystemTheme');
   const aiSettingsContainer = document.getElementById('aiSettingsContainer');
   const aiApiKeyInput = document.getElementById('aiApiKey');
@@ -882,6 +933,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const zhipuApiKeyInput = document.getElementById('zhipuApiKey');
   const moonshotApiKeyInput = document.getElementById('moonshotApiKey');
   const minimaxApiKeyInput = document.getElementById('minimaxApiKey');
+  const atriApiKeyInput = document.getElementById('atriApiKey');
   const aiApiKeyInputContainer = document.getElementById('aiApiKeyInputContainer');
   const aiDisabledHint = document.getElementById('aiDisabledHint');
   const connectBtn = document.getElementById('connectBtn');
@@ -899,6 +951,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const zhipuConfigDiv = document.getElementById('zhipuConfig');
   const moonshotConfigDiv = document.getElementById('moonshotConfig');
   const minimaxConfigDiv = document.getElementById('minimaxConfig');
+  const atriConfigDiv = document.getElementById('atriConfig');
   
   // 角色信息元素
   const characterNameInput = document.getElementById('characterName');
@@ -908,6 +961,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const characterLimitInput = document.getElementById('characterLimit');
   const refreshInfoBtn = document.getElementById('refreshInfoBtn');
   const refreshStatus = document.getElementById('refreshStatus');
+  const summaryRulesInput = document.getElementById('summaryRules');
   
   // 初始化角色信息
   if (characterNameInput) characterNameInput.value = config.characterName || '';
@@ -915,9 +969,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (characterRelationInput) characterRelationInput.value = config.characterRelation || '';
   if (characterProfileInput) characterProfileInput.value = config.characterProfile || '';
   if (characterLimitInput) characterLimitInput.value = config.characterLimit || '';
+  if (summaryRulesInput) summaryRulesInput.value = config.summaryRules || '';
   
   // 动态加载所有提供商的模型列表
-  const providers = ['deepseek', 'siliconflow', 'univibe', 'longcat', 'qwen', 'hunyuan', 'ernie', 'doubao', 'spark', 'zhipu', 'moonshot', 'minimax'];
+  const providers = ['deepseek', 'siliconflow', 'univibe', 'longcat', 'qwen', 'hunyuan', 'ernie', 'doubao', 'spark', 'zhipu', 'moonshot', 'minimax', 'atri'];
   for (const provider of providers) {
     await populateModelSelect(provider);
     // 恢复保存的模型选择
@@ -1002,6 +1057,10 @@ document.addEventListener('DOMContentLoaded', async () => {
           minimaxApiKeyInput.value = localConfig.api.minimax.apiKey;
           aiProviderSelect.value = 'minimax';
           await storage.set({ minimaxApiKey: localConfig.api.minimax.apiKey, aiProvider: 'minimax' });
+        } else if (provider === 'atri' && localConfig.api?.atri?.apiKey) {
+          atriApiKeyInput.value = localConfig.api.atri.apiKey;
+          aiProviderSelect.value = 'atri';
+          await storage.set({ atriApiKey: localConfig.api.atri.apiKey, aiProvider: 'atri' });
         }
       }
     } catch (e) {
@@ -1088,6 +1147,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             } else if (currentProvider === 'minimax') {
               minimaxApiKeyInput.value = currentProviderConfig.apiKey;
               await storage.set({ minimaxApiKey: currentProviderConfig.apiKey });
+            } else if (currentProvider === 'atri') {
+              atriApiKeyInput.value = currentProviderConfig.apiKey;
+              await storage.set({ atriApiKey: currentProviderConfig.apiKey });
             }
             hasUpdates = true;
             console.log('[Live2D Popup2] Updated API key for provider:', currentProvider);
@@ -1146,6 +1208,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (characterRelationInput) settings.characterRelation = characterRelationInput.value.trim();
         if (characterProfileInput) settings.characterProfile = characterProfileInput.value.trim();
         if (characterLimitInput) settings.characterLimit = characterLimitInput.value.trim();
+        if (summaryRulesInput) settings.summaryRules = summaryRulesInput.value;
         if (aiApiKeyInput) settings.aiApiKey = aiApiKeyInput.value.trim();
         if (siliconflowApiKeyInput) settings.siliconflowApiKey = siliconflowApiKeyInput.value.trim();
         if (aiProviderSelect) settings.aiProvider = aiProviderSelect.value;
@@ -1232,6 +1295,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (minimaxApiKeyInput) {
     minimaxApiKeyInput.value = config.minimaxApiKey || '';
   }
+  if (atriApiKeyInput) {
+    atriApiKeyInput.value = config.atriApiKey || '';
+  }
   
   // 显示对应 API 提供商的配置
   function updateProviderConfig(providerValue) {
@@ -1249,6 +1315,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     zhipuConfigDiv.style.display = 'none';
     moonshotConfigDiv.style.display = 'none';
     minimaxConfigDiv.style.display = 'none';
+    atriConfigDiv.style.display = 'none';
     
     // 显示当前选中的配置
     if (provider === 'deepseek') {
@@ -1275,6 +1342,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       moonshotConfigDiv.style.display = 'block';
     } else if (provider === 'minimax') {
       minimaxConfigDiv.style.display = 'block';
+    } else if (provider === 'atri') {
+      atriConfigDiv.style.display = 'block';
     }
   }
   updateProviderConfig();
@@ -1645,7 +1714,38 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     });
   }
-  
+
+  // ATRI API Key 输入事件
+  if (atriApiKeyInput) {
+    atriApiKeyInput.addEventListener('change', async () => {
+      const apiKey = atriApiKeyInput.value.trim();
+      await storage.set({ atriApiKey: apiKey });
+
+      const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+      settings.atriApiKey = apiKey;
+      localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+    });
+
+    atriApiKeyInput.addEventListener('input', () => {
+      if (connectStatus) {
+        connectStatus.className = 'connect-status';
+        connectStatus.textContent = '';
+      }
+    });
+  }
+
+  // 总结规则输入事件
+  if (summaryRulesInput) {
+    summaryRulesInput.addEventListener('change', async () => {
+      const val = summaryRulesInput.value;
+      await storage.set({ summaryRules: val });
+      
+      const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+      settings.summaryRules = val;
+      localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+    });
+  }
+
   // 连接按钮事件
   if (connectBtn && connectStatus) {
     connectBtn.addEventListener('click', async () => {
@@ -1676,6 +1776,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         apiKey = moonshotApiKeyInput.value.trim();
       } else if (provider === 'minimax') {
         apiKey = minimaxApiKeyInput.value.trim();
+      } else if (provider === 'atri') {
+        apiKey = atriApiKeyInput.value.trim();
       }
       
       if (!apiKey) {
@@ -1697,7 +1799,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         spark: { storageKey: 'sparkApiKey', value: apiKey },
         zhipu: { storageKey: 'zhipuApiKey', value: apiKey },
         moonshot: { storageKey: 'moonshotApiKey', value: apiKey },
-        minimax: { storageKey: 'minimaxApiKey', value: apiKey }
+        minimax: { storageKey: 'minimaxApiKey', value: apiKey },
+        atri: { storageKey: 'atriApiKey', value: apiKey }
       };
       
       const keyInfo = apiKeyMap[provider] || apiKeyMap.deepseek;
@@ -1745,6 +1848,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         result = await testMoonshotApi(apiKey);
       } else if (provider === 'minimax') {
         result = await testMinimaxApi(apiKey);
+      } else if (provider === 'atri') {
+        result = await testAtriApi(apiKey, selectedModel || 'gpt-5.4');
       } else {
         result = { success: false, error: '不支持的 API 提供商' };
       }

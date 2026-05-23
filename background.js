@@ -113,19 +113,101 @@ chrome.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
   // Proxy API requests to bypass CORS
   if (request.action === 'fetchApi') {
     const { url, options } = request;
-    console.log('[Live2D Background] Proxying API request:', url);
+    const responseType = (options && options.responseType) || 'json';
+    console.log('[Live2D Background] Proxying API request:', url, 'responseType:', responseType);
 
-    fetch(url, options)
-      .then(async (response) => {
-        const data = await response.json();
-        sendResponse({ success: true, data, status: response.status });
+    if (responseType === 'dataUrl') {
+      fetch(url, options)
+        .then(function(r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          var ct = (r.headers.get('content-type') || 'image/jpeg').split(';')[0];
+          return r.arrayBuffer().then(function(buf) { return { buf: buf, ct: ct }; });
+        })
+        .then(function(info) {
+          var binary = new TextDecoder('latin1').decode(new Uint8Array(info.buf));
+          sendResponse({ success: true, data: 'data:' + info.ct + ';base64,' + btoa(binary) });
+        })
+        .catch(function(error) {
+          console.error('[Live2D Background] dataUrl fetch failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+    } else {
+      fetch(url, options)
+        .then(async function(response) {
+          const data = await response.json();
+          sendResponse({ success: true, data: data, status: response.status });
+        })
+        .catch(function(error) {
+          console.error('[Live2D Background] Proxy request failed:', error);
+          sendResponse({ success: false, error: error.message });
+        });
+    }
+
+    return true;
+  }
+
+  // Fetch lewd image from sex.nyan.run (bypass CORS: host_permissions)
+  if (request.action === 'fetchLewdImage') {
+    fetch('https://sex.nyan.run/api/v2/?keyword=all&r18=true&num=1&t=' + Date.now(), { cache: 'no-store' })
+      .then(function(r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j) {
+        if (!j.success || !Array.isArray(j.data) || !j.data[0]) throw new Error('no data');
+        var imgUrl = j.data[0].url;
+        if (!imgUrl) throw new Error('no url');
+        if (imgUrl.startsWith('//')) imgUrl = 'https:' + imgUrl;
+        // Also fetch the image as data URL
+        fetch(imgUrl, { cache: 'no-cache' })
+          .then(function(r2) {
+            if (!r2.ok) throw new Error('HTTP ' + r2.status);
+            var ct = (r2.headers.get('content-type') || 'image/jpeg').split(';')[0];
+            return r2.arrayBuffer().then(function(buf) { return { buf: buf, ct: ct }; });
+          })
+          .then(function(info) {
+            var binary = new TextDecoder('latin1').decode(new Uint8Array(info.buf));
+            sendResponse({ success: true, dataUrl: 'data:' + info.ct + ';base64,' + btoa(binary), imageUrl: imgUrl });
+          })
+          .catch(function() { sendResponse({ success: true, imageUrl: imgUrl }); });
       })
-      .catch((error) => {
-        console.error('[Live2D Background] Proxy request failed:', error);
-        sendResponse({ success: false, error: error.message });
+      .catch(function(e) { sendResponse({ success: false, error: e.message }); });
+    return true;
+  }
+
+  // Fetch image → base64 data URL (bypass CORS: background has host_permissions)
+  if (request.action === 'fetchDailyImage') {
+    const imgUrl = request.url;
+
+    fetch(imgUrl, { cache: 'no-cache' })
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        var ct = (r.headers.get('content-type') || 'image/jpeg').split(';')[0];
+        return r.arrayBuffer().then(function(buf) {
+          return { buf: buf, ct: ct };
+        });
+      })
+      .then(function(info) {
+        var u8 = new Uint8Array(info.buf);
+        var binary = new TextDecoder('latin1').decode(u8);
+        var dataUrl = 'data:' + info.ct + ';base64,' + btoa(binary);
+        console.log('[Live2D Background] Data URL OK, size:', info.buf.byteLength, 'bytes, type:', info.ct);
+        sendResponse({ success: true, dataUrl: dataUrl });
+      })
+      .catch(function(e) {
+        console.error('[Live2D Background] Image fetch failed:', e.message);
+        sendResponse({ success: true, imageUrl: imgUrl });
       });
 
-    return true; // Keep message port open for async response
+    return true;
+  }
+
+  // Download screenshot (direct dataUrl from content script)
+  if (request.action === 'downloadFile') {
+    const { dataUrl, filename } = request;
+    chrome.downloads.download({
+      url: dataUrl,
+      filename: filename,
+      saveAs: false
+    }, function() { chrome.runtime.lastError; });
+    return;
   }
 });
 

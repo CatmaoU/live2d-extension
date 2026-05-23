@@ -212,7 +212,8 @@
                         'spark': latestSettings.sparkApiKey,
                         'zhipu': latestSettings.zhipuApiKey,
                         'moonshot': latestSettings.moonshotApiKey,
-                        'minimax': latestSettings.minimaxApiKey
+                        'minimax': latestSettings.minimaxApiKey,
+                        'atri': latestSettings.atriApiKey
                     };
                     apiKey = apiKeyMap[provider] || '';
                 }
@@ -238,7 +239,8 @@
                     'spark': { endpoint: 'https://spark-api.xf-yun.com/v3.1/chat', model: 'generalv3' },
                     'zhipu': { endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', model: 'glm-4' },
                     'moonshot': { endpoint: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k' },
-                    'minimax': { endpoint: 'https://api.minimax.chat/v1/text/chatcompletion_v2', model: 'MiniMax-Text-01' }
+                    'minimax': { endpoint: 'https://api.minimax.chat/v1/text/chatcompletion_v2', model: 'MiniMax-Text-01' },
+                    'atri': { endpoint: 'https://ai.zkmjnic.tech/v1/chat/completions', model: 'gpt-5.4' }
                 };
                 
                 // 优先从本地配置获取端点
@@ -399,7 +401,8 @@
                         'spark': latestSettings.sparkApiKey,
                         'zhipu': latestSettings.zhipuApiKey,
                         'moonshot': latestSettings.moonshotApiKey,
-                        'minimax': latestSettings.minimaxApiKey
+                        'minimax': latestSettings.minimaxApiKey,
+                        'atri': latestSettings.atriApiKey
                     };
                     apiKey = apiKeyMap[provider] || '';
                 }
@@ -421,7 +424,8 @@
                     'spark': { endpoint: 'https://spark-api.xf-yun.com/v3.1/chat', model: 'generalv3' },
                     'zhipu': { endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', model: 'glm-4' },
                     'moonshot': { endpoint: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k' },
-                    'minimax': { endpoint: 'https://api.minimax.chat/v1/text/chatcompletion_v2', model: 'MiniMax-Text-01' }
+                    'minimax': { endpoint: 'https://api.minimax.chat/v1/text/chatcompletion_v2', model: 'MiniMax-Text-01' },
+                    'atri': { endpoint: 'https://ai.zkmjnic.tech/v1/chat/completions', model: 'gpt-5.4' }
                 };
                 
                 // 优先从本地配置获取端点
@@ -568,36 +572,40 @@
                 let proxySuccess = false;
                 
                 try {
-                    console.log('[Live2D AI] Trying to use background proxy...');
-                    console.log('[Live2D AI] chrome.runtime available:', typeof chrome !== 'undefined' && chrome.runtime);
+                    console.log('[Live2D AI] Trying to use CustomEvent proxy bridge...');
                     
-                    if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
-                        const proxyResult = await new Promise((resolve, reject) => {
-                            console.log('[Live2D AI] Sending message to background...');
-                            chrome.runtime.sendMessage(
-                                { action: 'fetchApi', url: endpoint, options: options },
-                                (response) => {
-                                    console.log('[Live2D AI] Received response from background:', response);
-                                    if (chrome.runtime.lastError) {
-                                        console.error('[Live2D AI] Chrome runtime error:', chrome.runtime.lastError);
-                                        reject(new Error(chrome.runtime.lastError.message || 'Runtime error'));
-                                        return;
-                                    }
-                                    if (response && response.success) {
-                                        resolve(response.data);
-                                    } else {
-                                        reject(new Error(response?.error || 'Proxy request failed'));
-                                    }
+                    // 通过 CustomEvent 桥接将请求发给 content.js → background
+                    // （因为本脚本是注入的，在页面上下文，无法直接访问 chrome.runtime）
+                    const requestId = 'fetch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                    
+                    const proxyResult = await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            window.removeEventListener('live2dFetchProxyResult', handler);
+                            reject(new Error('Proxy request timeout'));
+                        }, 30000);
+                        
+                        function handler(e) {
+                            const d = e.detail || {};
+                            if (d.requestId === requestId) {
+                                clearTimeout(timeout);
+                                window.removeEventListener('live2dFetchProxyResult', handler);
+                                if (d.success) {
+                                    resolve(d.data);
+                                } else {
+                                    reject(new Error(d.error || 'Unknown proxy error'));
                                 }
-                            );
-                        });
-                        data = proxyResult;
-                        proxySuccess = true;
-                        console.log('[Live2D AI] Request via background proxy succeeded');
-                    } else {
-                        console.log('[Live2D AI] Background proxy not available, falling back to direct fetch');
-                        throw new Error('chrome.runtime not available');
-                    }
+                            }
+                        }
+                        
+                        window.addEventListener('live2dFetchProxyResult', handler);
+                        window.dispatchEvent(new CustomEvent('live2dFetchProxy', {
+                            detail: { requestId, url: endpoint, options }
+                        }));
+                    });
+                    
+                    data = proxyResult;
+                    proxySuccess = true;
+                    console.log('[Live2D AI] Request via CustomEvent proxy succeeded');
                 } catch (proxyError) {
                     console.log('[Live2D AI] Proxy failed, falling back to direct fetch:', proxyError);
                     
@@ -664,6 +672,118 @@
                 }
                 
                 throw error;
+            }
+        }
+
+        // 判断用户消息是否为「总结当前页面」的意图
+        async classifyIntent(userMessage) {
+            console.log('[Live2D AI] classifyIntent checking:', userMessage);
+            try {
+                // 复用 getAIResponse 的提供商配置逻辑
+                const baseUrl = this.settings?.baseUrl || '';
+                let localConfig = null;
+                try {
+                    const configRes = await fetch(baseUrl + 'live2d-ai/json/config.json');
+                    if (configRes.ok) localConfig = await configRes.json();
+                } catch (e) {}
+
+                let latestSettings = {};
+                try { latestSettings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}'); } catch(e) {}
+                const syncedSettings = await this.waitForSettings(3000);
+                Object.assign(latestSettings, syncedSettings);
+
+                let provider = 'deepseek';
+                if (latestSettings.aiProvider) provider = latestSettings.aiProvider;
+
+                let apiKey = '';
+                const providerConfig = localConfig?.api?.[provider];
+                if (providerConfig?.apiKey) {
+                    apiKey = providerConfig.apiKey;
+                } else {
+                    const keyMap = {
+                        'deepseek': latestSettings.aiApiKey, 'siliconflow': latestSettings.siliconflowApiKey,
+                        'univibe': latestSettings.univibeApiKey, 'longcat': latestSettings.longcatApiKey,
+                        'qwen': latestSettings.qwenApiKey, 'hunyuan': latestSettings.hunyuanApiKey,
+                        'ernie': latestSettings.ernieApiKey, 'doubao': latestSettings.doubaoApiKey,
+                        'spark': latestSettings.sparkApiKey, 'zhipu': latestSettings.zhipuApiKey,
+                        'moonshot': latestSettings.moonshotApiKey, 'minimax': latestSettings.minimaxApiKey,
+                        'atri': latestSettings.atriApiKey
+                    };
+                    apiKey = keyMap[provider] || '';
+                }
+                if (!apiKey) { console.log('[Live2D AI] classifyIntent: no API key'); return false; }
+
+                // 获取端点和模型（复用 getAIResponse 的默认配置）
+                const defaults = {
+                    'deepseek': { endpoint: 'https://api.deepseek.com/v1/chat/completions', model: 'deepseek-chat' },
+                    'siliconflow': { endpoint: 'https://api.siliconflow.cn/v1/chat/completions', model: 'deepseek-ai/DeepSeek-V3' },
+                    'univibe': { endpoint: 'https://api.univibe.cc/v1/chat/completions', model: 'gpt-4' },
+                    'longcat': { endpoint: 'https://api.longcat.chat/openai/v1/chat/completions', model: 'LongCat-Flash-Chat' },
+                    'qwen': { endpoint: 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', model: 'qwen-plus' },
+                    'hunyuan': { endpoint: 'https://tokenhub.tencentmaas.com/v1/chat/completions', model: 'deepseek-v4-pro' },
+                    'ernie': { endpoint: 'https://qianfan.baidubce.com/v2/chat/completions', model: 'ernie-4.0-8k-latest' },
+                    'doubao': { endpoint: 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', model: 'doubao-pro-32k' },
+                    'spark': { endpoint: 'https://spark-api.xf-yun.com/v3.1/chat', model: 'generalv3' },
+                    'zhipu': { endpoint: 'https://open.bigmodel.cn/api/paas/v4/chat/completions', model: 'glm-4' },
+                    'moonshot': { endpoint: 'https://api.moonshot.cn/v1/chat/completions', model: 'moonshot-v1-8k' },
+                    'minimax': { endpoint: 'https://api.minimax.chat/v1/text/chatcompletion_v2', model: 'MiniMax-Text-01' },
+                    'atri': { endpoint: 'https://ai.zkmjnic.tech/v1/chat/completions', model: 'gpt-5.4' }
+                };
+                const cfg = defaults[provider] || defaults['deepseek'];
+                const modelSettingKey = provider + 'Model';
+                const model = latestSettings[modelSettingKey] || cfg.model;
+                const endpoint = cfg.endpoint;
+
+                const body = JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'system', content: '你是一个意图分类器。判断用户的消息是否想让AI总结当前网页的内容。包含总结、摘要、归纳、这篇文章讲了什么、页面内容、网页要点等意图都算。只回答一个字：是 或 否。' },
+                        { role: 'user', content: userMessage }
+                    ],
+                    temperature: 0.1,
+                    max_tokens: 50
+                });
+
+                const options = {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+                    body: body
+                };
+
+                // 始终通过 CustomEvent 桥接（兼容 CSP 严格页面如 GitHub）
+                const requestId = 'cls_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                let data;
+                try {
+                    data = await new Promise((resolve, reject) => {
+                        const tid = setTimeout(function() { reject(new Error('timeout')); }, 15000);
+                        function handler(e) {
+                            const d = e.detail || {};
+                            if (d.requestId === requestId) {
+                                clearTimeout(tid);
+                                window.removeEventListener('live2dFetchProxyResult', handler);
+                                if (d.success) resolve(d.data);
+                                else reject(new Error(d.error));
+                            }
+                        }
+                        window.addEventListener('live2dFetchProxyResult', handler);
+                        window.dispatchEvent(new CustomEvent('live2dFetchProxy', {
+                            detail: { requestId: requestId, url: endpoint, options: options }
+                        }));
+                    });
+                } catch (e) {
+                    console.log('[Live2D AI] classifyIntent request failed:', e);
+                    // Fallback: keyword heuristic
+                    return isSummaryKeyword(userMessage);
+                }
+
+                const answer = ((data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '').trim();
+                console.log('[Live2D AI] classifyIntent result:', JSON.stringify(answer));
+                if (answer === '是' || answer.includes('是')) return true;
+                // Fallback: keyword heuristic when API returns unclear
+                return isSummaryKeyword(userMessage);
+            } catch (e) {
+                console.log('[Live2D AI] classifyIntent error:', e);
+                return false;
             }
         }
 
@@ -755,6 +875,17 @@
             }
             #waifu-tips.waifu-tips-active{
                 opacity:1;
+            }
+            #waifu-tips.waifu-tips-image{
+                width:auto !important;
+                max-width:420px !important;
+                height:auto !important;
+                padding:8px !important;
+                min-height:60px;
+            }
+            #waifu-tips.waifu-tips-image img{
+                opacity:0;
+                transition:opacity 0.3s ease;
             }
             #waifu-buttons{
                 position:absolute;
@@ -1266,7 +1397,7 @@
                         console.error('[Live2D AI] 保存连接状态失败:', e);
                     }
                     
-                    showTips('连接已恢复！');
+                    showTips('连接已恢复喵~');
                     // 更新连接状态
                     const statusEl = document.getElementById('aiConnectionStatus');
                     if (statusEl) {
@@ -1627,7 +1758,15 @@
                     // 清除之前的定时器，刷新持续时间
                     if (tipsTimeout) {
                         clearTimeout(tipsTimeout);
+                        tipsTimeout = null;
                     }
+                    if (tipsEl._hideTimeout) {
+                        clearTimeout(tipsEl._hideTimeout);
+                        tipsEl._hideTimeout = null;
+                    }
+                    
+                    // 清除图片
+                    tipsEl.classList.remove('waifu-tips-image');
                     
                     tipsEl.textContent = text;
                     tipsEl.classList.add('waifu-tips-active');
@@ -1645,10 +1784,167 @@
                         tipsEl.classList.remove('waifu-tips-active');
                         tipsTimeout = null;
                     }, displayTime);
+                    tipsEl._hideTimeout = tipsTimeout;
                     
                     console.log('[Live2D Tips] Display time:', displayTime / 1000, 'seconds for', text.length, 'chars');
                 }
             }
+
+            // ─── 每日一图 ───
+            var _dailyImageFetching = false;
+
+            // 在气泡中显示图片
+            function showImageInTips(imageUrl, clickUrl) {
+                if (!tipsEl) return;
+                if (tipsTimeout) clearTimeout(tipsTimeout);
+                if (tipsEl._hideTimeout) { clearTimeout(tipsEl._hideTimeout); tipsEl._hideTimeout = null; }
+                var fullUrl = clickUrl || imageUrl;
+                var safeUrl = imageUrl.replace(/['"]/g, '');
+                var safeClick = fullUrl.replace(/['"]/g, '');
+                tipsEl.innerHTML = '<div class="daily-image-container" style="display:block;text-align:center;">' +
+                  '<div style="color:#999;font-size:11px;margin-bottom:4px;">点击查看原图</div>' +
+                  '<a href="' + safeClick + '" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none;" onclick="event.stopPropagation();var t=document.getElementById(\'waifu-tips\');if(t){if(t._hideTimeout)clearTimeout(t._hideTimeout);t.classList.remove(\'waifu-tips-active\');t.classList.remove(\'waifu-tips-image\');t.style.pointerEvents=\'none\';}"><img src="' + safeUrl + '" style="max-width:400px;max-height:300px;border-radius:8px;display:block;margin:0 auto;cursor:pointer;" onerror="var p=this.parentNode;if(p){var e=document.createElement(\'div\');e.style.cssText=\'color:#f88;padding:8px;font-size:12px;\';e.textContent=\'图片加载失败\';this.parentNode.replaceChild(e,this);}" onload="this.style.opacity=\'1\';var a=this.parentNode;if(a&&this.currentSrc)a.href=this.currentSrc;"></a>' +
+                  '</div>';
+                tipsEl.classList.add('waifu-tips-active');
+                tipsEl.classList.add('waifu-tips-image');
+                tipsEl.style.pointerEvents = 'auto';
+                tipsEl.style.minWidth = '300px';
+                tipsEl.style.minHeight = '120px';
+                var stopBubble = function(e) { e.stopPropagation(); };
+                tipsEl.addEventListener('pointerdown', stopBubble);
+                tipsEl.addEventListener('mousedown', stopBubble);
+                tipsEl.addEventListener('touchstart', stopBubble);
+                // 等图片加载完再启动 15 秒倒计时（用 naturalWidth 检测，跨域也能用）
+                var imgCheckTimer = setInterval(function() {
+                    var im = tipsEl.querySelector('img');
+                    if (im && (im.complete || im.naturalWidth > 0)) {
+                        clearInterval(imgCheckTimer);
+                        startHideTimer();
+                    }
+                }, 200);
+                // 兜底：10 秒后强制启动（避免永远不消失）
+                setTimeout(function() { clearInterval(imgCheckTimer); startHideTimer(); }, 10000);
+                
+                function startHideTimer() {
+                    if (tipsEl._hideTimeout) return;
+                    tipsTimeout = setTimeout(function() {
+                        tipsEl.classList.remove('waifu-tips-active');
+                        tipsEl.classList.remove('waifu-tips-image');
+                        tipsEl.style.pointerEvents = 'none';
+                        tipsTimeout = null;
+                        tipsEl._hideTimeout = null;
+                    }, 15000);
+                    tipsEl._hideTimeout = tipsTimeout;
+                }
+            }
+
+            // 获取每日一图设置
+            function getDailyImageSettings() {
+                try {
+                    var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                    return {
+                        enabled: s.dailyImageEnabled !== false, // 默认开启
+                        customApi: !!s.dailyImageCustomApi,
+                        apiList: s.dailyImageApiList || [{ url: 'https://api.yppp.net/api.php', enabled: true }, { url: '', enabled: false }]
+                    };
+                } catch(e) { return { enabled: true, customApi: false, apiList: [{ url: 'https://api.yppp.net/api.php', enabled: true }] }; }
+            }
+
+            // 获取图片 URL 并显示
+            async function fetchAndShowDailyImage() {
+                if (_dailyImageFetching) { console.log('[Live2D DailyImage] Already fetching, skip'); return; }
+                _dailyImageFetching = true;
+                
+                try {
+                    var settings = getDailyImageSettings();
+                    if (!settings.enabled) { showTips('未开启每日一图喵！'); _dailyImageFetching = false; return; }
+
+                    var enabledApis = [];
+                    for (var ai = 0; ai < settings.apiList.length; ai++) {
+                        var item = settings.apiList[ai];
+                        if (item.enabled && item.url) {
+                            enabledApis.push(item.url);
+                        }
+                    }
+                    if (enabledApis.length === 0) {
+                        enabledApis.push('https://api.yppp.net/api.php');
+                    }
+
+                    var apiUrl = enabledApis[Math.floor(Math.random() * enabledApis.length)];
+                    console.log('[Live2D DailyImage] Using API:', apiUrl);
+
+                    var sep = apiUrl.includes('?') ? '&' : '?';
+                    var urlWithTs = apiUrl + sep + 't=' + Date.now();
+
+                    // 先显示加载提示
+                    tipsEl.textContent = '加载中喵...';
+                    tipsEl.classList.add('waifu-tips-active');
+
+                    // 通过 background 桥接获取图片 URL
+                    var imgUrlToShow = urlWithTs; // fallback（显示用）
+                    var imgClickUrl = urlWithTs;  // fallback（点开用）
+                    try {
+                        var bridgeResult = await new Promise(function(resolve, reject) {
+                            var rid = 'di_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                            function handler(e) {
+                                var d = e.detail || {};
+                                if (d.requestId === rid) {
+                                    window.removeEventListener('live2dDailyImageResult', handler);
+                                    resolve(d); // 返回完整的 detail
+                                }
+                            }
+                            window.addEventListener('live2dDailyImageResult', handler);
+                            window.dispatchEvent(new CustomEvent('live2dDailyImageFetch', { detail: { requestId: rid, url: urlWithTs } }));
+                            setTimeout(function() { window.removeEventListener('live2dDailyImageResult', handler); reject(new Error('Timeout')); }, 15000);
+                        });
+                        // 分离显示用 URL 和点开用 URL
+                        if (bridgeResult.dataUrl) {
+                            imgUrlToShow = bridgeResult.dataUrl;  // base64 显示
+                            imgClickUrl = bridgeResult.imageUrl || urlWithTs; // 原图地址
+                        } else if (bridgeResult.imageUrl) {
+                            imgUrlToShow = bridgeResult.imageUrl;  // 直链显示
+                            imgClickUrl = bridgeResult.imageUrl;   // 直链点开
+                        }
+                        console.log('[Live2D DailyImage] Show:', imgUrlToShow.slice(0, 80), '| Click:', imgClickUrl.slice(0, 80));
+                    } catch(e) {
+                        console.log('[Live2D DailyImage] Bridge:', e.message);
+                    }
+
+                    // 在气泡中显示
+                    showImageInTips(imgUrlToShow, imgClickUrl);
+
+                } catch(e) {
+                    console.error('[Live2D DailyImage] Error:', e);
+                    showTips('图片出错了喵~');
+                }
+                
+                _dailyImageFetching = false;
+            }
+
+            // 初始化每日一图定时器（每 5 分钟刷新一次，仅当用户手动触发后才开始轮询）
+            var dailyImageTimer = null;
+            function initDailyImage() {
+                if (dailyImageTimer) {
+                    clearInterval(dailyImageTimer);
+                    dailyImageTimer = null;
+                }
+                var settings = getDailyImageSettings();
+                if (settings.enabled) {
+                    // 只设置定时器，不自动触发（用户手动触发后开始轮询）
+                    dailyImageTimer = setInterval(fetchAndShowDailyImage, 5 * 60 * 1000);
+                } else {
+                    // 10 秒后重试（解决启动时设置尚未同步的问题）
+                    setTimeout(function() {
+                        var s = getDailyImageSettings();
+                        if (s.enabled) initDailyImage();
+                    }, 10000);
+                }
+            }
+
+            // 监听每日一图设置变更
+            window.addEventListener('live2dUpdateSettings', function() {
+                initDailyImage();
+            });
 
             async function waitForSettings(timeout = 3000) {
                 const start = Date.now();
@@ -1681,6 +1977,267 @@
             function getRandomPetMessage() {
                 return petMessages[Math.floor(Math.random() * petMessages.length)];
             }
+
+            // 关键词启发式判断：用户消息是否想总结页面
+            function isSummaryKeyword(text) {
+                const keywords = ['总结', '摘要', '归纳', '概括', '讲了什么', '页面内容', '网页要点', '页面要点', '页面讲了', '这篇文章', '文章内容', '内容概括', '内容摘要', '简短总结', '帮我总结', '总结一下', '总结页面', '页面总结', '网页总结', '什么内容'];
+                const t = text.toLowerCase();
+                for (const kw of keywords) {
+                    if (t.includes(kw.toLowerCase())) return true;
+                }
+                return false;
+            }
+
+            // 截图关键词判断
+            function isScreenshotKeyword(text) {
+                const keywords = ['截图', '拍照', '截屏', '屏幕截图', '快照', '截图保存', '页面截图', '保存为图片', 'capture', 'screenshot', '截个图', '拍个照', '截图一下'];
+                const t = text.toLowerCase();
+                for (const kw of keywords) {
+                    if (t.includes(kw.toLowerCase())) return true;
+                }
+                return false;
+            }
+
+            // 判断是否不要截看板娘
+            function isNoMascotScreenshot(text) {
+                const keywords = [
+                    '不要截看板娘', '不截看板娘', '不要看板娘', '不看板娘', '不带看板娘',
+                    '不要模型', '不要角色', '隐藏模型', '隐藏看板娘', '隐藏角色',
+                    '只截页面', '只截网页', '不要截模型', '不截模型',
+                    '截图不要看板娘', '截图不包含看板娘', '截图不带看板娘',
+                    'without mascot', 'without character', 'hide mascot', 'hide character',
+                    'no mascot', 'no character', 'no waifu'
+                ];
+                const t = text.toLowerCase();
+                for (const kw of keywords) {
+                    if (t.includes(kw.toLowerCase())) return true;
+                }
+                return false;
+            }
+
+            // 每日一图触发关键词
+            function isDailyImageKeyword(text) {
+                const keywords = [
+                    '每日一图', '随机图片', '随机图', '看图片', '看美图', '看妹子图', '看风景', '看画', '看漫画',
+                    '再来一张', '换一张', '来一张', '给我一张图', '来张图', '来图',
+                    '显示图片', '展示图片', '秀图', '整张图', '放图', '出图',
+                    'daily', 'random image', 'random pic', 'show image', 'show picture',
+                    '让我看看', '有什么图', '好看吗', '美图'
+                ];
+                const t = text.toLowerCase();
+                for (const kw of keywords) {
+                    if (t.includes(kw.toLowerCase())) return true;
+                }
+                return false;
+            }
+
+            // 涩图触发关键词（仅输入框有效）
+            function isLewdKeyword(text) {
+                const keywords = ['瑟瑟', '色色', '涩涩', '色图', '涩图', '瑟图'];
+                const t = text.toLowerCase();
+                for (const kw of keywords) {
+                    if (t.includes(kw.toLowerCase())) return true;
+                }
+                return false;
+            }
+
+            // 直接显示涩图（/api/v2/img 返回 302 到随机图片，浏览器处理重定向，无 CSP 问题）
+            var _lewdImageFetching = false;
+            async function fetchAndShowLewdImage() {
+                if (_lewdImageFetching) { return; }
+                _lewdImageFetching = true;
+
+                try {
+                    var imgApiUrl = 'https://sex.nyan.run/api/v2/img?keyword=all&r18=true';
+                    // 显示：用 <img> 直接请求 API（302 到图片），每次不同 URL 防缓存
+                    showImageInTips(imgApiUrl + '&t=' + Date.now(), imgApiUrl + '&t=' + (Date.now() + 1));
+                } catch(e) {
+                    console.error('[Live2D Lewd Image] Error:', e);
+                    showTips('图片出错了喵~');
+                }
+
+                _lewdImageFetching = false;
+            }
+
+            // 全页面截图并下载
+            // includeMascot: true=截图中包含看板娘（默认）, false=隐藏看板娘只截页面
+            async function captureFullPageScreenshot(includeMascot) {
+                if (includeMascot === undefined) includeMascot = true;
+                try {
+                    // 动态加载 html2canvas
+                    if (typeof html2canvas === 'undefined') {
+                        await new Promise(function(resolve, reject) {
+                            var script = document.createElement('script');
+                            try {
+                                var url;
+                                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+                                    url = chrome.runtime.getURL('html2canvas.min.js');
+                                } else if (typeof browser !== 'undefined' && browser.runtime && browser.runtime.getURL) {
+                                    url = browser.runtime.getURL('html2canvas.min.js');
+                                } else {
+                                    url = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+                                }
+                                script.src = url;
+                                script.onload = resolve;
+                                script.onerror = function() { reject(new Error('Failed to load html2canvas')); };
+                                document.head.appendChild(script);
+                            } catch(e) { reject(e); }
+                        });
+                    }
+                    
+                    // 等待 html2canvas 加载完成
+                    if (typeof html2canvas === 'undefined') {
+                        // 尝试等待一帧
+                        await new Promise(function(resolve) { setTimeout(resolve, 1000); });
+                        if (typeof html2canvas === 'undefined') {
+                            showTips('截图引擎加载失败喵~');
+                            return;
+                        }
+                    }
+                    
+                    // ─── 自动滚动预加载 ───
+                    // 很多网站使用懒加载（图片、iframe、评论区等），
+                    // 需要逐屏滚动以触发加载，再截图才能得到完整内容。
+                    // 先记录当前滚动位置，之后恢复。
+                    var originalScrollY = window.scrollY || window.pageYOffset || 0;
+                    
+                    // 获取页面总高度（取较大参考值）
+                    var totalHeight = Math.max(
+                        document.documentElement.scrollHeight,
+                        document.body.scrollHeight,
+                        document.documentElement.offsetHeight
+                    );
+                    var viewportHeight = window.innerHeight;
+                    var scrollStep = Math.max(viewportHeight - 100, 200); // 每步略重叠，不漏区域
+                    var scrollDelay = 300; // 每步等待时间（ms），让懒加载有机会触发
+                    
+                    showTips('正在预加载页面内容喵...');
+                    
+                    // 如果页面需要滚动，逐屏滚动触发懒加载
+                    if (totalHeight > viewportHeight * 1.5) {
+                        var scrollPositions = [];
+                        for (var sy = 0; sy < totalHeight; sy += scrollStep) {
+                            scrollPositions.push(sy);
+                        }
+                        // 先向下滚动到底
+                        for (var si = 0; si < scrollPositions.length; si++) {
+                            window.scrollTo(0, scrollPositions[si]);
+                            // 分发给 scroll/load 事件的时间
+                            await new Promise(function(r) { setTimeout(r, scrollDelay); });
+                            // 如果页面上有图片且是 IntersectionObserver 懒加载的，
+                            // 手动触发加载：找到未加载的 img 强制设置 src
+                            var lazyImgs = document.querySelectorAll('img[loading="lazy"], img[data-src], img[data-lazy-src], img[src$="svg"], img[src=""]');
+                            for (var li = 0; li < lazyImgs.length; li++) {
+                                var img = lazyImgs[li];
+                                if (img) {
+                                    var ds = img.getAttribute('data-src') || img.getAttribute('data-lazy-src') || img.getAttribute('data-original');
+                                    if (ds && (!img.src || img.src === '' || img.src.endsWith('svg'))) {
+                                        img.src = ds;
+                                    }
+                                    // data-srcset 响应式图片
+                                    var dss = img.getAttribute('data-srcset');
+                                    if (dss && !img.srcset) {
+                                        img.srcset = dss;
+                                    }
+                                }
+                            }
+                        }
+                        // 额外等待一小段时间让滚动底部的内容完全加载
+                        await new Promise(function(r) { setTimeout(r, 500); });
+                    }
+                    
+                    // 滚动回顶部开始截图
+                    window.scrollTo(0, 0);
+                    await new Promise(function(r) { setTimeout(r, 300); });
+                    
+                    // 查找页面中最大的内容容器，临时解除溢出隐藏
+                    var containers = document.querySelectorAll('html, body, #root, #app, #__nuxt, main, .main, .content, [class*="container"], [class*="wrapper"], [class*="layout"]');
+                    var overflowOrigins = [];
+                    for (var ci = 0; ci < containers.length; ci++) {
+                        var el = containers[ci];
+                        if (el && el.style) {
+                            var ov = window.getComputedStyle(el).overflow;
+                            if (ov === 'hidden' || ov === 'scroll' || ov === 'auto') {
+                                overflowOrigins.push({ el: el, val: el.style.overflow });
+                                el.style.overflow = 'visible';
+                            }
+                        }
+                    }
+                    
+                    // ─── 临场处理看板娘 ───
+                    // 直接操作真实 DOM，用 requestAnimationFrame 确保重排完成后再截图
+                    var waifuEl = document.getElementById('waifu');
+                    var waifuOrigStyles = {};
+                    if (waifuEl) {
+                        if (!includeMascot) {
+                            // 隐藏看板娘
+                            waifuOrigStyles.display = waifuEl.style.display;
+                            waifuEl.style.display = 'none';
+                        } else {
+                            // 保留看板娘，但把 position:fixed 换成 position:absolute 并算好坐标
+                            var cs = window.getComputedStyle(waifuEl);
+                            waifuOrigStyles.position = waifuEl.style.position;
+                            waifuOrigStyles.top = waifuEl.style.top;
+                            waifuOrigStyles.left = waifuEl.style.left;
+                            waifuOrigStyles.bottom = waifuEl.style.bottom;
+                            waifuOrigStyles.right = waifuEl.style.right;
+                            if (cs.position === 'fixed') {
+                                var rect = waifuEl.getBoundingClientRect();
+                                waifuEl.style.position = 'absolute';
+                                waifuEl.style.top = (rect.top + window.scrollY) + 'px';
+                                waifuEl.style.left = (rect.left + window.scrollX) + 'px';
+                                waifuEl.style.bottom = '';
+                                waifuEl.style.right = '';
+                            }
+                        }
+                        // 等一帧让浏览器应用样式
+                        await new Promise(function(r) { requestAnimationFrame(r); });
+                    }
+                    
+                    var canvas = await html2canvas(document.documentElement, {
+                        useCORS: true,
+                        allowTaint: false,
+                        logging: false,
+                        scale: window.devicePixelRatio || 1
+                    });
+                    
+                    // 恢复看板娘样式
+                    if (waifuEl && Object.keys(waifuOrigStyles).length > 0) {
+                        if (waifuOrigStyles.display !== undefined) waifuEl.style.display = waifuOrigStyles.display;
+                        if (waifuOrigStyles.position !== undefined) waifuEl.style.position = waifuOrigStyles.position;
+                        if (waifuOrigStyles.top !== undefined) waifuEl.style.top = waifuOrigStyles.top;
+                        if (waifuOrigStyles.left !== undefined) waifuEl.style.left = waifuOrigStyles.left;
+                        if (waifuOrigStyles.bottom !== undefined) waifuEl.style.bottom = waifuOrigStyles.bottom;
+                        if (waifuOrigStyles.right !== undefined) waifuEl.style.right = waifuOrigStyles.right;
+                    }
+                    
+                    // 恢复容器的 overflow 设置
+                    for (var ri = 0; ri < overflowOrigins.length; ri++) {
+                        overflowOrigins[ri].el.style.overflow = overflowOrigins[ri].val;
+                    }
+                    
+                    // 恢复原始滚动位置
+                    window.scrollTo(0, originalScrollY);
+                    
+                    // 转换为 base64 并通过 CustomEvent 发给 content.js 下载
+                    var timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                    var fileName = 'screenshot_' + timestamp + '.png';
+                    try {
+                        var dataUrl = canvas.toDataURL('image/png');
+                        // 通过 CustomEvent 发送给 content.js → background → chrome.downloads
+                        window.dispatchEvent(new CustomEvent('live2dDownloadScreenshot', {
+                            detail: { dataUrl: dataUrl, fileName: fileName }
+                        }));
+                        showTips('正在保存截图喵~');
+                    } catch (e) {
+                        console.error('[Live2D Screenshot] toDataURL failed:', e);
+                        showTips('截图保存失败: ' + e.message + ' 喵~');
+                    }
+                } catch (e) {
+                    console.error('[Live2D Screenshot] Error:', e);
+                    showTips('截图失败: ' + (e.message || '未知错误') + ' 喵~');
+                }
+            }
             
             // 处理抚摸交互
             async function handlePetInteraction() {
@@ -1700,7 +2257,22 @@
                 
                 if (aiEnabled) {
                     // 检查 API Key
-                    const hasApiKey = aiProvider === 'siliconflow' ? siliconflowApiKey : aiApiKey;
+                    const apiKeyMap = {
+                        deepseek: aiApiKey,
+                        siliconflow: siliconflowApiKey,
+                        univibe: latestSettings.univibeApiKey,
+                        longcat: latestSettings.longcatApiKey,
+                        qwen: latestSettings.qwenApiKey,
+                        hunyuan: latestSettings.hunyuanApiKey,
+                        ernie: latestSettings.ernieApiKey,
+                        doubao: latestSettings.doubaoApiKey,
+                        spark: latestSettings.sparkApiKey,
+                        zhipu: latestSettings.zhipuApiKey,
+                        moonshot: latestSettings.moonshotApiKey,
+                        minimax: latestSettings.minimaxApiKey,
+                        atri: latestSettings.atriApiKey
+                    };
+                    const hasApiKey = apiKeyMap[aiProvider] || aiApiKey;
                     if (!hasApiKey) {
                         return;
                     }
@@ -1749,12 +2321,45 @@
                 console.log('[Live2D AI Chat] 硅基流动 API Key:', siliconflowApiKey ? '已配置' : '未配置');
                 console.log('[Live2D AI Chat] User message:', text);
                 
+                // 涩图关键词触发（独立 API，无需 AI 聊天）
+                if (isLewdKeyword(text)) {
+                    console.log('[Live2D AI Chat] 检测到涩图意图');
+                    showTips('给你看点好康的喵~');
+                    if (!isMouseInWaifu) { hideChatDelayed(); }
+                    fetchAndShowLewdImage();
+                    return;
+                }
+                
+                // 非 AI 功能：每日一图关键词触发（无需 AI 聊天）
+                if (isDailyImageKeyword(text)) {
+                    console.log('[Live2D AI Chat] 检测到每日一图意图');
+                    showTips('来张美图喵~');
+                    if (!isMouseInWaifu) { hideChatDelayed(); }
+                    fetchAndShowDailyImage();
+                    return;
+                }
+                
                 if (aiEnabled) {
                     // 检查 API Key
-                    const hasApiKey = aiProvider === 'siliconflow' ? siliconflowApiKey : aiApiKey;
+                    const apiKeyMap = {
+                        deepseek: aiApiKey,
+                        siliconflow: siliconflowApiKey,
+                        univibe: latestSettings.univibeApiKey,
+                        longcat: latestSettings.longcatApiKey,
+                        qwen: latestSettings.qwenApiKey,
+                        hunyuan: latestSettings.hunyuanApiKey,
+                        ernie: latestSettings.ernieApiKey,
+                        doubao: latestSettings.doubaoApiKey,
+                        spark: latestSettings.sparkApiKey,
+                        zhipu: latestSettings.zhipuApiKey,
+                        moonshot: latestSettings.moonshotApiKey,
+                        minimax: latestSettings.minimaxApiKey,
+                        atri: latestSettings.atriApiKey
+                    };
+                    const hasApiKey = apiKeyMap[aiProvider] || aiApiKey;
                     if (!hasApiKey) {
                         console.log('[Live2D AI Chat] 错误: API Key 未配置');
-                        showTips('请先在设置中配置 API Key');
+                        showTips('请先在设置中配置 API Key 喵~');
                         if (!isMouseInWaifu) {
                             hideChatDelayed();
                         }
@@ -1762,8 +2367,46 @@
                     }
                     
                     try {
-                        showTips('正在思考...');
+                        showTips('正在思考喵...');
                         console.log('[Live2D AI Chat] 开始调用 AI API...');
+                        
+                        // 先判断用户是否想总结当前页面
+                        console.log('[Live2D AI Chat] classifyIntent available:', !!(window.Live2DAI && typeof window.Live2DAI.classifyIntent === 'function'));
+                        if (window.Live2DAI && typeof window.Live2DAI.classifyIntent === 'function') {
+                            const isSummaryIntent = await window.Live2DAI.classifyIntent(text);
+                            if (isSummaryIntent) {
+                                console.log('[Live2D AI Chat] 检测到总结页面的意图, 触发页面总结');
+                                // 获取页面内容并触发总结
+                                let pageText = document.body.innerText || '';
+                                if (pageText.length > 8000) {
+                                    pageText = pageText.substring(0, 8000) + '\n...（内容过长已截断）';
+                                }
+                                const summaryEvent = new CustomEvent('live2dPageSummary', {
+                                    detail: { pageContent: pageText }
+                                });
+                                window.dispatchEvent(summaryEvent);
+                                showTips('正在总结页面喵~');
+                                if (!isMouseInWaifu) { hideChatDelayed(); }
+                                return;
+                            }
+                        }
+                        
+                        // 判断用户是否想截图当前页面（先关键词快速判断，再 API 分类）
+                        let isScreenshotIntent = isScreenshotKeyword(text);
+                        if (!isScreenshotIntent && window.Live2DAI && typeof window.Live2DAI.classifyIntent === 'function') {
+                            // 复用 classifyIntent 但不传给用户输入以避免重复 API 调用过多
+                            // 直接关键词匹配即可，因为截图关键词很明确
+                        }
+                        if (isScreenshotIntent) {
+                            console.log('[Live2D AI Chat] 检测到截图意图, 执行截图');
+                            showTips('正在截图喵~');
+                            if (!isMouseInWaifu) { hideChatDelayed(); }
+                            // 判断是否要隐藏看板娘
+                            var includeMascot = !isNoMascotScreenshot(text);
+                            captureFullPageScreenshot(includeMascot);
+                            return;
+                        }
+                        
                         const aiResponse = await window.Live2DAI.getAIResponse(text);
                         console.log('[Live2D AI Chat] AI 响应成功:', aiResponse);
                         showTips(aiResponse);
@@ -1782,10 +2425,80 @@
                 }
             }
 
+            // 独立监听：无需 AI 聊天也能通过关键词触发每日一图（必须先添加，用 stopImmediatePropagation 阻止 handleChat 重复触发）
+            chatInput.addEventListener('keypress', function _dailyImageKeypress(e) {
+                if (e.key === 'Enter') {
+                    if (isLewdKeyword(chatInput.value)) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        chatInput.value = '';
+                        showTips('给你看点好康的喵~');
+                        if (!isMouseInWaifu) { hideChatDelayed(); }
+                        fetchAndShowLewdImage();
+                    } else if (isDailyImageKeyword(chatInput.value)) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        chatInput.value = '';
+                        showTips('来张美图喵~');
+                        if (!isMouseInWaifu) { hideChatDelayed(); }
+                        fetchAndShowDailyImage();
+                    }
+                }
+            });
             chatSend.addEventListener('click', handleChat);
             chatInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     handleChat();
+                }
+            });
+
+            // ─── 动态快捷键系统 ───
+            // 每次 keydown 时实时从 localStorage 读取，无需刷新页面
+            function getLiveBindings() {
+                var defaults = {
+                    screenshot: { ctrl: true, shift: false, alt: true, key: 'V' },
+                    screenshotNoMascot: { ctrl: true, shift: false, alt: true, key: 'B' },
+                    dailyImage: { ctrl: true, shift: false, alt: true, key: 'G' }
+                };
+                var b = {};
+                try {
+                    var raw = localStorage.getItem('live2dKeybindings');
+                    if (raw) b = JSON.parse(raw);
+                } catch(e) {}
+                Object.keys(defaults).forEach(function(k) {
+                    if (!b[k]) b[k] = defaults[k];
+                });
+                return b;
+            }
+            
+            function matchBinding(e, b) {
+                if (!b || !b.key) return false;
+                return (!!e.ctrlKey === !!b.ctrl) &&
+                       (!!e.shiftKey === !!b.shift) &&
+                       (!!e.altKey === !!b.alt) &&
+                       (e.key.toUpperCase() === b.key.toUpperCase());
+            }
+            
+            document.addEventListener('keydown', function(e) {
+                var bindings = getLiveBindings();
+                if (matchBinding(e, bindings.screenshot)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[Live2D Screenshot] Keybinding triggered screenshot');
+                    showTips('正在截图喵~');
+                    captureFullPageScreenshot(true);
+                } else if (matchBinding(e, bindings.screenshotNoMascot)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[Live2D Screenshot] Keybinding triggered screenshot (no mascot)');
+                    showTips('正在截图喵~');
+                    captureFullPageScreenshot(false);
+                } else if (matchBinding(e, bindings.dailyImage)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('[Live2D DailyImage] Keybinding triggered');
+                    showTips('来张美图喵~');
+                    fetchAndShowDailyImage();
                 }
             });
 
@@ -1808,7 +2521,7 @@
                                 // 检查 canvas 是否有内容
                                 if (canvas.width === 0 || canvas.height === 0) {
                                     console.error('[Live2D Cubism3] Canvas has no size');
-                                    showTips('图片生成失败，请确保模型已加载~');
+                                    showTips('图片生成失败喵！');
                                     return;
                                 }
                                 
@@ -1875,10 +2588,10 @@
                                     document.body.removeChild(a);
                                 }, 100);
                                 
-                                showTips('图片已保存！');
+                                showTips('图片已保存喵！');
                             } catch (e) {
                                 console.error('[Live2D Cubism3] Screenshot error:', e);
-                                showTips('截图失败，请重试~');
+                                showTips('截图失败，请重试喵！');
                             }
                         });
                     });
@@ -1903,6 +2616,53 @@
                     waifu.style.display = 'none';
                     // 创建悬浮窗
                     createFloatingButton();
+                }
+            });
+
+            // 页面总结：监听来自 content.js 的事件
+            window.addEventListener('live2dPageSummary', async function(e) {
+                const pageContent = e.detail?.pageContent || '';
+                if (!pageContent) {
+                    showTips('无法获取页面内容喵~');
+                    return;
+                }
+                showTips('正在总结喵~');
+                try {
+                    // 读取用户设置的总结规则
+                    let summaryRules = '';
+                    try {
+                        const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                        summaryRules = settings.summaryRules || '';
+                    } catch (e) {}
+                    
+                    // 默认规则（始终生效，优先于用户输入）
+                    const defaultRule = '自动识别和提取页面主要内容，过滤广告、导航等无关信息';
+                    
+                    let summaryPrompt;
+                    if (summaryRules && summaryRules.trim()) {
+                        // 默认规则 > 用户输入规则
+                        summaryPrompt = '请用中文总结以下网页内容。\n\n规则：\n- ' + defaultRule + '\n- ' + summaryRules.trim().replace(/\n/g, '\n- ') + '\n\n网页内容：\n\n' + pageContent;
+                    } else {
+                        summaryPrompt = '请用中文简洁地总结以下网页内容。\n\n规则：\n- ' + defaultRule + '\n\n先显示页面标题，然后用每句摘要列出关键要点。\n\n网页内容：\n\n' + pageContent;
+                    }
+                    const response = await window.Live2DAI.getAIResponse(summaryPrompt);
+                    // 通过自定义事件将结果发送给 content.js（弹窗显示、缓存复用）
+                    const resultEvent = new CustomEvent('live2dShowSummary', {
+                        detail: { summary: response }
+                    });
+                    window.dispatchEvent(resultEvent);
+                    showTips('已生成总结喵~');
+                } catch (error) {
+                    console.error('[Live2D Page Summary] API 调用失败:', error);
+                    showTips(error.message || '页面总结失败，请稍后再试喵~');
+                }
+            });
+
+            // 接收来自 content.js 的提示显示请求
+            window.addEventListener('live2dShowTips', function(e) {
+                const text = e.detail?.text || '';
+                if (text) {
+                    showTips(text);
                 }
             });
             
@@ -2006,7 +2766,7 @@
             }
 
             btnSwitch.addEventListener('click', function() {
-                showTips('请在扩展设置中切换模型');
+                showTips('请在扩展设置中切换模型喵~');
             });
 
             // 检查成就是否已经解锁过
@@ -2045,7 +2805,7 @@
                     enableDragging(waifu, dragEnabled);
                 } catch (e) {
                     console.error('[Live2D Cubism3] Failed to load model:', e);
-                    showTips('模型加载失败，请尝试切换其他模型~');
+                    showTips('模型加载失败，请尝试切换其他模型喵！');
                 }
                 
                 // 如果是全部位置模式，复制canvas到其他位置
@@ -2097,12 +2857,35 @@
                     });
                 }, 2000);
 
+                // 初始化每日一图
+                initDailyImage();
+
                 preCacheHitokoto();
+                
+                // 监听 SPA 页面切换，清除残留的图片气泡
+                var _lastUrl = location.href;
+                setInterval(function() {
+                    if (location.href !== _lastUrl) {
+                        _lastUrl = location.href;
+                        if (tipsTimeout) clearTimeout(tipsTimeout);
+                        if (tipsEl._hideTimeout) { clearTimeout(tipsEl._hideTimeout); tipsEl._hideTimeout = null; }
+                        tipsEl.classList.remove('waifu-tips-active');
+                        tipsEl.classList.remove('waifu-tips-image');
+                        tipsEl.style.pointerEvents = 'none';
+                        tipsTimeout = null;
+                        tipsEl._hideTimeout = null;
+                    }
+                }, 500);
 
                 // 为所有canvas添加点击事件
                 const allCanvasElements = document.querySelectorAll('[id^="live2d"]');
                 allCanvasElements.forEach(canvas => {
-                    canvas.addEventListener('click', async function() {
+                    canvas.addEventListener('click', async function(e) {
+                    // 如果图片气泡正在显示，忽略点击（打开原图由气泡自己的 handler 处理）
+                    if (tipsEl && tipsEl.classList.contains('waifu-tips-image')) {
+                        e.stopPropagation();
+                        return;
+                    }
                     // 先检查是否开启 AI，如果开启则处理抚摸交互并返回
                     const latestSettings = await waitForSettings(2000);
                     try {
