@@ -1,4 +1,10 @@
 # Live2D 看板娘浏览器插件
+## 示例
+
+.\dist\README\1.png
+
+.\dist\README\2.png
+
 
 基于 [live2d-widget](https://github.com/stevenjoezhang/live2d-widget) 开发的浏览器扩展，支持 Chrome、Edge 和 Firefox
 
