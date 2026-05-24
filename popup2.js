@@ -919,39 +919,69 @@ async function testAtriApi(apiKey, modelToTest = 'gpt-5.4') {
 
 // ===================== 自动更新功能 =====================
 
-// 检查 GitHub Releases 最新版本
+const GITHUB_REPO = 'CatmaoU/live2d-extension';
+const UPDATE_PROXY = 'https://cdn.gh-proxy.org/';
+const GITHUB_API_URL = 'https://api.github.com/repos/' + GITHUB_REPO + '/releases/latest';
+
+// 获取代理链接（将 GitHub URL 转为代理 URL）
+function getProxyUrl(originalUrl) {
+  return UPDATE_PROXY + originalUrl;
+}
+
+// 检查 GitHub Releases 最新版本（支持自动切换代理）
 async function checkGitHubUpdate() {
   const updateStatusEl = document.getElementById('updateStatus');
   const checkBtn = document.getElementById('checkUpdateBtn');
-  
-  if (updateStatusEl) {
-    updateStatusEl.className = 'connect-status loading';
-    updateStatusEl.style.display = 'block';
-    updateStatusEl.textContent = '正在检查更新喵...';
+
+  // 尝试直接连接 GitHub
+  async function tryFetch(url, isProxy = false) {
+    if (updateStatusEl) {
+      updateStatusEl.className = 'connect-status loading';
+      updateStatusEl.style.display = 'block';
+      updateStatusEl.textContent = isProxy ? '正在通过代理检查更新喵...' : '正在检查更新喵...';
+    }
+
+    const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(8000) });
+
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+
+    return await response.json();
   }
-  if (checkBtn) checkBtn.disabled = true;
 
   try {
-    const response = await fetch('https://api.github.com/repos/CatmaoU/live2d-extension/releases/latest', {
-      cache: 'no-cache'
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+    let data;
+    let usedProxy = false;
+
+    try {
+      // 第1步：直连 GitHub API
+      data = await tryFetch(GITHUB_API_URL, false);
+    } catch (directErr) {
+      console.warn('[Live2D] Direct GitHub API failed, trying proxy:', directErr.message);
+      // 第2步：通过代理重试
+      try {
+        data = await tryFetch(getProxyUrl(GITHUB_API_URL), true);
+        usedProxy = true;
+      } catch (proxyErr) {
+        throw new Error('直连与代理均失败（直连: ' + directErr.message + ' | 代理: ' + proxyErr.message + '）');
+      }
     }
-    
-    const data = await response.json();
-    const latestTag = data.tag_name || '';  // 如 "v1.0.6"
-    const latestVersion = latestTag.replace(/^v/i, ''); // 去掉 "v" 前缀 → "1.0.6"
-    const currentVersion = chrome.runtime.getManifest().version; // 当前扩展版本
-    
+
+    const latestTag = data.tag_name || '';
+    const latestVersion = latestTag.replace(/^v/i, '');
+    const currentVersion = chrome.runtime.getManifest().version;
+    const releaseUrl = data.html_url || ('https://github.com/' + GITHUB_REPO + '/releases/tag/' + latestTag);
+
     return {
       success: true,
       currentVersion: currentVersion,
       latestVersion: latestVersion,
       latestTag: latestTag,
       hasUpdate: compareVersions(latestVersion, currentVersion) > 0,
-      releaseUrl: data.html_url,
+      releaseUrl: releaseUrl,
+      releaseUrlProxy: getProxyUrl(releaseUrl),
+      usedProxy: usedProxy,
       releaseNotes: data.body || ''
     };
   } catch (e) {
@@ -999,9 +1029,11 @@ async function manualCheckUpdate() {
   if (result.hasUpdate) {
     showUpdateStatus('error', '目前版本是 ' + result.currentVersion + ' 喵，可更新 ' + result.latestVersion + ' 喵！');
     
-    // 弹出确认窗口
-    if (confirm('新版本 ' + result.latestTag + ' 可用喵！\n当前版本：' + result.currentVersion + '\n\n是否前往 GitHub 下载更新？')) {
-      chrome.tabs.create({ url: result.releaseUrl });
+    // 弹出确认窗口（若直连失败则使用代理链接）
+    const downloadUrl = result.usedProxy ? result.releaseUrlProxy : result.releaseUrl;
+    const proxyHint = result.usedProxy ? '（通过代理加速）' : '';
+    if (confirm('新版本 ' + result.latestTag + ' 可用喵！\n当前版本：' + result.currentVersion + '\n\n是否前往下载更新' + proxyHint + '？')) {
+      chrome.tabs.create({ url: downloadUrl });
     }
   } else {
     showUpdateStatus('success', '版本是最新的了喵～');
@@ -1017,8 +1049,11 @@ async function silentCheckUpdate() {
   if (result.hasUpdate) {
     showUpdateStatus('error', '目前版本是 ' + result.currentVersion + ' 喵，可更新 ' + result.latestVersion + ' 喵！');
     
-    if (confirm('新版本 ' + result.latestTag + ' 可用喵！\n当前版本：' + result.currentVersion + '\n\n是否前往 GitHub 下载更新？')) {
-      chrome.tabs.create({ url: result.releaseUrl });
+    // 弹出确认窗口（若直连失败则使用代理链接）
+    const downloadUrl = result.usedProxy ? result.releaseUrlProxy : result.releaseUrl;
+    const proxyHint = result.usedProxy ? '（通过代理加速）' : '';
+    if (confirm('新版本 ' + result.latestTag + ' 可用喵！\n当前版本：' + result.currentVersion + '\n\n是否前往下载更新' + proxyHint + '？')) {
+      chrome.tabs.create({ url: downloadUrl });
     }
   } else {
     showUpdateStatus('success', '版本是最新的了喵～');
