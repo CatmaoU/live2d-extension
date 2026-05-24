@@ -920,12 +920,17 @@ async function testAtriApi(apiKey, modelToTest = 'gpt-5.4') {
 // ===================== 自动更新功能 =====================
 
 const GITHUB_REPO = 'CatmaoU/live2d-extension';
-const UPDATE_PROXY = 'https://cdn.gh-proxy.org/';
+const UPDATE_PROXIES = [
+  'https://cdn.gh-proxy.org/',
+  'https://v6.gh-proxy.org/',
+  'https://v4.gh-proxy.org/',
+  'https://gh-proxy.org/'
+];
 const GITHUB_API_URL = 'https://api.github.com/repos/' + GITHUB_REPO + '/releases/latest';
 
 // 获取代理链接（将 GitHub URL 转为代理 URL）
-function getProxyUrl(originalUrl) {
-  return UPDATE_PROXY + originalUrl;
+function getProxyUrl(originalUrl, proxyIndex) {
+  return UPDATE_PROXIES[proxyIndex] + originalUrl;
 }
 
 // 检查 GitHub Releases 最新版本（支持自动切换代理）
@@ -934,11 +939,11 @@ async function checkGitHubUpdate() {
   const checkBtn = document.getElementById('checkUpdateBtn');
 
   // 尝试直接连接 GitHub
-  async function tryFetch(url, isProxy = false) {
+  async function tryFetch(url, proxyLabel) {
     if (updateStatusEl) {
       updateStatusEl.className = 'connect-status loading';
       updateStatusEl.style.display = 'block';
-      updateStatusEl.textContent = isProxy ? '正在通过代理检查更新喵...' : '正在检查更新喵...';
+      updateStatusEl.textContent = proxyLabel ? '正在通过 ' + proxyLabel + ' 检查更新喵...' : '正在检查更新喵...';
     }
 
     const response = await fetch(url, { cache: 'no-cache', signal: AbortSignal.timeout(8000) });
@@ -952,19 +957,29 @@ async function checkGitHubUpdate() {
 
   try {
     let data;
-    let usedProxy = false;
+    let usedProxyIndex = -1;
 
     try {
       // 第1步：直连 GitHub API
-      data = await tryFetch(GITHUB_API_URL, false);
+      data = await tryFetch(GITHUB_API_URL, '');
     } catch (directErr) {
-      console.warn('[Live2D] Direct GitHub API failed, trying proxy:', directErr.message);
-      // 第2步：通过代理重试
-      try {
-        data = await tryFetch(getProxyUrl(GITHUB_API_URL), true);
-        usedProxy = true;
-      } catch (proxyErr) {
-        throw new Error('直连与代理均失败（直连: ' + directErr.message + ' | 代理: ' + proxyErr.message + '）');
+      console.warn('[Live2D] Direct GitHub API failed:', directErr.message);
+
+      // 第2步：遍历所有代理，依次重试
+      let lastProxyErr = directErr;
+      for (let i = 0; i < UPDATE_PROXIES.length; i++) {
+        try {
+          data = await tryFetch(getProxyUrl(GITHUB_API_URL, i), '代理' + (i + 1));
+          usedProxyIndex = i;
+          break;
+        } catch (proxyErr) {
+          console.warn('[Live2D] Proxy ' + (i + 1) + ' failed:', proxyErr.message);
+          lastProxyErr = proxyErr;
+        }
+      }
+
+      if (usedProxyIndex === -1) {
+        throw new Error('直连与所有代理均失败（' + lastProxyErr.message + '）');
       }
     }
 
@@ -980,8 +995,8 @@ async function checkGitHubUpdate() {
       latestTag: latestTag,
       hasUpdate: compareVersions(latestVersion, currentVersion) > 0,
       releaseUrl: releaseUrl,
-      releaseUrlProxy: getProxyUrl(releaseUrl),
-      usedProxy: usedProxy,
+      releaseUrlProxy: usedProxyIndex >= 0 ? getProxyUrl(releaseUrl, usedProxyIndex) : releaseUrl,
+      usedProxy: usedProxyIndex >= 0,
       releaseNotes: data.body || ''
     };
   } catch (e) {
