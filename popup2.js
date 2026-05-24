@@ -917,9 +917,125 @@ async function testAtriApi(apiKey, modelToTest = 'gpt-5.4') {
   }
 }
 
+// ===================== 自动更新功能 =====================
+
+// 检查 GitHub Releases 最新版本
+async function checkGitHubUpdate() {
+  const updateStatusEl = document.getElementById('updateStatus');
+  const checkBtn = document.getElementById('checkUpdateBtn');
+  
+  if (updateStatusEl) {
+    updateStatusEl.className = 'connect-status loading';
+    updateStatusEl.style.display = 'block';
+    updateStatusEl.textContent = '正在检查更新喵...';
+  }
+  if (checkBtn) checkBtn.disabled = true;
+
+  try {
+    const response = await fetch('https://api.github.com/repos/CatmaoU/live2d-extension/releases/latest', {
+      cache: 'no-cache'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const latestTag = data.tag_name || '';  // 如 "v1.0.6"
+    const latestVersion = latestTag.replace(/^v/i, ''); // 去掉 "v" 前缀 → "1.0.6"
+    const currentVersion = chrome.runtime.getManifest().version; // 当前扩展版本
+    
+    return {
+      success: true,
+      currentVersion: currentVersion,
+      latestVersion: latestVersion,
+      latestTag: latestTag,
+      hasUpdate: compareVersions(latestVersion, currentVersion) > 0,
+      releaseUrl: data.html_url,
+      releaseNotes: data.body || ''
+    };
+  } catch (e) {
+    console.error('[Live2D] Check update error:', e);
+    return {
+      success: false,
+      error: e.message
+    };
+  } finally {
+    if (checkBtn) checkBtn.disabled = false;
+  }
+}
+
+// 版本号比较（返回 1: a>b, 0: a=b, -1: a<b）
+function compareVersions(a, b) {
+  const pa = a.split('.').map(Number);
+  const pb = b.split('.').map(Number);
+  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+    const na = pa[i] || 0;
+    const nb = pb[i] || 0;
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+
+// 显示更新状态
+function showUpdateStatus(type, message) {
+  const el = document.getElementById('updateStatus');
+  if (!el) return;
+  el.className = 'connect-status ' + type;
+  el.style.display = 'block';
+  el.textContent = message;
+}
+
+// 手动检查更新（按钮触发）
+async function manualCheckUpdate() {
+  const result = await checkGitHubUpdate();
+  
+  if (!result.success) {
+    showUpdateStatus('error', '检查更新失败喵～(' + result.error + ')');
+    return;
+  }
+  
+  if (result.hasUpdate) {
+    showUpdateStatus('error', '目前版本是 ' + result.currentVersion + ' 喵，可更新 ' + result.latestVersion + ' 喵！');
+    
+    // 弹出确认窗口
+    if (confirm('新版本 ' + result.latestTag + ' 可用喵！\n当前版本：' + result.currentVersion + '\n\n是否前往 GitHub 下载更新？')) {
+      chrome.tabs.create({ url: result.releaseUrl });
+    }
+  } else {
+    showUpdateStatus('success', '版本是最新的了喵～');
+  }
+}
+
+// 自动静默检查更新（自动更新开关开启时）
+async function silentCheckUpdate() {
+  const result = await checkGitHubUpdate();
+  
+  if (!result.success) return;
+  
+  if (result.hasUpdate) {
+    showUpdateStatus('error', '目前版本是 ' + result.currentVersion + ' 喵，可更新 ' + result.latestVersion + ' 喵！');
+    
+    if (confirm('新版本 ' + result.latestTag + ' 可用喵！\n当前版本：' + result.currentVersion + '\n\n是否前往 GitHub 下载更新？')) {
+      chrome.tabs.create({ url: result.releaseUrl });
+    }
+  } else {
+    showUpdateStatus('success', '版本是最新的了喵～');
+    // 3秒后自动隐藏
+    setTimeout(() => {
+      const el = document.getElementById('updateStatus');
+      if (el) { el.style.display = 'none'; }
+    }, 3000);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-  const config = await storage.get(['theme', 'followSystemTheme', 'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey', 'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey', 'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey', 'atriApiKey', 'aiProvider', 'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit', 'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel', 'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel', 'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel', 'summaryRules']);
+  const config = await storage.get(['theme', 'followSystemTheme', 'autoUpdate', 'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey', 'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey', 'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey', 'atriApiKey', 'aiProvider', 'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit', 'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel', 'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel', 'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel', 'summaryRules']);
   const followSystemThemeCheckbox = document.getElementById('followSystemTheme');
+  const autoUpdateCheckbox = document.getElementById('autoUpdate');
+  const checkUpdateBtn = document.getElementById('checkUpdateBtn');
+  const updateStatusEl = document.getElementById('updateStatus');
   const aiSettingsContainer = document.getElementById('aiSettingsContainer');
   const aiApiKeyInput = document.getElementById('aiApiKey');
   const siliconflowApiKeyInput = document.getElementById('siliconflowApiKey');
@@ -1239,6 +1355,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     followSystemThemeCheckbox.checked = config.followSystemTheme || false;
   }
   
+  // 初始化自动更新开关
+  if (autoUpdateCheckbox) {
+    autoUpdateCheckbox.checked = config.autoUpdate || false;
+  }
+  
   // 初始化AI设置状态
   const aiEnabled = config.aiEnabled || false;
   
@@ -1457,6 +1578,60 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 开启跟随系统主题，立即应用系统主题
         updateThemeFromSystem();
       }
+    });
+  }
+  
+  // 自动更新开关事件
+  if (autoUpdateCheckbox) {
+    autoUpdateCheckbox.addEventListener('change', async () => {
+      const enabled = autoUpdateCheckbox.checked;
+      await storage.set({ autoUpdate: enabled });
+      
+      // 更新 localStorage 中的设置
+      const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+      settings.autoUpdate = enabled;
+      localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+      
+      if (enabled) {
+        // 开启自动更新时立即检查一次
+        showUpdateStatus('loading', '自动更新已开启，正在检查...');
+        if (checkUpdateBtn) checkUpdateBtn.disabled = true;
+        try {
+          await silentCheckUpdate();
+        } finally {
+          if (checkUpdateBtn) checkUpdateBtn.disabled = false;
+        }
+        
+        // 每6小时自动检查一次
+        if (window._autoUpdateTimer) clearInterval(window._autoUpdateTimer);
+        window._autoUpdateTimer = setInterval(async () => {
+          await silentCheckUpdate();
+        }, 6 * 60 * 60 * 1000);
+      } else {
+        // 关闭自动更新，清除定时器
+        if (window._autoUpdateTimer) {
+          clearInterval(window._autoUpdateTimer);
+          window._autoUpdateTimer = null;
+        }
+        // 隐藏状态
+        if (updateStatusEl) {
+          updateStatusEl.style.display = 'none';
+        }
+      }
+    });
+    
+    // 如果已开启自动更新，启动定时器
+    if (config.autoUpdate) {
+      window._autoUpdateTimer = setInterval(async () => {
+        await silentCheckUpdate();
+      }, 6 * 60 * 60 * 1000);
+    }
+  }
+  
+  // 检查更新按钮事件
+  if (checkUpdateBtn) {
+    checkUpdateBtn.addEventListener('click', async () => {
+      await manualCheckUpdate();
     });
   }
   

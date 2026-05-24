@@ -60,7 +60,8 @@
     "https://raw.fastgit.org/*",
     "https://api.yppp.net/*",
     "https://list.yppp.net/*",
-    "https://sex.nyan.run/*"
+    "https://sex.nyan.run/*",
+    "https://api.github.com/*"
   ],
   "web_accessible_resources": [
     {
@@ -86,7 +87,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'self'; connect-src 'self' https://v1.hitokoto.cn https://api.deepseek.com https://api.siliconflow.cn https://api.univibe.cc https://api.longcat.chat https://dashscope.aliyuncs.com https://hunyuan.cloud.tencent.com https://tokenhub.tencentmaas.com https://qianfan.baidubce.com https://ark.cn-beijing.volces.com https://spark-api.xf-yun.com https://open.bigmodel.cn https://api.moonshot.cn https://api.minimax.chat https://ai.zkmjnic.tech https://raw.githubusercontent.com https://gitee.com https://cdn.jsdelivr.net https://raw.fastgit.org http://localhost:*"
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'self'; connect-src 'self' https://v1.hitokoto.cn https://api.deepseek.com https://api.siliconflow.cn https://api.univibe.cc https://api.longcat.chat https://dashscope.aliyuncs.com https://hunyuan.cloud.tencent.com https://tokenhub.tencentmaas.com https://qianfan.baidubce.com https://ark.cn-beijing.volces.com https://spark-api.xf-yun.com https://open.bigmodel.cn https://api.moonshot.cn https://api.minimax.chat https://ai.zkmjnic.tech https://raw.githubusercontent.com https://gitee.com https://cdn.jsdelivr.net https://raw.fastgit.org https://api.github.com http://localhost:*"
   },
   "browser_specific_settings": {
       "gecko": {
