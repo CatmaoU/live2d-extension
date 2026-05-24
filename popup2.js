@@ -966,7 +966,6 @@ async function checkGitHubUpdate() {
       console.warn('[Live2D] Direct GitHub API failed:', directErr.message);
 
       // 第2步：遍历所有代理，依次重试
-      let lastProxyErr = directErr;
       for (let i = 0; i < UPDATE_PROXIES.length; i++) {
         try {
           data = await tryFetch(getProxyUrl(GITHUB_API_URL, i), '代理' + (i + 1));
@@ -974,12 +973,11 @@ async function checkGitHubUpdate() {
           break;
         } catch (proxyErr) {
           console.warn('[Live2D] Proxy ' + (i + 1) + ' failed:', proxyErr.message);
-          lastProxyErr = proxyErr;
         }
       }
 
       if (usedProxyIndex === -1) {
-        throw new Error('直连与所有代理均失败（' + lastProxyErr.message + '）');
+        throw new Error('直连与所有代理均失败');
       }
     }
 
@@ -1037,7 +1035,7 @@ async function manualCheckUpdate() {
   const result = await checkGitHubUpdate();
   
   if (!result.success) {
-    showUpdateStatus('error', '检查更新失败喵～(' + result.error + ')');
+    showUpdateStatus('error', '更新失败喵！请检查网络或代理喵！');
     return;
   }
   
