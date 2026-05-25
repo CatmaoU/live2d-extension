@@ -514,10 +514,6 @@
 
         if (summaryModalOverlay) {
             summaryModalTextarea.value = summaryText;
-            // 清空 AI 面板
-            if (summaryModalAIPanel) {
-                summaryModalAIPanel.innerHTML = '';
-            }
             updateExistingTheme();
             return;
         }
@@ -808,21 +804,6 @@
             style.textContent = `@keyframes live2dSummaryFadeIn { from { opacity: 0; } to { opacity: 1; } }`;
             document.head.appendChild(style);
         }
-
-        // 监听 AI 回复
-        window.addEventListener('live2dPageSummaryAnswer', function _qaHandler(e) {
-            const answer = e.detail?.answer || '';
-            if (!answer) return;
-            if (summaryModalAIPanel) {
-                const ph = document.getElementById('summary-ai-placeholder');
-                if (ph) ph.style.display = 'none';
-                summaryModalAIPanel.innerHTML = answer;
-            }
-            const loading = document.getElementById('summary-loading');
-            if (loading) loading.style.display = 'none';
-            if (summaryModalSendBtn) { summaryModalSendBtn.disabled = false; summaryModalSendBtn.textContent = '发送'; }
-            if (summaryModalQuestionInput) summaryModalQuestionInput.disabled = false;
-        });
     }
 
     // 发送总结相关问题
