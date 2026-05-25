@@ -603,7 +603,7 @@
         header.appendChild(btnGroup);
         modalBox.appendChild(header);
         
-        // ===== 内容区域：左侧 AI 回复框 + 右侧总结 =====
+        // ===== 内容区域：左侧 AI 回复框 + 右侧总结（含底部输入框） =====
         const contentRow = document.createElement('div');
         contentRow.style.cssText = `
             display: flex;
@@ -637,13 +637,24 @@
         aiPlaceholder.textContent = '在下方输入框提问\n即可询问关于总结的详细内容喵~';
         aiPanel.appendChild(aiPlaceholder);
         
-        // 右侧总结 textarea
+        // 右侧：总结 textarea + 底部输入框（垂直排列）
+        const rightCol = document.createElement('div');
+        rightCol.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 200px;
+            min-height: 0;
+            overflow: hidden;
+        `;
+        
+        // 总结 textarea
         summaryModalTextarea = document.createElement('textarea');
         summaryModalTextarea.className = 'summary-textarea';
         summaryModalTextarea.value = summaryText;
         summaryModalTextarea.style.cssText = `
             flex: 1;
-            min-width: 200px;
+            min-height: 200px;
             padding: 14px 18px;
             border: none;
             outline: none;
@@ -654,12 +665,9 @@
             resize: none;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         `;
+        rightCol.appendChild(summaryModalTextarea);
         
-        contentRow.appendChild(aiPanel);
-        contentRow.appendChild(summaryModalTextarea);
-        modalBox.appendChild(contentRow);
-        
-        // ===== 底部：输入框 + 发送按钮 =====
+        // 输入框 + 发送按钮
         const inputRow = document.createElement('div');
         inputRow.className = 'summary-footer';
         inputRow.style.cssText = `
@@ -723,7 +731,11 @@
         inputRow.appendChild(questionInput);
         inputRow.appendChild(sendBtn);
         inputRow.appendChild(loadingDots);
-        modalBox.appendChild(inputRow);
+        rightCol.appendChild(inputRow);
+        
+        contentRow.appendChild(aiPanel);
+        contentRow.appendChild(rightCol);
+        modalBox.appendChild(contentRow);
 
         // 拖拽缩放手柄
         const resizeHandle = document.createElement('div');
