@@ -922,17 +922,11 @@
         var placeholderMap = {}; // {'__BDG_0__': {id:'12', text:'@12'}}
         
         // 第1步：替换所有标注为占位符
-        // 先处理范围 §12-§15 或 @12-@15
+        // 先处理范围 §12-§15 或 @12-@15 → 单个范围标注
         var step1 = text.replace(/(?:@|§)(\d+)\s*[-–—]\s*(?:@|§)?(\d+)/g, function(m, s, e) {
-            var result = '';
-            var start = parseInt(s, 10);
-            var end = parseInt(e, 10);
-            for (var n = start; n <= end; n++) {
-                var key = '__BDG_' + badges.length + '__';
-                badges.push({ id: n.toString(), text: '@' + n });
-                result += key;
-            }
-            return result;
+            var key = '__BDG_' + badges.length + '__';
+            badges.push({ id: s, text: '@' + s + '-@' + e });
+            return key;
         });
         // 再处理单个 @数字 或 §数字
         var step2 = step1.replace(/(?:@|§)(\d+)/g, function(m, id) {
