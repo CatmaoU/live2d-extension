@@ -2650,7 +2650,7 @@
                         paraText = paragraphs.map(function(p, i) { return '[P' + (i + 1) + '] ' + p; }).join('\n');
                     }
 
-                    var firstPrompt = '基于以下信息回答用户的问题。\n\n请用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）。\n\n【信息层级】\n先看「页面总结」，如果总结中有相关内容则用总结回答，不要添加 @标注。\n如果总结中没有足够信息，在「网页原文」中搜索相关内容，只标注最关键的1-2个段落来源（如 @12），不要重复标注同一个段落，也不要标注超过2处。\n【严格规则】回答中出现的 @数字 总数不得超过2个。不允许出现连续的 @标注，例如「@12@13@14」或大量「@12-@198」这种大范围标注都禁止。\n如果以上两者都无法回答，请在回答末尾输出：__NEED_SEARCH__||搜索关键词\n\n页面总结：\n' + summary;
+                    var firstPrompt = '基于以下信息回答用户的问题。\n\n请用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）。\n\n【信息层级】\n先看「页面总结」，如果总结中有相关内容则用总结回答，不要添加 @标注。\n如果总结中没有足够信息，在「网页原文」中搜索相关内容，只标注最关键的1-2个段落来源（如 @12 表示引用第12段，@12-@15 表示第12到15段）。注意：使用 @12 格式而非 @P12 格式。\n【严格规则】回答中出现的 @数字 总数不得超过2个。不允许出现连续的 @标注，例如「@12@13@14」或大量「@12-@198」这种大范围标注都禁止。\n如果以上两者都无法回答，请在回答末尾输出：__NEED_SEARCH__||搜索关键词\n\n页面总结：\n' + summary;
                     if (paraText) {
                         firstPrompt += '\n\n网页原文（每段带编号[P数字]）：\n' + paraText;
                     }
@@ -2732,9 +2732,9 @@
 
             // 限制回答中 @数字 标注的数量，超过 maxCount 的替换为范围或移除
             function limitAnnotationCount(text, maxCount) {
-                // 收集所有 @数字 和 @数字-@数字 标注
+                // 收集所有 @数字 和 @数字-@数字 标注（含 @P 格式）
                 var annotations = [];
-                text.replace(/(?:@|§)(\d+)(?:\s*[-–—]\s*(?:@|§)?(\d+))?/g, function(m, s, e) {
+                text.replace(/(?:@|§)P?(\d+)(?:\s*[-–—]\s*(?:@|§)?P?(\d+))?/g, function(m, s, e) {
                     annotations.push({ match: m, start: parseInt(s, 10), end: e ? parseInt(e, 10) : parseInt(s, 10) });
                     return m;
                 });
@@ -2759,7 +2759,7 @@
                 var total = annotations.length;
                 var rangeStr = allConsecutive ? '@' + first.start + '-@' + last.start : annotations[0].match;
                 
-                return text.replace(/(?:@|§)(\d+)(?:\s*[-–—]\s*(?:@|§)?(\d+))?/g, function(m, s, e) {
+                return text.replace(/(?:@|§)P?(\d+)(?:\s*[-–—]\s*(?:@|§)?P?(\d+))?/g, function(m, s, e) {
                     count++;
                     if (count === 1) {
                         return rangeStr;

@@ -1109,14 +1109,14 @@
             var badges = [];
             var srcBadges = [];
             
-            // 范围标注
-            var s1 = segText.replace(/(?:@|§)(\d+)\s*[-–—]\s*(?:@|§)?(\d+)/g, function(m, s, e) {
+            // 范围标注：@12-@15、@P12-P15、§12-§15、(@P12-P15)
+            var s1 = segText.replace(/(?:@|§)P?(\d+)\s*[-–—]\s*(?:@|§)?P?(\d+)/g, function(m, s, e) {
                 var key = '__BDG_' + badges.length + '__';
                 badges.push({ id: s, text: '@' + s + '-@' + e });
                 return key;
             });
-            // 单个标注
-            var s2 = s1.replace(/(?:@|§)(\d+)/g, function(m, id) {
+            // 单个标注：@12、@P12、§12
+            var s2 = s1.replace(/(?:@|§)P?(\d+)/g, function(m, id) {
                 var key = '__BDG_' + badges.length + '__';
                 badges.push({ id: id, text: '@' + id });
                 return key;
