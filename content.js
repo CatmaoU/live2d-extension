@@ -1061,9 +1061,9 @@
                 
                 var copyBtn = document.createElement('button');
                 copyBtn.textContent = '复制';
-                copyBtn.style.cssText = 'padding:3px 10px;background:#667eea;color:#fff;border:none;border-radius:4px;font-size:11px;cursor:pointer;transition:opacity 0.2s;';
-                copyBtn.addEventListener('mouseenter', function() { this.style.opacity = '0.85'; });
-                copyBtn.addEventListener('mouseleave', function() { this.style.opacity = '1'; });
+                copyBtn.style.cssText = 'padding:0;background:transparent;color:#888;border:none;font-size:11px;cursor:pointer;transition:color 0.2s;';
+                copyBtn.addEventListener('mouseenter', function() { this.style.color = '#fff'; });
+                copyBtn.addEventListener('mouseleave', function() { this.style.color = '#888'; });
                 // 用 IIFE 捕获 codeContent
                 (function(btn, content) {
                     btn.addEventListener('click', function() {
