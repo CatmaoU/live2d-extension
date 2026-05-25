@@ -477,6 +477,9 @@
     let summaryModalSendBtn = null;
 
     function showSummaryModal(summaryText) {
+        // 确保 DOM 段落索引为最新
+        buildPageParagraphs();
+        
         const isDark = isDarkMode();
         const theme = {
             overlayBg: isDark ? 'rgba(0,0,0,0.65)' : 'rgba(0,0,0,0.45)',
@@ -609,7 +612,7 @@
         refreshBtn.addEventListener('click', function() {
             __lastSummaryResult = null;
             __lastPageContent = '';
-            __lastPageParagraphs = [];
+            buildPageParagraphs();
             resetQuestionInputState();
             summaryModalTextarea.value = '正在重新总结喵~';
             if (summaryModalAIPanel) summaryModalAIPanel.innerHTML = '';
@@ -1061,7 +1064,7 @@
                 
                 var copyBtn = document.createElement('button');
                 copyBtn.textContent = '复制';
-                copyBtn.style.cssText = 'padding:0;background:transparent;color:#888;border:none;font-size:11px;cursor:pointer;transition:color 0.2s;';
+                copyBtn.style.cssText = 'padding:0;background:transparent;color:#888;border:0;outline:none;font-size:11px;cursor:pointer;transition:color 0.2s;';
                 copyBtn.addEventListener('mouseenter', function() { this.style.color = '#fff'; });
                 copyBtn.addEventListener('mouseleave', function() { this.style.color = '#888'; });
                 // 用 IIFE 捕获 codeContent
