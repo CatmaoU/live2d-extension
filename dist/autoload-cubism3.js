@@ -519,7 +519,7 @@
                         characterPrompt += `\n限制：\n${characterLimit}\n`;
                     }
                     
-                    characterPrompt += '\n请始终以这个角色的身份进行对话，保持角色设定一致。用友好、可爱的方式回复用户。';
+                    characterPrompt += '\n【重要】回复规则：\n- 禁止使用任何 emoji 图案表情（如😊、❤️、✨等）\n- 允许使用颜文字表达情绪（如 (´▽｀)、(*^▽^*)、_(:з」∠)_ 等）\n- 用友好、可爱的方式回复用户。';
                     
                     systemPromptToUse = characterPrompt;
                     console.log('[Live2D AI] Using character prompt from settings');
@@ -2618,9 +2618,9 @@
                     let summaryPrompt;
                     if (summaryRules && summaryRules.trim()) {
                         // 默认规则 > 用户输入规则
-                        summaryPrompt = '请用中文总结以下网页内容。\n\n规则：\n- ' + defaultRule + '\n- ' + summaryRules.trim().replace(/\n/g, '\n- ') + '\n\n网页内容：\n\n' + pageContent;
+                        summaryPrompt = '请用中文总结以下网页内容。\n\n规则：\n- ' + defaultRule + '\n- ' + summaryRules.trim().replace(/\n/g, '\n- ') + '\n- 不使用任何emoji图案表情，可以用颜文字\n\n网页内容：\n\n' + pageContent;
                     } else {
-                        summaryPrompt = '请用中文简洁地总结以下网页内容。\n\n规则：\n- ' + defaultRule + '\n\n先显示页面标题，然后用每句摘要列出关键要点。\n\n网页内容：\n\n' + pageContent;
+                        summaryPrompt = '请用中文简洁地总结以下网页内容。\n\n规则：\n- ' + defaultRule + '\n- 不使用任何emoji图案表情，可以用颜文字\n\n先显示页面标题，然后用每句摘要列出关键要点。\n\n网页内容：\n\n' + pageContent;
                     }
                     const response = await window.Live2DAI.getAIResponse(summaryPrompt);
                     // 通过自定义事件将结果发送给 content.js（弹窗显示、缓存复用）
@@ -2641,7 +2641,7 @@
                 const summary = e.detail?.summary || '';
                 if (!question || !summary) return;
                 try {
-                    const prompt = '基于以下页面总结回答用户的问题。\n\n请用中文回答，详细、清晰。如果问题涉及的内容不在总结中，请说明。\n\n页面总结：\n' + summary + '\n\n用户问题：\n' + question;
+                    const prompt = '基于以下页面总结回答用户的问题。\n\n请用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）。如果问题涉及的内容不在总结中，请说明。\n\n页面总结：\n' + summary + '\n\n用户问题：\n' + question;
                     const response = await window.Live2DAI.getAIResponse(prompt);
                     window.dispatchEvent(new CustomEvent('live2dPageSummaryAnswer', {
                         detail: { answer: response }
