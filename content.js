@@ -912,6 +912,87 @@
         }
     }
 
+    // 代码语法高亮：键名/函数变量 → 蓝色，字符串/值 → 绿色，数字 → 橙色
+    function highlightCode(code, lang) {
+        var span = document.createElement('span');
+        
+        // 按行处理保持换行
+        var lines = code.split('\n');
+        for (var li = 0; li < lines.length; li++) {
+            if (li > 0) span.appendChild(document.createElement('br'));
+            var line = lines[li];
+            
+            // JSON 风格高亮：匹配 "key": 模式
+            // 步骤1: 匹配字符串值 "..." → 绿色
+            var parts = [];
+            var lastIdx = 0;
+            var strRegex = /"([^"\\]*(\\.[^"\\]*)*)"/g;
+            var m;
+            while ((m = strRegex.exec(line)) !== null) {
+                if (m.index > lastIdx) {
+                    parts.push({ type: 'text', content: line.substring(lastIdx, m.index) });
+                }
+                // 判断是否是 key（后面紧跟 : 或 ：）
+                var after = line.substring(m.index + m[0].length).replace(/^\s+/, '');
+                if (after.charAt(0) === ':' || after.charAt(0) === '：') {
+                    // 这是键名 → 蓝色
+                    parts.push({ type: 'key', content: m[0] });
+                } else {
+                    // 这是字符串值 → 绿色
+                    parts.push({ type: 'string', content: m[0] });
+                }
+                lastIdx = m.index + m[0].length;
+            }
+            if (lastIdx < line.length) {
+                parts.push({ type: 'text', content: line.substring(lastIdx) });
+            }
+            
+            // 渲染每个部分
+            for (var pi = 0; pi < parts.length; pi++) {
+                var p = parts[pi];
+                if (p.type === 'key') {
+                    var keySpan = document.createElement('span');
+                    keySpan.style.cssText = 'color:#569cd6;';
+                    keySpan.textContent = p.content;
+                    span.appendChild(keySpan);
+                } else if (p.type === 'string') {
+                    var strSpan = document.createElement('span');
+                    strSpan.style.cssText = 'color:#6aab73;';
+                    strSpan.textContent = p.content;
+                    span.appendChild(strSpan);
+                } else {
+                    // 纯文本：再高亮数字和关键词
+                    var textParts = p.content.split(/(\b\d+(?:\.\d+)?\b)/);
+                    for (var ti = 0; ti < textParts.length; ti++) {
+                        var tp = textParts[ti];
+                        if (/^\d+(?:\.\d+)?$/.test(tp)) {
+                            var numSpan = document.createElement('span');
+                            numSpan.style.cssText = 'color:#dcdcaa;';
+                            numSpan.textContent = tp;
+                            span.appendChild(numSpan);
+                        } else {
+                            // 高亮常见关键字
+                            var kwParts = tp.split(/(\b(?:function|const|let|var|if|else|for|while|return|import|export|from|class|extends|new|this|async|await|true|false|null|undefined|typeof|instanceof|try|catch|finally|throw|switch|case|break|default|continue|do|in|of|with|yield|enum|implements|interface|package|private|protected|public|static)\b)/g);
+                            for (var ki = 0; ki < kwParts.length; ki++) {
+                                var kwp = kwParts[ki];
+                                if (/^(?:function|const|let|var|if|else|for|while|return|import|export|from|class|extends|new|this|async|await|true|false|null|undefined|typeof|instanceof|try|catch|finally|throw|switch|case|break|default|continue|do|in|of|with|yield|enum|implements|interface|package|private|protected|public|static)$/.test(kwp)) {
+                                    var kwSpan = document.createElement('span');
+                                    kwSpan.style.cssText = 'color:#c586c0;';
+                                    kwSpan.textContent = kwp;
+                                    span.appendChild(kwSpan);
+                                } else {
+                                    span.appendChild(document.createTextNode(kwp));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        return span;
+    }
+
     // 渲染回答文本，支持代码块、@数字标注和 [来源] 标记
     function renderAnswerWithCitations(text) {
         const container = document.createElement('div');
@@ -985,11 +1066,12 @@
                 codeHeader.appendChild(copyBtn);
                 codeBox.appendChild(codeHeader);
                 
-                // 代码内容
+                // 代码内容（语法高亮）
                 var codePre = document.createElement('pre');
-                codePre.style.cssText = 'margin:0;padding:12px 16px;overflow-x:auto;font-size:12px;line-height:1.5;color:#ddd;background:#0e0e24;font-family:Consolas,monospace;white-space:pre;tab-size:4;';
+                codePre.style.cssText = 'margin:0;padding:12px 16px;overflow-x:auto;font-size:12px;line-height:1.5;color:#6aab73;background:#0e0e24;font-family:Consolas,monospace;white-space:pre;tab-size:4;';
                 var codeEl = document.createElement('code');
-                codeEl.textContent = codeContent;
+                codeEl.style.cssText = 'color:#6aab73;font-family:Consolas,monospace;';
+                codeEl.appendChild(highlightCode(codeContent, codeLang));
                 codePre.appendChild(codeEl);
                 codeBox.appendChild(codePre);
                 
