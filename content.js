@@ -952,59 +952,76 @@
 
     // 跳转到页面上包含指定文本的位置
     function scrollToPageText(paragraphId) {
-        // 先关闭总结弹窗
         hideSummaryModal();
         
-        // 尝试通过 window.find 在页面中定位段落文本
-        // 获取 pageContent 的分段落文本
         var fullText = __lastPageContent || document.body.innerText || '';
         var paragraphs = fullText.split('\n').filter(function(p) { return p.trim(); });
         var idx = parseInt(paragraphId, 10) - 1;
-        if (idx >= 0 && idx < paragraphs.length) {
-            var targetText = paragraphs[idx].trim();
-            if (targetText.length > 60) targetText = targetText.substring(0, 60);
-            // 使用 window.find
-            try {
-                if (window.find(targetText, false, false, true)) {
-                    // 高亮闪烁
+        if (idx < 0 || idx >= paragraphs.length) return;
+        
+        var targetText = paragraphs[idx].trim();
+        if (targetText.length > 60) targetText = targetText.substring(0, 60);
+        
+        // 第1种方法：用 TreeWalker 直接找到文本节点并 scrollIntoView
+        var walker = document.createTreeWalker(document.body, 4, null, false);
+        var node;
+        while (node = walker.nextNode()) {
+            if (node.textContent.trim().indexOf(targetText.substring(0, 30)) !== -1) {
+                // 先滚动到该节点
+                node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // 再选中并高亮
+                try {
+                    var range = document.createRange();
+                    range.selectNodeContents(node);
                     var sel = window.getSelection();
-                    if (sel && sel.rangeCount > 0) {
-                        var range = sel.getRangeAt(0);
-                        var span = document.createElement('span');
-                        span.style.cssText = 'background:#667eea;color:#fff;transition:background 1s;';
-                        try {
-                            range.surroundContents(span);
-                            setTimeout(function() {
-                                span.style.background = 'transparent';
-                                span.style.color = 'inherit';
-                            }, 2000);
-                        } catch(e) {}
-                    }
-                    return;
-                }
-            } catch(e) {}
-            
-            // fallback: 用 TreeWalker 扫描文本节点
-            var walker = document.createTreeWalker(document.body, 4, null, false);
-            var node;
-            while (node = walker.nextNode()) {
-                if (node.textContent.trim().indexOf(targetText.substring(0, 30)) !== -1) {
-                    node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    // 高亮
-                    var hl = document.createElement('mark');
-                    hl.style.cssText = 'background:#667eea;color:#fff;border-radius:2px;padding:1px 3px;transition:background 2s;';
-                    hl.textContent = targetText.substring(0, 30);
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                    // 高亮闪烁
+                    var hlSpan = document.createElement('span');
+                    hlSpan.style.cssText = 'background:#667eea;color:#fff;padding:1px 3px;border-radius:2px;transition:background 2s,color 2s;';
                     try {
-                        node.parentNode.replaceChild(hl, node);
+                        range.surroundContents(hlSpan);
                         setTimeout(function() {
-                            var txt = document.createTextNode(hl.textContent);
-                            hl.parentNode.replaceChild(txt, hl);
-                        }, 3000);
+                            hlSpan.style.background = 'transparent';
+                            hlSpan.style.color = 'inherit';
+                        }, 2000);
                     } catch(e) {}
-                    return;
-                }
+                } catch(e) {}
+                return;
             }
         }
+        
+        // 第2种方法：用 window.find + 手动滚动
+        try {
+            if (window.find(targetText, false, false, true)) {
+                var sel = window.getSelection();
+                if (sel && sel.rangeCount > 0) {
+                    var range = sel.getRangeAt(0);
+                    // 滚动到选中区域
+                    var textNode = range.startContainer;
+                    if (textNode.nodeType === 3) { // text node
+                        // 用父元素滚动
+                        var parentEl = textNode.parentElement;
+                        if (parentEl) {
+                            // 尝试找到最近的可滚动容器
+                            var scrollTarget = parentEl;
+                            // 确保滚动
+                            scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                    }
+                    // 高亮
+                    var hlSpan = document.createElement('span');
+                    hlSpan.style.cssText = 'background:#667eea;color:#fff;padding:1px 3px;border-radius:2px;transition:background 2s,color 2s;';
+                    try {
+                        range.surroundContents(hlSpan);
+                        setTimeout(function() {
+                            hlSpan.style.background = 'transparent';
+                            hlSpan.style.color = 'inherit';
+                        }, 2000);
+                    } catch(e) {}
+                }
+            }
+        } catch(e) {}
     }
 
     // ─── 按键绑定系统 ───
