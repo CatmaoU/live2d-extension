@@ -2650,13 +2650,16 @@
                         paraText = paragraphs.map(function(p, i) { return '[P' + (i + 1) + '] ' + p; }).join('\n');
                     }
 
-                    var firstPrompt = '基于以下信息回答用户的问题。\n\n请用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）。\n\n【信息层级】\n先看「页面总结」，如果总结中有相关内容则用总结回答。\n如果总结中没有足够信息，在「网页原文」中搜索相关内容并用 @数字 标注来源（如 @12 表示引用第12段，@12-@15 表示第12到15段）。\n只引用最相关的段落（最多5处），避免大量连续标注。\n如果以上两者都无法回答，请在回答末尾输出：__NEED_SEARCH__||搜索关键词\n\n页面总结：\n' + summary;
+                    var firstPrompt = '基于以下信息回答用户的问题。\n\n请用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）。\n\n【信息层级】\n先看「页面总结」，如果总结中有相关内容则用总结回答，不要添加 @标注。\n如果总结中没有足够信息，在「网页原文」中搜索相关内容，只标注最关键的1-2个段落来源（如 @12），不要重复标注同一个段落，也不要标注超过2处。\n【严格规则】回答中出现的 @数字 总数不得超过2个。不允许出现连续的 @标注，例如「@12@13@14」或大量「@12-@198」这种大范围标注都禁止。\n如果以上两者都无法回答，请在回答末尾输出：__NEED_SEARCH__||搜索关键词\n\n页面总结：\n' + summary;
                     if (paraText) {
                         firstPrompt += '\n\n网页原文（每段带编号[P数字]）：\n' + paraText;
                     }
                     firstPrompt += '\n\n用户问题：\n' + question;
 
                     var response = await window.Live2DAI.getAIResponse(firstPrompt);
+                    
+                    // 后处理：限制 @数字 标注数量不超过2个，过多的则折叠为范围或移除
+                    response = limitAnnotationCount(response, 2);
 
                     // 检查是否需要网络搜索
                     var searchMatch = response.match(/__NEED_SEARCH__\|\|(.+)/);
@@ -2725,6 +2728,44 @@
             // 提取域名
             function extractDomain(url) {
                 try { return new URL(url).hostname.replace('www.', ''); } catch(e) { return url; }
+            }
+
+            // 限制回答中 @数字 标注的数量，超过 maxCount 的替换为范围或移除
+            function limitAnnotationCount(text, maxCount) {
+                // 收集所有 @数字 和 @数字-@数字 标注
+                var annotations = [];
+                text.replace(/(?:@|§)(\d+)(?:\s*[-–—]\s*(?:@|§)?(\d+))?/g, function(m, s, e) {
+                    annotations.push({ match: m, start: parseInt(s, 10), end: e ? parseInt(e, 10) : parseInt(s, 10) });
+                    return m;
+                });
+                
+                if (annotations.length <= maxCount) return text;
+                
+                // 大量连续标注 → 替换为 @起始-@结束
+                var first = annotations[0];
+                var last = annotations[annotations.length - 1];
+                
+                var allConsecutive = true;
+                for (var i = 1; i < annotations.length; i++) {
+                    if (annotations[i].start !== annotations[i-1].end + 1 &&
+                        annotations[i].start !== annotations[i-1].start + 1) {
+                        allConsecutive = false;
+                        break;
+                    }
+                }
+                
+                // 用计数变量逐次替换
+                var count = 0;
+                var total = annotations.length;
+                var rangeStr = allConsecutive ? '@' + first.start + '-@' + last.start : annotations[0].match;
+                
+                return text.replace(/(?:@|§)(\d+)(?:\s*[-–—]\s*(?:@|§)?(\d+))?/g, function(m, s, e) {
+                    count++;
+                    if (count === 1) {
+                        return rangeStr;
+                    }
+                    return '';
+                });
             }
 
             // 接收来自 content.js 的提示显示请求
