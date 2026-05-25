@@ -2625,7 +2625,7 @@
                     const response = await window.Live2DAI.getAIResponse(summaryPrompt);
                     // 通过自定义事件将结果发送给 content.js（弹窗显示、缓存复用）
                     const resultEvent = new CustomEvent('live2dShowSummary', {
-                        detail: { summary: response }
+                        detail: { summary: response, pageContent: pageContent }
                     });
                     window.dispatchEvent(resultEvent);
                     showTips('已生成总结喵~');
@@ -2635,14 +2635,82 @@
                 }
             });
 
-            // 页面总结问答：监听来自 content.js 的提问
+            // 页面总结问答：监听来自 content.js 的提问（三步回答：总结→页面→网络搜索）
             window.addEventListener('live2dPageSummaryQuestion', async function(e) {
                 const question = e.detail?.question || '';
                 const summary = e.detail?.summary || '';
+                const pageContent = e.detail?.pageContent || '';
                 if (!question || !summary) return;
+                
                 try {
-                    const prompt = '基于以下页面总结回答用户的问题。\n\n请用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）。如果问题涉及的内容不在总结中，请说明。\n\n页面总结：\n' + summary + '\n\n用户问题：\n' + question;
-                    const response = await window.Live2DAI.getAIResponse(prompt);
+                    // 第1步：用总结 + 页面全文（带段落编号）尝试回答
+                    var paraText = '';
+                    if (pageContent) {
+                        var paragraphs = pageContent.split('\n').filter(function(p) { return p.trim(); });
+                        paraText = paragraphs.map(function(p, i) { return '[P' + (i + 1) + '] ' + p; }).join('\n');
+                    }
+
+                    var firstPrompt = '基于以下信息回答用户的问题。\n\n请用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）。\n\n【信息层级】\n先看「页面总结」，如果总结中有相关内容则用总结回答。\n如果总结中没有足够信息，在「网页原文」中搜索相关内容并用 @§段落号 标注来源（如 @§12 表示引用第12段）。\n如果以上两者都无法回答，请在回答末尾输出：__NEED_SEARCH__||搜索关键词\n\n页面总结：\n' + summary;
+                    if (paraText) {
+                        firstPrompt += '\n\n网页原文（每段带编号[P数字]）：\n' + paraText;
+                    }
+                    firstPrompt += '\n\n用户问题：\n' + question;
+
+                    var response = await window.Live2DAI.getAIResponse(firstPrompt);
+
+                    // 检查是否需要网络搜索
+                    var searchMatch = response.match(/__NEED_SEARCH__\|\|(.+)/);
+                    if (searchMatch) {
+                        var searchQuery = searchMatch[1].trim();
+                        console.log('[Live2D Page Summary] Need web search for:', searchQuery);
+                        
+                        // 执行 DuckDuckGo 搜索
+                        var searchResults = '';
+                        try {
+                            var searchUrl = 'https://api.duckduckgo.com/?q=' + encodeURIComponent(searchQuery) + '&format=json&no_html=1&skip_disambig=1';
+                            var searchResp = await fetch(searchUrl, { signal: AbortSignal.timeout(10000) });
+                            if (searchResp.ok) {
+                                var searchData = await searchResp.json();
+                                var results = [];
+                                
+                                // DuckDuckGo Instant Answer
+                                if (searchData.AbstractText) {
+                                    results.push('[来源 ' + (searchData.AbstractSource || 'duckduckgo') + '] ' + searchData.AbstractText);
+                                }
+                                // Related topics
+                                if (searchData.RelatedTopics && searchData.RelatedTopics.length > 0) {
+                                    for (var ri = 0; ri < Math.min(searchData.RelatedTopics.length, 5); ri++) {
+                                        var rt = searchData.RelatedTopics[ri];
+                                        if (rt.Text) {
+                                            results.push('[来源 ' + (rt.FirstURL ? extractDomain(rt.FirstURL) : 'web') + '] ' + rt.Text);
+                                        }
+                                        if (rt.Topics) {
+                                            for (var ti = 0; ti < Math.min(rt.Topics.length, 3); ti++) {
+                                                if (rt.Topics[ti].Text) {
+                                                    results.push('[来源 ' + (rt.Topics[ti].FirstURL ? extractDomain(rt.Topics[ti].FirstURL) : 'web') + '] ' + rt.Topics[ti].Text);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                if (results.length === 0 && searchData.Answer) {
+                                    results.push('[来源 duckduckgo] ' + searchData.Answer);
+                                }
+                                searchResults = results.join('\n') || '未找到相关搜索结果。';
+                            } else {
+                                searchResults = '搜索服务暂时不可用。';
+                            }
+                        } catch (searchErr) {
+                            console.error('[Live2D Page Summary] Search error:', searchErr);
+                            searchResults = '网络搜索失败喵～(' + searchErr.message + ')';
+                        }
+
+                        // 第2步：用搜索结果再次回答
+                        var secondPrompt = '基于以下搜索结果回答用户的问题。\n\n规则：\n- 用中文回答，详细、清晰，不使用任何emoji图案表情（可以用颜文字）\n- 引用来源时用 [来源 域名] 标注\n- 如果搜索结果无法回答问题，如实说明\n\n用户问题：\n' + question + '\n\n搜索结果：\n' + searchResults;
+
+                        response = await window.Live2DAI.getAIResponse(secondPrompt);
+                    }
+
                     window.dispatchEvent(new CustomEvent('live2dPageSummaryAnswer', {
                         detail: { answer: response }
                     }));
@@ -2653,6 +2721,11 @@
                     }));
                 }
             });
+
+            // 提取域名
+            function extractDomain(url) {
+                try { return new URL(url).hostname.replace('www.', ''); } catch(e) { return url; }
+            }
 
             // 接收来自 content.js 的提示显示请求
             window.addEventListener('live2dShowTips', function(e) {

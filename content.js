@@ -409,6 +409,7 @@
 
     // 页面总结功能（带缓存）
     let __lastSummaryResult = null;
+    let __lastPageContent = '';
 
     function triggerPageSummary() {
         // 如果有缓存，直接显示弹窗，不重新调用 API
@@ -434,6 +435,10 @@
         const summary = e.detail?.summary || '';
         if (!summary) return;
         __lastSummaryResult = summary;
+        // 缓存页面全文（用于后续问答引用）
+        if (e.detail?.pageContent) {
+            __lastPageContent = e.detail.pageContent;
+        }
         showSummaryModal(summary);
     });
 
@@ -584,6 +589,7 @@
         refreshBtn.addEventListener('mouseleave', () => { refreshBtn.style.background = __summaryBtnTheme.btnBg; refreshBtn.style.color = __summaryBtnTheme.btnColor; });
         refreshBtn.addEventListener('click', function() {
             __lastSummaryResult = null;
+            __lastPageContent = '';
             summaryModalTextarea.value = '正在重新总结喵~';
             if (summaryModalAIPanel) summaryModalAIPanel.innerHTML = '';
             let freshPageText = document.body.innerText || '';
@@ -858,8 +864,9 @@
                 qDiv.style.cssText = 'color:#667eea;font-weight:600;margin-bottom:6px;font-size:13px;';
                 qDiv.textContent = '> ' + question;
                 summaryModalAIPanel.appendChild(qDiv);
-                const aDiv = document.createElement('div');
-                aDiv.textContent = answer;
+                
+                // 渲染回答：解析 @§段落号 和 [来源] 标记
+                const aDiv = renderAnswerWithCitations(answer);
                 summaryModalAIPanel.appendChild(aDiv);
             }
             if (summaryModalSendBtn) { summaryModalSendBtn.disabled = false; summaryModalSendBtn.textContent = '发送'; }
@@ -873,15 +880,130 @@
         window._summaryQAHandlers.push(handler);
         window.addEventListener('live2dPageSummaryAnswer', handler);
         
-        // 发送事件给 AI
+        // 发送事件给 AI（附带页面全文用于引用检索）
         window.dispatchEvent(new CustomEvent('live2dPageSummaryQuestion', {
-            detail: { question: question, summary: summary }
+            detail: { question: question, summary: summary, pageContent: __lastPageContent }
         }));
     }
 
     function hideSummaryModal() {
         if (summaryModalOverlay) {
             summaryModalOverlay.style.display = 'none';
+        }
+    }
+
+    // 渲染回答文本，解析 @§数字 标注和 [来源] 标记
+    function renderAnswerWithCitations(text) {
+        const container = document.createElement('div');
+        container.style.cssText = 'line-height:1.7;font-size:13px;word-break:break-word;white-space:pre-wrap;';
+        
+        // 按行处理以保留换行
+        const lines = text.split('\n');
+        lines.forEach(function(line, li) {
+            if (li > 0) {
+                const br = document.createElement('br');
+                container.appendChild(br);
+            }
+            if (!line.trim()) {
+                container.appendChild(document.createTextNode('\n'));
+                return;
+            }
+            
+            // 匹配 @§数字 标注
+            var parts = line.split(/(@§\d+)/);
+            for (var i = 0; i < parts.length; i++) {
+                var part = parts[i];
+                var m = part.match(/^@§(\d+)$/);
+                if (m) {
+                     var pId = m[1];
+                     var badge = document.createElement('span');
+                     badge.textContent = '@§' + pId;
+                     badge.title = '点击跳转到网页对应段落';
+                     badge.style.cssText = 'display:inline-block;background:#667eea;color:#fff;border-radius:3px;padding:0 5px;font-size:11px;cursor:pointer;margin:0 2px;line-height:1.6;';
+                     badge.addEventListener('click', function(e) {
+                         e.stopPropagation();
+                         scrollToPageText(pId);
+                         // 闪烁提示
+                         this.style.background = '#ff8800';
+                         setTimeout(function() { this.style.background = '#667eea'; }.bind(this), 1000);
+                     });
+                     container.appendChild(badge);
+                } else {
+                    // 匹配 [来源 域名] 标记
+                    var moreParts = part.split(/(\[来源[^\]]*\])/);
+                    for (var j = 0; j < moreParts.length; j++) {
+                        var sub = moreParts[j];
+                        var sm = sub.match(/^\[来源\s*(.+?)\]$/);
+                        if (sm) {
+                            var srcBadge = document.createElement('span');
+                            srcBadge.textContent = '[' + sm[1] + ']';
+                            srcBadge.style.cssText = 'display:inline-block;background:#555;color:#ccc;border-radius:3px;padding:0 5px;font-size:11px;margin:0 2px;line-height:1.6;';
+                            container.appendChild(srcBadge);
+                        } else {
+                            container.appendChild(document.createTextNode(sub));
+                        }
+                    }
+                }
+            }
+        });
+        
+        return container;
+    }
+
+    // 跳转到页面上包含指定文本的位置
+    function scrollToPageText(paragraphId) {
+        // 先关闭总结弹窗
+        hideSummaryModal();
+        
+        // 尝试通过 window.find 在页面中定位段落文本
+        // 获取 pageContent 的分段落文本
+        var fullText = __lastPageContent || document.body.innerText || '';
+        var paragraphs = fullText.split('\n').filter(function(p) { return p.trim(); });
+        var idx = parseInt(paragraphId, 10) - 1;
+        if (idx >= 0 && idx < paragraphs.length) {
+            var targetText = paragraphs[idx].trim();
+            if (targetText.length > 60) targetText = targetText.substring(0, 60);
+            // 使用 window.find
+            try {
+                if (window.find(targetText, false, false, true)) {
+                    // 高亮闪烁
+                    var sel = window.getSelection();
+                    if (sel && sel.rangeCount > 0) {
+                        var range = sel.getRangeAt(0);
+                        var span = document.createElement('span');
+                        span.style.cssText = 'background:#667eea;color:#fff;transition:background 1s;';
+                        try {
+                            range.surroundContents(span);
+                            setTimeout(function() {
+                                span.style.background = 'transparent';
+                                span.style.color = 'inherit';
+                            }, 2000);
+                        } catch(e) {}
+                    }
+                    return;
+                }
+            } catch(e) {}
+            
+            // fallback: 用 TreeWalker 扫描文本节点
+            var walker = document.createTreeWalker(document.body, 4, null, false);
+            var node;
+            while (node = walker.nextNode()) {
+                if (node.textContent.trim().indexOf(targetText.substring(0, 30)) !== -1) {
+                    node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // 高亮
+                    var hl = document.createElement('mark');
+                    hl.style.cssText = 'background:#667eea;color:#fff;border-radius:2px;padding:1px 3px;transition:background 2s;';
+                    hl.textContent = targetText.substring(0, 30);
+                    try {
+                        node.parentNode.replaceChild(hl, node);
+                        setTimeout(function() {
+                            var txt = document.createTextNode(hl.textContent);
+                            hl.parentNode.replaceChild(txt, hl);
+                        }, 3000);
+                    } catch(e) {}
+                    return;
+                }
+            }
         }
     }
 
