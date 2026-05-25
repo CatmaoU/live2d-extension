@@ -492,7 +492,12 @@
             const ta = box.querySelector('.summary-textarea');
             if (ta) { ta.style.background = theme.textareaBg; ta.style.color = theme.textareaColor; }
             const aiPanel = box.querySelector('.summary-ai-panel');
-            if (aiPanel) { aiPanel.style.background = theme.aiPanelBg; aiPanel.style.color = theme.aiPanelColor; aiPanel.style.borderRightColor = theme.borderColor; }
+            if (aiPanel) { aiPanel.style.background = theme.aiPanelBg; aiPanel.style.color = theme.aiPanelColor; }
+            const dh = box.querySelector('.summary-dialogue-header');
+            if (dh) { dh.style.color = theme.headerColor; dh.style.borderBottomColor = theme.borderColor; dh.style.background = theme.aiPanelBg; }
+            // leftCol borderRight handled via leftCol class
+            const leftColEl = box.querySelector('.summary-left-col');
+            if (leftColEl) { leftColEl.style.borderRightColor = theme.borderColor; }
             const inp = box.querySelector('.summary-question-input');
             if (inp) { inp.style.background = theme.inputBg; inp.style.color = theme.inputColor; }
             const ftr = box.querySelector('.summary-footer');
@@ -612,21 +617,47 @@
             overflow: hidden;
         `;
         
-        // 左侧 AI 回复框
+        // 左侧：对话标题 + AI 回复框
+        const leftCol = document.createElement('div');
+        leftCol.className = 'summary-left-col';
+        leftCol.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            width: 40%;
+            min-width: 180px;
+            min-height: 0;
+            overflow: hidden;
+            border-right: 1px solid ${theme.borderColor};
+        `;
+        
+        // 对话标题
+        const dialogueHeader = document.createElement('div');
+        dialogueHeader.className = 'summary-dialogue-header';
+        dialogueHeader.style.cssText = `
+            padding: 8px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            color: ${theme.headerColor};
+            background: ${theme.aiPanelBg};
+            border-bottom: 1px solid ${theme.borderColor};
+            flex-shrink: 0;
+        `;
+        dialogueHeader.textContent = '对话';
+        leftCol.appendChild(dialogueHeader);
+        
+        // AI 回复框
         const aiPanel = document.createElement('div');
         aiPanel.className = 'summary-ai-panel';
         summaryModalAIPanel = aiPanel;
         aiPanel.style.cssText = `
-            width: 40%;
-            min-width: 180px;
-            background: ${theme.aiPanelBg};
-            color: ${theme.aiPanelColor};
-            border-right: 1px solid ${theme.borderColor};
+            flex: 1;
             padding: 12px 14px;
             font-size: 13px;
             line-height: 1.6;
             overflow-y: auto;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: ${theme.aiPanelBg};
+            color: ${theme.aiPanelColor};
             white-space: pre-wrap;
             word-break: break-word;
         `;
@@ -636,6 +667,7 @@
         aiPlaceholder.style.cssText = 'color:' + (isDark ? '#555' : '#bbb') + ';text-align:center;margin-top:40%;font-size:13px;';
         aiPlaceholder.textContent = '在下方输入框提问\n即可询问关于总结的详细内容喵~';
         aiPanel.appendChild(aiPlaceholder);
+        leftCol.appendChild(aiPanel);
         
         // 右侧：总结 textarea + 底部输入框（垂直排列）
         const rightCol = document.createElement('div');
@@ -733,7 +765,7 @@
         inputRow.appendChild(loadingDots);
         rightCol.appendChild(inputRow);
         
-        contentRow.appendChild(aiPanel);
+        contentRow.appendChild(leftCol);
         contentRow.appendChild(rightCol);
         modalBox.appendChild(contentRow);
 
