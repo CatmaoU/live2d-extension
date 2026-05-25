@@ -750,15 +750,8 @@
         sendBtn.addEventListener('mouseleave', () => sendBtn.style.opacity = '1');
         sendBtn.addEventListener('click', sendSummaryQuestion);
         
-        // 加载指示器
-        const loadingDots = document.createElement('span');
-        loadingDots.id = 'summary-loading';
-        loadingDots.style.cssText = 'display:none;font-size:12px;color:' + (isDark ? '#888' : '#999') + ';';
-        loadingDots.textContent = 'AI 思考中...';
-        
         inputRow.appendChild(questionInput);
         inputRow.appendChild(sendBtn);
-        inputRow.appendChild(loadingDots);
         rightCol.appendChild(inputRow);
         
         contentRow.appendChild(leftCol);
@@ -818,12 +811,10 @@
         summaryModalSendBtn.disabled = true;
         summaryModalSendBtn.textContent = '发送中...';
         summaryModalQuestionInput.disabled = true;
-        const loading = document.getElementById('summary-loading');
-        if (loading) loading.style.display = 'inline';
         if (summaryModalAIPanel) {
             const ph = document.getElementById('summary-ai-placeholder');
             if (ph) ph.style.display = 'none';
-            summaryModalAIPanel.textContent = 'AI 思考中...';
+            summaryModalAIPanel.textContent = '少女祈祷中...';
         }
         
         // 清除旧监听，避免重复
@@ -847,8 +838,6 @@
                 aDiv.textContent = answer;
                 summaryModalAIPanel.appendChild(aDiv);
             }
-            const loading = document.getElementById('summary-loading');
-            if (loading) loading.style.display = 'none';
             if (summaryModalSendBtn) { summaryModalSendBtn.disabled = false; summaryModalSendBtn.textContent = '发送'; }
             if (summaryModalQuestionInput) summaryModalQuestionInput.disabled = false;
             // 清空输入框

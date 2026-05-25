@@ -2640,7 +2640,6 @@
                 const question = e.detail?.question || '';
                 const summary = e.detail?.summary || '';
                 if (!question || !summary) return;
-                showTips('正在思考喵~');
                 try {
                     const prompt = '基于以下页面总结回答用户的问题。\n\n请用中文回答，详细、清晰。如果问题涉及的内容不在总结中，请说明。\n\n页面总结：\n' + summary + '\n\n用户问题：\n' + question;
                     const response = await window.Live2DAI.getAIResponse(prompt);
