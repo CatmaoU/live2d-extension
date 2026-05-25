@@ -631,7 +631,7 @@
             try { await navigator.clipboard.writeText(summaryModalTextarea.value); } catch(e) {
                 const ta = document.createElement('textarea'); ta.value = summaryModalTextarea.value; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
             }
-            copyBtn.textContent = '✅ 已复制'; setTimeout(() => copyBtn.textContent = '复制', 2000);
+            copyBtn.textContent = '已复制'; setTimeout(() => copyBtn.textContent = '复制', 2000);
         });
         
         const closeBtn = document.createElement('button');
@@ -1071,7 +1071,7 @@
                 (function(btn, content) {
                     btn.addEventListener('click', function() {
                         navigator.clipboard.writeText(content).then(function() {
-                            btn.textContent = '✅ 已复制';
+                            btn.textContent = '已复制';
                             setTimeout(function() { btn.textContent = '复制'; }, 2000);
                         }).catch(function() {
                             var ta = document.createElement('textarea');
@@ -1080,7 +1080,7 @@
                             ta.select();
                             document.execCommand('copy');
                             document.body.removeChild(ta);
-                            btn.textContent = '✅ 已复制';
+                            btn.textContent = '已复制';
                             setTimeout(function() { btn.textContent = '复制'; }, 2000);
                         });
                     });
