@@ -610,6 +610,7 @@
             __lastSummaryResult = null;
             __lastPageContent = '';
             __lastPageParagraphs = [];
+            resetQuestionInputState();
             summaryModalTextarea.value = '正在重新总结喵~';
             if (summaryModalAIPanel) summaryModalAIPanel.innerHTML = '';
             let freshPageText = document.body.innerText || '';
@@ -847,6 +848,24 @@
              `;
             document.head.appendChild(style);
         }
+    }
+
+    // 重置聊天输入框状态（中断发送、恢复按钮）
+    function resetQuestionInputState() {
+        if (summaryModalSendBtn) {
+            summaryModalSendBtn.disabled = false;
+            summaryModalSendBtn.textContent = '发送';
+        }
+        if (summaryModalQuestionInput) {
+            summaryModalQuestionInput.disabled = false;
+            summaryModalQuestionInput.value = '';
+        }
+        // 移除所有待处理的问答监听器
+        const oldHandlers = window._summaryQAHandlers || [];
+        oldHandlers.forEach(function(fn) {
+            window.removeEventListener('live2dPageSummaryAnswer', fn);
+        });
+        window._summaryQAHandlers = [];
     }
 
     // 发送总结相关问题
