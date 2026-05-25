@@ -912,60 +912,96 @@
         }
     }
 
-    // 渲染回答文本，解析 @§数字 标注和 [来源] 标记
+    // 渲染回答文本，解析 @数字 / §数字 标注和 [来源] 标记
     function renderAnswerWithCitations(text) {
         const container = document.createElement('div');
         container.style.cssText = 'line-height:1.7;font-size:13px;word-break:break-word;white-space:pre-wrap;';
         
-        // 按行处理以保留换行
-        const lines = text.split('\n');
-        lines.forEach(function(line, li) {
-            if (li > 0) {
-                const br = document.createElement('br');
-                container.appendChild(br);
+        // 解析标注：先收集所有 @数字 和 §数字 的位置（包括范围）
+        var badges = []; // [{id: '12', text: '@12'}, ...]
+        var placeholderMap = {}; // {'__BDG_0__': {id:'12', text:'@12'}}
+        
+        // 第1步：替换所有标注为占位符
+        // 先处理范围 §12-§15 或 @12-@15
+        var step1 = text.replace(/(?:@|§)(\d+)\s*[-–—]\s*(?:@|§)?(\d+)/g, function(m, s, e) {
+            var result = '';
+            var start = parseInt(s, 10);
+            var end = parseInt(e, 10);
+            for (var n = start; n <= end; n++) {
+                var key = '__BDG_' + badges.length + '__';
+                badges.push({ id: n.toString(), text: '@' + n });
+                result += key;
             }
-            if (!line.trim()) {
-                container.appendChild(document.createTextNode('\n'));
-                return;
-            }
+            return result;
+        });
+        // 再处理单个 @数字 或 §数字
+        var step2 = step1.replace(/(?:@|§)(\d+)/g, function(m, id) {
+            var key = '__BDG_' + badges.length + '__';
+            badges.push({ id: id, text: '@' + id });
+            return key;
+        });
+        
+        // 处理 [来源 域名] 标记（替换为占位符）
+        var srcBadges = [];
+        var step3 = step2.replace(/\[来源\s+([^\]]+)\]/g, function(m, domain) {
+            var key = '__SRC_' + srcBadges.length + '__';
+            srcBadges.push({ domain: domain });
+            return key;
+        });
+        
+        // 按换行分段
+        var rawLines = step3.split('\n');
+        for (var li = 0; li < rawLines.length; li++) {
+            if (li > 0) container.appendChild(document.createElement('br'));
+            var line = rawLines[li];
+            if (!line) { container.appendChild(document.createTextNode('')); continue; }
             
-            // 匹配 @§数字 标注
-            var parts = line.split(/(@§\d+)/);
-            for (var i = 0; i < parts.length; i++) {
-                var part = parts[i];
-                var m = part.match(/^@§(\d+)$/);
-                if (m) {
-                     var pId = m[1];
-                     var badge = document.createElement('span');
-                     badge.textContent = '@§' + pId;
-                     badge.title = '点击跳转到网页对应段落';
-                     badge.style.cssText = 'display:inline-block;background:#667eea;color:#fff;border-radius:3px;padding:0 5px;font-size:11px;cursor:pointer;margin:0 2px;line-height:1.6;';
-                     badge.addEventListener('click', function(e) {
-                         e.stopPropagation();
-                         scrollToPageText(pId);
-                         // 闪烁提示
-                         this.style.background = '#ff8800';
-                         setTimeout(function() { this.style.background = '#667eea'; }.bind(this), 1000);
-                     });
-                     container.appendChild(badge);
-                } else {
-                    // 匹配 [来源 域名] 标记
-                    var moreParts = part.split(/(\[来源[^\]]*\])/);
-                    for (var j = 0; j < moreParts.length; j++) {
-                        var sub = moreParts[j];
-                        var sm = sub.match(/^\[来源\s*(.+?)\]$/);
-                        if (sm) {
-                            var srcBadge = document.createElement('span');
-                            srcBadge.textContent = '[' + sm[1] + ']';
-                            srcBadge.style.cssText = 'display:inline-block;background:#555;color:#ccc;border-radius:3px;padding:0 5px;font-size:11px;margin:0 2px;line-height:1.6;';
-                            container.appendChild(srcBadge);
-                        } else {
-                            container.appendChild(document.createTextNode(sub));
-                        }
+            // 按占位符切分
+            var parts = line.split(/(__BDG_\d+__|__SRC_\d+__)/);
+            for (var pi = 0; pi < parts.length; pi++) {
+                var part = parts[pi];
+                
+                // 段落标注
+                var bm = part.match(/^__BDG_(\d+)__$/);
+                if (bm) {
+                    var bi = parseInt(bm[1], 10);
+                    var badgeData = badges[bi];
+                    if (badgeData) {
+                        var badge = document.createElement('span');
+                        badge.textContent = badgeData.text;
+                        badge.title = '点击跳转到网页对应段落';
+                        badge.style.cssText = 'display:inline-block;background:#667eea;color:#fff;border-radius:3px;padding:0 5px;font-size:11px;cursor:pointer;margin:0 2px;line-height:1.6;';
+                        (function(pid) {
+                            badge.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                scrollToPageText(pid);
+                                this.style.background = '#ff8800';
+                                setTimeout(function() { this.style.background = '#667eea'; }.bind(this), 1000);
+                            });
+                        })(badgeData.id);
+                        container.appendChild(badge);
+                        continue;
                     }
                 }
+                
+                // 来源标注
+                var sm = part.match(/^__SRC_(\d+)__$/);
+                if (sm) {
+                    var si = parseInt(sm[1], 10);
+                    var srcData = srcBadges[si];
+                    if (srcData) {
+                        var srcBadge = document.createElement('span');
+                        srcBadge.textContent = '[' + srcData.domain + ']';
+                        srcBadge.style.cssText = 'display:inline-block;background:#555;color:#ccc;border-radius:3px;padding:0 5px;font-size:11px;margin:0 2px;line-height:1.6;';
+                        container.appendChild(srcBadge);
+                        continue;
+                    }
+                }
+                
+                // 普通文本
+                if (part) container.appendChild(document.createTextNode(part));
             }
-        });
+        }
         
         return container;
     }
