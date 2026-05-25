@@ -502,6 +502,20 @@
             if (inp) { inp.style.background = theme.inputBg; inp.style.color = theme.inputColor; }
             const ftr = box.querySelector('.summary-footer');
             if (ftr) { ftr.style.borderTopColor = theme.footerBorder; }
+            // 更新 scrollbar 主题
+            const styleEl = document.getElementById('live2d-summary-style');
+            if (styleEl) {
+                const scrollTrack = isDark ? '#0e0e24' : '#eee';
+                const scrollThumb = isDark ? '#3a3a5c' : '#ccc';
+                const scrollHover = isDark ? '#5a5a7c' : '#aaa';
+                styleEl.textContent = `
+                    @keyframes live2dSummaryFadeIn { from { opacity: 0; } to { opacity: 1; } }
+                    .summary-ai-panel::-webkit-scrollbar, .summary-textarea::-webkit-scrollbar { width: 6px; }
+                    .summary-ai-panel::-webkit-scrollbar-track, .summary-textarea::-webkit-scrollbar-track { background: ${scrollTrack}; border-radius: 3px; }
+                    .summary-ai-panel::-webkit-scrollbar-thumb, .summary-textarea::-webkit-scrollbar-thumb { background: ${scrollThumb}; border-radius: 3px; }
+                    .summary-ai-panel::-webkit-scrollbar-thumb:hover, .summary-textarea::-webkit-scrollbar-thumb:hover { background: ${scrollHover}; }
+                `;
+            }
             __summaryBtnTheme = { btnBg: theme.btnBg, btnColor: theme.btnColor, isDark };
             ['.summary-btn-refresh','.summary-btn-copy'].forEach(cls => {
                 const el = box.querySelector(cls);
@@ -794,7 +808,17 @@
         if (!document.getElementById('live2d-summary-style')) {
             const style = document.createElement('style');
             style.id = 'live2d-summary-style';
-            style.textContent = `@keyframes live2dSummaryFadeIn { from { opacity: 0; } to { opacity: 1; } }`;
+            style.textContent = `
+                 @keyframes live2dSummaryFadeIn { from { opacity: 0; } to { opacity: 1; } }
+                 .summary-ai-panel::-webkit-scrollbar { width: 6px; }
+                 .summary-ai-panel::-webkit-scrollbar-track { background: ${isDark ? '#0e0e24' : '#eee'}; border-radius: 3px; }
+                 .summary-ai-panel::-webkit-scrollbar-thumb { background: ${isDark ? '#3a3a5c' : '#ccc'}; border-radius: 3px; }
+                 .summary-ai-panel::-webkit-scrollbar-thumb:hover { background: ${isDark ? '#5a5a7c' : '#aaa'}; }
+                 .summary-textarea::-webkit-scrollbar { width: 6px; }
+                 .summary-textarea::-webkit-scrollbar-track { background: ${isDark ? '#0e0e24' : '#eee'}; border-radius: 3px; }
+                 .summary-textarea::-webkit-scrollbar-thumb { background: ${isDark ? '#3a3a5c' : '#ccc'}; border-radius: 3px; }
+                 .summary-textarea::-webkit-scrollbar-thumb:hover { background: ${isDark ? '#5a5a7c' : '#aaa'}; }
+             `;
             document.head.appendChild(style);
         }
     }
