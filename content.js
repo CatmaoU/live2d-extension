@@ -410,6 +410,22 @@
     // 页面总结功能（带缓存）
     let __lastSummaryResult = null;
     let __lastPageContent = '';
+    let __lastPageParagraphs = []; // [{text, element}] DOM 段落索引
+
+    // 构建 DOM 段落索引：遍历所有文本节点，收集非空段落
+    function buildPageParagraphs() {
+        var result = [];
+        var walker = document.createTreeWalker(document.body, 4, null, false);
+        var node;
+        while (node = walker.nextNode()) {
+            var text = node.textContent.trim();
+            if (text) {
+                result.push({ text: text, element: node });
+            }
+        }
+        __lastPageParagraphs = result;
+        return result;
+    }
 
     function triggerPageSummary() {
         // 如果有缓存，直接显示弹窗，不重新调用 API
@@ -417,8 +433,11 @@
             showSummaryModal(__lastSummaryResult);
             return;
         }
+        // 构建 DOM 段落索引（用于后续 @§ 跳转）
+        buildPageParagraphs();
+        
         // 获取页面文本内容
-        let pageText = document.body.innerText || '';
+        let pageText = __lastPageParagraphs.map(function(p) { return p.text; }).join('\n');
         if (pageText.length > 8000) {
             pageText = pageText.substring(0, 8000) + '\n...（内容过长已截断）';
         }
@@ -590,6 +609,7 @@
         refreshBtn.addEventListener('click', function() {
             __lastSummaryResult = null;
             __lastPageContent = '';
+            __lastPageParagraphs = [];
             summaryModalTextarea.value = '正在重新总结喵~';
             if (summaryModalAIPanel) summaryModalAIPanel.innerHTML = '';
             let freshPageText = document.body.innerText || '';
@@ -950,78 +970,49 @@
         return container;
     }
 
-    // 跳转到页面上包含指定文本的位置
+    // 跳转到页面上对应的段落（基于 DOM 段落索引）
     function scrollToPageText(paragraphId) {
         hideSummaryModal();
         
-        var fullText = __lastPageContent || document.body.innerText || '';
-        var paragraphs = fullText.split('\n').filter(function(p) { return p.trim(); });
         var idx = parseInt(paragraphId, 10) - 1;
-        if (idx < 0 || idx >= paragraphs.length) return;
+        if (idx < 0 || idx >= __lastPageParagraphs.length) return;
         
-        var targetText = paragraphs[idx].trim();
-        if (targetText.length > 60) targetText = targetText.substring(0, 60);
+        var para = __lastPageParagraphs[idx];
+        if (!para || !para.element) return;
         
-        // 第1种方法：用 TreeWalker 直接找到文本节点并 scrollIntoView
-        var walker = document.createTreeWalker(document.body, 4, null, false);
-        var node;
-        while (node = walker.nextNode()) {
-            if (node.textContent.trim().indexOf(targetText.substring(0, 30)) !== -1) {
-                // 先滚动到该节点
-                node.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // 再选中并高亮
-                try {
-                    var range = document.createRange();
-                    range.selectNodeContents(node);
-                    var sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                    // 高亮闪烁
-                    var hlSpan = document.createElement('span');
-                    hlSpan.style.cssText = 'background:#667eea;color:#fff;padding:1px 3px;border-radius:2px;transition:background 2s,color 2s;';
-                    try {
-                        range.surroundContents(hlSpan);
-                        setTimeout(function() {
-                            hlSpan.style.background = 'transparent';
-                            hlSpan.style.color = 'inherit';
-                        }, 2000);
-                    } catch(e) {}
-                } catch(e) {}
-                return;
-            }
+        // 找到块级父元素用于滚动和高亮
+        var el = para.element;
+        if (el.nodeType === 3) el = el.parentElement;
+        while (el && el !== document.body && el.tagName !== 'P' && el.tagName !== 'DIV' && el.tagName !== 'LI' && el.tagName !== 'H1' && el.tagName !== 'H2' && el.tagName !== 'H3' && el.tagName !== 'H4' && el.tagName !== 'SECTION' && el.tagName !== 'ARTICLE') {
+            el = el.parentElement;
         }
+        if (!el || el === document.body) el = para.element.parentElement || document.body;
         
-        // 第2种方法：用 window.find + 手动滚动
+        // 滚动到该元素
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // 用闪烁边框代替 DOM 结构修改
+        var origOutline = el.style.outline;
+        var origOutlineOffset = el.style.outlineOffset;
+        el.style.outline = '3px solid #667eea';
+        el.style.outlineOffset = '2px';
+        el.style.transition = 'outline 3s ease, outline-offset 3s ease';
+        setTimeout(function() {
+            el.style.outline = origOutline || '';
+            el.style.outlineOffset = origOutlineOffset || '';
+        }, 3000);
+        
+        // 同时用 Range 选中文本（浏览器原生高亮）
         try {
-            if (window.find(targetText, false, false, true)) {
-                var sel = window.getSelection();
-                if (sel && sel.rangeCount > 0) {
-                    var range = sel.getRangeAt(0);
-                    // 滚动到选中区域
-                    var textNode = range.startContainer;
-                    if (textNode.nodeType === 3) { // text node
-                        // 用父元素滚动
-                        var parentEl = textNode.parentElement;
-                        if (parentEl) {
-                            // 尝试找到最近的可滚动容器
-                            var scrollTarget = parentEl;
-                            // 确保滚动
-                            scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                    }
-                    // 高亮
-                    var hlSpan = document.createElement('span');
-                    hlSpan.style.cssText = 'background:#667eea;color:#fff;padding:1px 3px;border-radius:2px;transition:background 2s,color 2s;';
-                    try {
-                        range.surroundContents(hlSpan);
-                        setTimeout(function() {
-                            hlSpan.style.background = 'transparent';
-                            hlSpan.style.color = 'inherit';
-                        }, 2000);
-                    } catch(e) {}
-                }
-            }
+            var range = document.createRange();
+            range.selectNodeContents(para.element);
+            var sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
         } catch(e) {}
+        
+        // 聚焦到段落
+        try { el.focus({ preventScroll: true }); } catch(e) {}
     }
 
     // ─── 按键绑定系统 ───
