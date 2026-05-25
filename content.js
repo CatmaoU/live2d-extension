@@ -832,7 +832,7 @@
                 // 显示问题和回答
                 const qDiv = document.createElement('div');
                 qDiv.style.cssText = 'color:#667eea;font-weight:600;margin-bottom:6px;font-size:13px;';
-                qDiv.textContent = '🙋 ' + question;
+                qDiv.textContent = '> ' + question;
                 summaryModalAIPanel.appendChild(qDiv);
                 const aDiv = document.createElement('div');
                 aDiv.textContent = answer;
