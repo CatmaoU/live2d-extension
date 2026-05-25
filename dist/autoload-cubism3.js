@@ -1843,11 +1843,11 @@
                 try {
                     var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
                     return {
-                        enabled: s.dailyImageEnabled !== false, // 默认开启
+                        enabled: s.dailyImageEnabled === true, // 默认关闭
                         customApi: !!s.dailyImageCustomApi,
                         apiList: s.dailyImageApiList || [{ url: 'https://api.yppp.net/api.php', enabled: true }, { url: '', enabled: false }]
                     };
-                } catch(e) { return { enabled: true, customApi: false, apiList: [{ url: 'https://api.yppp.net/api.php', enabled: true }] }; }
+                } catch(e) { return { enabled: false, customApi: false, apiList: [{ url: 'https://api.yppp.net/api.php', enabled: true }] }; }
             }
 
             // 获取图片 URL 并显示
@@ -1921,7 +1921,7 @@
                 _dailyImageFetching = false;
             }
 
-            // 初始化每日一图定时器（每 5 分钟刷新一次，仅当用户手动触发后才开始轮询）
+            // 初始化每日一图定时器（每 5 分钟刷新一次）
             var dailyImageTimer = null;
             function initDailyImage() {
                 if (dailyImageTimer) {
@@ -1930,14 +1930,7 @@
                 }
                 var settings = getDailyImageSettings();
                 if (settings.enabled) {
-                    // 只设置定时器，不自动触发（用户手动触发后开始轮询）
                     dailyImageTimer = setInterval(fetchAndShowDailyImage, 5 * 60 * 1000);
-                } else {
-                    // 10 秒后重试（解决启动时设置尚未同步的问题）
-                    setTimeout(function() {
-                        var s = getDailyImageSettings();
-                        if (s.enabled) initDailyImage();
-                    }, 10000);
                 }
             }
 
