@@ -2635,6 +2635,26 @@
                 }
             });
 
+            // 页面总结问答：监听来自 content.js 的提问
+            window.addEventListener('live2dPageSummaryQuestion', async function(e) {
+                const question = e.detail?.question || '';
+                const summary = e.detail?.summary || '';
+                if (!question || !summary) return;
+                showTips('正在思考喵~');
+                try {
+                    const prompt = '基于以下页面总结回答用户的问题。\n\n请用中文回答，详细、清晰。如果问题涉及的内容不在总结中，请说明。\n\n页面总结：\n' + summary + '\n\n用户问题：\n' + question;
+                    const response = await window.Live2DAI.getAIResponse(prompt);
+                    window.dispatchEvent(new CustomEvent('live2dPageSummaryAnswer', {
+                        detail: { answer: response }
+                    }));
+                } catch (error) {
+                    console.error('[Live2D Page Summary] Q&A API error:', error);
+                    window.dispatchEvent(new CustomEvent('live2dPageSummaryAnswer', {
+                        detail: { answer: 'AI 回答失败喵～' + (error.message || '请稍后再试') }
+                    }));
+                }
+            });
+
             // 接收来自 content.js 的提示显示请求
             window.addEventListener('live2dShowTips', function(e) {
                 const text = e.detail?.text || '';

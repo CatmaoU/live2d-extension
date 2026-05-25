@@ -448,6 +448,10 @@
     let __isSummaryResizing = false;
     let __summaryBtnTheme = { btnBg: '#fff', btnColor: '#667eea', isDark: false };
 
+    let summaryModalAIPanel = null;
+    let summaryModalQuestionInput = null;
+    let summaryModalSendBtn = null;
+
     function showSummaryModal(summaryText) {
         const isDark = isDarkMode();
         const theme = {
@@ -462,45 +466,58 @@
             footerBorder: isDark ? '#333' : '#eee',
             btnBg: isDark ? '#2a2a4e' : '#fff',
             btnColor: '#667eea',
+            aiPanelBg: isDark ? '#12122a' : '#fafafa',
+            aiPanelColor: isDark ? '#ccc' : '#555',
+            inputBg: isDark ? '#0e0e24' : '#f5f5f5',
+            inputColor: isDark ? '#ddd' : '#333',
+            sendBtnBg: '#667eea',
+            sendBtnColor: '#fff',
         };
         
-        // 更新共享按钮主题（用于 hover 事件）
         __summaryBtnTheme = { btnBg: theme.btnBg, btnColor: theme.btnColor, isDark };
 
-        // 如果弹窗已存在，直接显示并更新主题
-        if (summaryModalOverlay) {
-            summaryModalTextarea.value = summaryText;
+        // 辅助函数：更新已有弹窗主题
+        function updateExistingTheme() {
             summaryModalOverlay.style.background = theme.overlayBg;
-            // 恢复保存的大小
+            const box = document.getElementById('live2d-summary-box');
+            if (!box) return;
             const savedW = localStorage.getItem('live2dSummaryWidth');
             const savedH = localStorage.getItem('live2dSummaryHeight');
-            const box = document.getElementById('live2d-summary-box');
-            if (box) {
-                if (savedW) box.style.width = savedW + 'px';
-                if (savedH) box.style.height = savedH + 'px';
-                box.style.background = theme.boxBg;
-                box.style.boxShadow = theme.boxShadow;
-                // 更新子元素主题
-                const hdr = box.querySelector('.summary-header');
-                if (hdr) { hdr.style.color = theme.headerColor; hdr.style.borderBottomColor = theme.borderColor; }
-                const ta = box.querySelector('.summary-textarea');
-                if (ta) { ta.style.background = theme.textareaBg; ta.style.color = theme.textareaColor; }
-                const ftr = box.querySelector('.summary-footer');
-                if (ftr) { ftr.style.color = theme.footerColor; ftr.style.borderTopColor = theme.footerBorder; }
-                // 更新按钮主题
-                __summaryBtnTheme = { btnBg: theme.btnBg, btnColor: theme.btnColor, isDark };
-                const rBtn = box.querySelector('.summary-btn-refresh');
-                if (rBtn) { rBtn.style.background = theme.btnBg; rBtn.style.color = theme.btnColor; rBtn.style.borderColor = theme.btnColor; }
-                const cBtn = box.querySelector('.summary-btn-copy');
-                if (cBtn) { cBtn.style.background = theme.btnBg; cBtn.style.color = theme.btnColor; cBtn.style.borderColor = theme.btnColor; }
-                const xBtn = box.querySelector('.summary-btn-close');
-                if (xBtn) { xBtn.style.background = isDark ? '#3a3a5c' : '#f0f0f0'; xBtn.style.color = isDark ? '#ccc' : '#666'; }
-            }
+            if (savedW) box.style.width = savedW + 'px';
+            if (savedH) box.style.height = savedH + 'px';
+            box.style.background = theme.boxBg;
+            box.style.boxShadow = theme.boxShadow;
+            const hdr = box.querySelector('.summary-header');
+            if (hdr) { hdr.style.color = theme.headerColor; hdr.style.borderBottomColor = theme.borderColor; }
+            const ta = box.querySelector('.summary-textarea');
+            if (ta) { ta.style.background = theme.textareaBg; ta.style.color = theme.textareaColor; }
+            const aiPanel = box.querySelector('.summary-ai-panel');
+            if (aiPanel) { aiPanel.style.background = theme.aiPanelBg; aiPanel.style.color = theme.aiPanelColor; aiPanel.style.borderRightColor = theme.borderColor; }
+            const inp = box.querySelector('.summary-question-input');
+            if (inp) { inp.style.background = theme.inputBg; inp.style.color = theme.inputColor; }
+            const ftr = box.querySelector('.summary-footer');
+            if (ftr) { ftr.style.borderTopColor = theme.footerBorder; }
+            __summaryBtnTheme = { btnBg: theme.btnBg, btnColor: theme.btnColor, isDark };
+            ['.summary-btn-refresh','.summary-btn-copy'].forEach(cls => {
+                const el = box.querySelector(cls);
+                if (el) { el.style.background = theme.btnBg; el.style.color = theme.btnColor; el.style.borderColor = theme.btnColor; }
+            });
+            const xBtn = box.querySelector('.summary-btn-close');
+            if (xBtn) { xBtn.style.background = isDark ? '#3a3a5c' : '#f0f0f0'; xBtn.style.color = isDark ? '#ccc' : '#666'; }
             summaryModalOverlay.style.display = 'flex';
+        }
+
+        if (summaryModalOverlay) {
+            summaryModalTextarea.value = summaryText;
+            // 清空 AI 面板
+            if (summaryModalAIPanel) {
+                summaryModalAIPanel.innerHTML = '';
+            }
+            updateExistingTheme();
             return;
         }
         
-        // 创建遮罩层
+        // 遮罩层
         summaryModalOverlay = document.createElement('div');
         summaryModalOverlay.id = 'live2d-summary-overlay';
         summaryModalOverlay.style.cssText = `
@@ -513,20 +530,13 @@
             justify-content: center;
             animation: live2dSummaryFadeIn 0.2s ease;
         `;
-        
-        // 点击遮罩层关闭
         summaryModalOverlay.addEventListener('click', function(e) {
-            if (__isSummaryResizing) {
-                __isSummaryResizing = false;
-                return;
-            }
-            if (e.target === summaryModalOverlay) {
-                hideSummaryModal();
-            }
+            if (__isSummaryResizing) { __isSummaryResizing = false; return; }
+            if (e.target === summaryModalOverlay) hideSummaryModal();
         });
         
-        // 弹窗容器（读取保存的大小）
-        const savedWidth = localStorage.getItem('live2dSummaryWidth') || '700';
+        // 弹窗容器
+        const savedWidth = localStorage.getItem('live2dSummaryWidth') || '780';
         const savedHeight = localStorage.getItem('live2dSummaryHeight') || '';
         const modalBox = document.createElement('div');
         modalBox.id = 'live2d-summary-box';
@@ -534,7 +544,7 @@
             background: ${theme.boxBg};
             border-radius: 12px;
             width: ${savedWidth}px;
-            ${savedHeight ? 'height: ' + savedHeight + 'px;' : 'min-height: 300px; max-height: 80vh;'}
+            ${savedHeight ? 'height: ' + savedHeight + 'px;' : 'min-height: 360px; max-height: 85vh;'}
             display: flex;
             flex-direction: column;
             box-shadow: ${theme.boxShadow};
@@ -545,100 +555,46 @@
         // 标题栏
         const header = document.createElement('div');
         header.className = 'summary-header';
-        header.style.cssText = `
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 20px;
-            border-bottom: 1px solid ${theme.borderColor};
-            font-size: 15px;
-            font-weight: 600;
-            color: ${theme.headerColor};
-        `;
+        header.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid ${theme.borderColor};font-size:15px;font-weight:600;color:${theme.headerColor};flex-shrink:0;`;
         header.innerHTML = '<span>页面总结</span>';
         
-        // 按钮组
         const btnGroup = document.createElement('div');
-        btnGroup.style.cssText = 'display: flex; gap: 8px;';
+        btnGroup.style.cssText = 'display:flex;gap:6px;';
         
-        // 刷新按钮（重新总结）
         const refreshBtn = document.createElement('button');
         refreshBtn.className = 'summary-btn-refresh';
         refreshBtn.textContent = '刷新';
-        refreshBtn.style.cssText = `
-            padding: 6px 14px;
-            background: ${theme.btnBg};
-            color: ${theme.btnColor};
-            border: 1px solid ${theme.btnColor};
-            border-radius: 6px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-        `;
+        refreshBtn.style.cssText = `padding:5px 12px;background:${theme.btnBg};color:${theme.btnColor};border:1px solid ${theme.btnColor};border-radius:6px;font-size:12px;cursor:pointer;transition:background 0.2s,color 0.2s;`;
         refreshBtn.addEventListener('mouseenter', () => { refreshBtn.style.background = __summaryBtnTheme.btnColor; refreshBtn.style.color = '#fff'; });
         refreshBtn.addEventListener('mouseleave', () => { refreshBtn.style.background = __summaryBtnTheme.btnBg; refreshBtn.style.color = __summaryBtnTheme.btnColor; });
         refreshBtn.addEventListener('click', function() {
-            // 清缓存，更新 textarea 内容，获取最新页面内容重新总结
             __lastSummaryResult = null;
             summaryModalTextarea.value = '正在重新总结喵~';
+            if (summaryModalAIPanel) summaryModalAIPanel.innerHTML = '';
             let freshPageText = document.body.innerText || '';
-            if (freshPageText.length > 8000) {
-                freshPageText = freshPageText.substring(0, 8000) + '\n...（内容过长已截断）';
-            }
-            const event = new CustomEvent('live2dPageSummary', {
-                detail: { pageContent: freshPageText }
-            });
-            window.dispatchEvent(event);
+            if (freshPageText.length > 8000) freshPageText = freshPageText.substring(0, 8000) + '\n...（内容过长已截断）';
+            window.dispatchEvent(new CustomEvent('live2dPageSummary', { detail: { pageContent: freshPageText } }));
         });
         
         const copyBtn = document.createElement('button');
         copyBtn.className = 'summary-btn-copy';
         copyBtn.textContent = '复制';
-        copyBtn.style.cssText = `
-            padding: 6px 14px;
-            background: ${theme.btnBg};
-            color: ${theme.btnColor};
-            border: 1px solid ${theme.btnColor};
-            border-radius: 6px;
-            font-size: 13px;
-            cursor: pointer;
-            transition: background 0.2s, color 0.2s;
-        `;
+        copyBtn.style.cssText = `padding:5px 12px;background:${theme.btnBg};color:${theme.btnColor};border:1px solid ${theme.btnColor};border-radius:6px;font-size:12px;cursor:pointer;transition:background 0.2s,color 0.2s;`;
         copyBtn.addEventListener('mouseenter', () => { copyBtn.style.background = __summaryBtnTheme.btnColor; copyBtn.style.color = '#fff'; });
         copyBtn.addEventListener('mouseleave', () => { copyBtn.style.background = __summaryBtnTheme.btnBg; copyBtn.style.color = __summaryBtnTheme.btnColor; });
         copyBtn.addEventListener('click', async function() {
-            try {
-                await navigator.clipboard.writeText(summaryModalTextarea.value);
-                copyBtn.textContent = '✅ 已复制';
-                setTimeout(() => { copyBtn.textContent = '复制'; }, 2000);
-            } catch (e) {
-                // Fallback
-                const ta = document.createElement('textarea');
-                ta.value = summaryModalTextarea.value;
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-                copyBtn.textContent = '✅ 已复制';
-                setTimeout(() => { copyBtn.textContent = '复制'; }, 2000);
+            try { await navigator.clipboard.writeText(summaryModalTextarea.value); } catch(e) {
+                const ta = document.createElement('textarea'); ta.value = summaryModalTextarea.value; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
             }
+            copyBtn.textContent = '✅ 已复制'; setTimeout(() => copyBtn.textContent = '复制', 2000);
         });
         
         const closeBtn = document.createElement('button');
         closeBtn.className = 'summary-btn-close';
         closeBtn.textContent = '✕';
-        closeBtn.style.cssText = `
-            padding: 6px 12px;
-            background: ${isDark ? '#3a3a5c' : '#f0f0f0'};
-            color: ${isDark ? '#ccc' : '#666'};
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: background 0.2s;
-        `;
-        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = __summaryBtnTheme.isDark ? '#4a4a6c' : '#e0e0e0'; });
-        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = __summaryBtnTheme.isDark ? '#3a3a5c' : '#f0f0f0'; });
+        closeBtn.style.cssText = `padding:5px 10px;background:${isDark?'#3a3a5c':'#f0f0f0'};color:${isDark?'#ccc':'#666'};border:none;border-radius:6px;font-size:13px;cursor:pointer;transition:background 0.2s;`;
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.background = isDark ? '#4a4a6c' : '#e0e0e0'; });
+        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.background = isDark ? '#3a3a5c' : '#f0f0f0'; });
         closeBtn.addEventListener('click', hideSummaryModal);
         
         btnGroup.appendChild(refreshBtn);
@@ -647,14 +603,48 @@
         header.appendChild(btnGroup);
         modalBox.appendChild(header);
         
-        // 可编辑内容区域
+        // ===== 内容区域：左侧 AI 回复框 + 右侧总结 =====
+        const contentRow = document.createElement('div');
+        contentRow.style.cssText = `
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        `;
+        
+        // 左侧 AI 回复框
+        const aiPanel = document.createElement('div');
+        aiPanel.className = 'summary-ai-panel';
+        summaryModalAIPanel = aiPanel;
+        aiPanel.style.cssText = `
+            width: 40%;
+            min-width: 180px;
+            background: ${theme.aiPanelBg};
+            color: ${theme.aiPanelColor};
+            border-right: 1px solid ${theme.borderColor};
+            padding: 12px 14px;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-y: auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            white-space: pre-wrap;
+            word-break: break-word;
+        `;
+        // AI 面板提示文字
+        const aiPlaceholder = document.createElement('div');
+        aiPlaceholder.id = 'summary-ai-placeholder';
+        aiPlaceholder.style.cssText = 'color:' + (isDark ? '#555' : '#bbb') + ';text-align:center;margin-top:40%;font-size:13px;';
+        aiPlaceholder.textContent = '在下方输入框提问\n即可询问关于总结的详细内容喵~';
+        aiPanel.appendChild(aiPlaceholder);
+        
+        // 右侧总结 textarea
         summaryModalTextarea = document.createElement('textarea');
         summaryModalTextarea.className = 'summary-textarea';
         summaryModalTextarea.value = summaryText;
         summaryModalTextarea.style.cssText = `
             flex: 1;
-            min-height: 200px;
-            padding: 16px 20px;
+            min-width: 200px;
+            padding: 14px 18px;
             border: none;
             outline: none;
             font-size: 14px;
@@ -664,60 +654,99 @@
             resize: none;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         `;
-        modalBox.appendChild(summaryModalTextarea);
         
-        // 底部提示
-        const footer = document.createElement('div');
-        footer.className = 'summary-footer';
-        footer.style.cssText = `
-            padding: 8px 20px;
+        contentRow.appendChild(aiPanel);
+        contentRow.appendChild(summaryModalTextarea);
+        modalBox.appendChild(contentRow);
+        
+        // ===== 底部：输入框 + 发送按钮 =====
+        const inputRow = document.createElement('div');
+        inputRow.className = 'summary-footer';
+        inputRow.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
             border-top: 1px solid ${theme.footerBorder};
-            font-size: 12px;
-            color: ${theme.footerColor};
-            text-align: center;
+            flex-shrink: 0;
         `;
-        footer.textContent = '内容可编辑修改 · 点击空白处关闭';
-        modalBox.appendChild(footer);
+        
+        const questionInput = document.createElement('input');
+        questionInput.className = 'summary-question-input';
+        summaryModalQuestionInput = questionInput;
+        questionInput.type = 'text';
+        questionInput.placeholder = '询问总结的详细内容...';
+        questionInput.style.cssText = `
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid ${theme.borderColor};
+            border-radius: 6px;
+            font-size: 13px;
+            background: ${theme.inputBg};
+            color: ${theme.inputColor};
+            outline: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        `;
+        questionInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendSummaryQuestion();
+            }
+        });
+        
+        const sendBtn = document.createElement('button');
+        sendBtn.className = 'summary-send-btn';
+        summaryModalSendBtn = sendBtn;
+        sendBtn.textContent = '发送';
+        sendBtn.style.cssText = `
+            padding: 8px 18px;
+            background: ${theme.sendBtnBg};
+            color: ${theme.sendBtnColor};
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+        `;
+        sendBtn.addEventListener('mouseenter', () => sendBtn.style.opacity = '0.85');
+        sendBtn.addEventListener('mouseleave', () => sendBtn.style.opacity = '1');
+        sendBtn.addEventListener('click', sendSummaryQuestion);
+        
+        // 加载指示器
+        const loadingDots = document.createElement('span');
+        loadingDots.id = 'summary-loading';
+        loadingDots.style.cssText = 'display:none;font-size:12px;color:' + (isDark ? '#888' : '#999') + ';';
+        loadingDots.textContent = 'AI 思考中...';
+        
+        inputRow.appendChild(questionInput);
+        inputRow.appendChild(sendBtn);
+        inputRow.appendChild(loadingDots);
+        modalBox.appendChild(inputRow);
 
         // 拖拽缩放手柄
         const resizeHandle = document.createElement('div');
-        resizeHandle.style.cssText = `
-            position: absolute;
-            right: 0;
-            bottom: 0;
-            width: 20px;
-            height: 20px;
-            cursor: nwse-resize;
-            z-index: 10;
-        `;
-        // 右下角三角形图标
+        resizeHandle.style.cssText = `position:absolute;right:0;bottom:0;width:20px;height:20px;cursor:nwse-resize;z-index:10;`;
         resizeHandle.innerHTML = '<svg width="12" height="12" viewBox="0 0 12 12" style="position:absolute;right:3px;bottom:3px;"><path d="M0 12 L12 12 L12 0" fill="none" stroke="#bbb" stroke-width="2"/></svg>';
         modalBox.appendChild(resizeHandle);
 
-        // 拖拽缩放逻辑
         let isResizing = false;
         resizeHandle.addEventListener('mousedown', function(e) {
             isResizing = true;
             __isSummaryResizing = true;
-            e.preventDefault();
-            e.stopPropagation();
-            const startX = e.clientX;
-            const startY = e.clientY;
-            const startW = modalBox.offsetWidth;
-            const startH = modalBox.offsetHeight;
-
+            e.preventDefault(); e.stopPropagation();
+            const startX = e.clientX, startY = e.clientY;
+            const startW = modalBox.offsetWidth, startH = modalBox.offsetHeight;
             function onMouseMove(ev) {
                 if (!isResizing) return;
-                const newW = Math.max(350, startW + (ev.clientX - startX));
-                const newH = Math.max(250, startH + (ev.clientY - startY));
-                modalBox.style.width = newW + 'px';
-                modalBox.style.height = newH + 'px';
+                modalBox.style.width = Math.max(350, startW + (ev.clientX - startX)) + 'px';
+                modalBox.style.height = Math.max(250, startH + (ev.clientY - startY)) + 'px';
             }
             function onMouseUp(ev) {
                 isResizing = false;
                 document.removeEventListener('mousemove', onMouseMove);
                 document.removeEventListener('mouseup', onMouseUp);
-                // 保存大小
                 localStorage.setItem('live2dSummaryWidth', Math.round(modalBox.offsetWidth));
                 localStorage.setItem('live2dSummaryHeight', Math.round(modalBox.offsetHeight));
             }
@@ -728,18 +757,88 @@
         summaryModalOverlay.appendChild(modalBox);
         document.body.appendChild(summaryModalOverlay);
         
-        // 添加淡入动画样式
+        // 淡入动画
         if (!document.getElementById('live2d-summary-style')) {
             const style = document.createElement('style');
             style.id = 'live2d-summary-style';
-            style.textContent = `
-                @keyframes live2dSummaryFadeIn {
-                    from { opacity: 0; }
-                    to { opacity: 1; }
-                }
-            `;
+            style.textContent = `@keyframes live2dSummaryFadeIn { from { opacity: 0; } to { opacity: 1; } }`;
             document.head.appendChild(style);
         }
+
+        // 监听 AI 回复
+        window.addEventListener('live2dPageSummaryAnswer', function _qaHandler(e) {
+            const answer = e.detail?.answer || '';
+            if (!answer) return;
+            if (summaryModalAIPanel) {
+                const ph = document.getElementById('summary-ai-placeholder');
+                if (ph) ph.style.display = 'none';
+                summaryModalAIPanel.innerHTML = answer;
+            }
+            const loading = document.getElementById('summary-loading');
+            if (loading) loading.style.display = 'none';
+            if (summaryModalSendBtn) { summaryModalSendBtn.disabled = false; summaryModalSendBtn.textContent = '发送'; }
+            if (summaryModalQuestionInput) summaryModalQuestionInput.disabled = false;
+        });
+    }
+
+    // 发送总结相关问题
+    function sendSummaryQuestion() {
+        if (!summaryModalQuestionInput || !summaryModalSendBtn) return;
+        const question = summaryModalQuestionInput.value.trim();
+        if (!question) return;
+        const summary = summaryModalTextarea.value;
+        if (!summary) return;
+        
+        // 显示加载状态
+        summaryModalSendBtn.disabled = true;
+        summaryModalSendBtn.textContent = '发送中...';
+        summaryModalQuestionInput.disabled = true;
+        const loading = document.getElementById('summary-loading');
+        if (loading) loading.style.display = 'inline';
+        if (summaryModalAIPanel) {
+            const ph = document.getElementById('summary-ai-placeholder');
+            if (ph) ph.style.display = 'none';
+            summaryModalAIPanel.textContent = 'AI 思考中...';
+        }
+        
+        // 清除旧监听，避免重复
+        const oldListeners = window._summaryQAHandlers || [];
+        oldListeners.forEach(fn => window.removeEventListener('live2dPageSummaryAnswer', fn));
+        window._summaryQAHandlers = [];
+        
+        const handler = function(e) {
+            const answer = e.detail?.answer || '';
+            if (!answer) return;
+            if (summaryModalAIPanel) {
+                const ph = document.getElementById('summary-ai-placeholder');
+                if (ph) ph.style.display = 'none';
+                summaryModalAIPanel.innerHTML = '';
+                // 显示问题和回答
+                const qDiv = document.createElement('div');
+                qDiv.style.cssText = 'color:#667eea;font-weight:600;margin-bottom:6px;font-size:13px;';
+                qDiv.textContent = '🙋 ' + question;
+                summaryModalAIPanel.appendChild(qDiv);
+                const aDiv = document.createElement('div');
+                aDiv.textContent = answer;
+                summaryModalAIPanel.appendChild(aDiv);
+            }
+            const loading = document.getElementById('summary-loading');
+            if (loading) loading.style.display = 'none';
+            if (summaryModalSendBtn) { summaryModalSendBtn.disabled = false; summaryModalSendBtn.textContent = '发送'; }
+            if (summaryModalQuestionInput) summaryModalQuestionInput.disabled = false;
+            // 清空输入框
+            summaryModalQuestionInput.value = '';
+            window.removeEventListener('live2dPageSummaryAnswer', handler);
+            const idx = window._summaryQAHandlers.indexOf(handler);
+            if (idx > -1) window._summaryQAHandlers.splice(idx, 1);
+        };
+        window._summaryQAHandlers.push(handler);
+        window.addEventListener('live2dPageSummaryAnswer', handler);
+        
+        // 发送事件给 AI
+        window.dispatchEvent(new CustomEvent('live2dPageSummaryQuestion', {
+            detail: { question: question, summary: summary }
+        }));
     }
 
     function hideSummaryModal() {
