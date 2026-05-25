@@ -57,7 +57,7 @@ live2d-widget-extension/
 ### v1.0.4-beta-2
 - 修复 Cubism2 本地模型加载问题（兼容-这玩意太老了准备舍弃）
 - 修复 settingsData 变量作用域问题
-- 在 lemon-tab 默认图标配置中添加 GitHub 和 UAPI 图标
+- 在 lemon-tab 默认图标配置中添加部分默认图标
 
 ### v1.0.4-beta-1
 - AI 聊天功能完善，支持 DeepSeek 和硅基流动 API
