@@ -1921,23 +1921,7 @@
                 _dailyImageFetching = false;
             }
 
-            // 初始化每日一图定时器（每 5 分钟刷新一次）
-            var dailyImageTimer = null;
-            function initDailyImage() {
-                if (dailyImageTimer) {
-                    clearInterval(dailyImageTimer);
-                    dailyImageTimer = null;
-                }
-                var settings = getDailyImageSettings();
-                if (settings.enabled) {
-                    dailyImageTimer = setInterval(fetchAndShowDailyImage, 5 * 60 * 1000);
-                }
-            }
-
-            // 监听每日一图设置变更
-            window.addEventListener('live2dUpdateSettings', function() {
-                initDailyImage();
-            });
+            // 每日一图已无自动轮询，仅由快捷键和关键词触发
 
             async function waitForSettings(timeout = 3000) {
                 const start = Date.now();
@@ -2849,9 +2833,6 @@
                         showTips(text);
                     });
                 }, 2000);
-
-                // 初始化每日一图
-                initDailyImage();
 
                 preCacheHitokoto();
                 
