@@ -983,9 +983,12 @@ async function checkGitHubUpdate() {
 }
 
 // 版本号比较（返回 1: a>b, 0: a=b, -1: a<b）
+// 自动忽略 pre-release 后缀（如 -beta.2、-alpha.1），只比较纯数字部分
 function compareVersions(a, b) {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
+  // 去掉 pre-release 后缀（-xxx）只保留数字部分
+  const clean = function(v) { return v.replace(/-.*$/, ''); };
+  const pa = clean(a).split('.').map(Number);
+  const pb = clean(b).split('.').map(Number);
   for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
     const na = pa[i] || 0;
     const nb = pb[i] || 0;
