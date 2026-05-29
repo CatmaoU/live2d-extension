@@ -3451,11 +3451,21 @@
     // 监听拖拽状态更新事件
     window.addEventListener('live2dUpdateDrag', function(event) {
         console.log('[Live2D Cubism3] Received drag update:', event.detail);
-        
         if (currentWaifuElement) {
-            // 重新调用 enableDragging 来更新拖拽状态
             enableDragging(currentWaifuElement, event.detail.drag);
         }
+    });
+    
+    // 监听拖拽限位更新事件
+    window.addEventListener('live2dUpdateDragLimit', function(event) {
+        console.log('[Live2D Cubism3] Received drag limit update:', event.detail);
+        // 更新 localStorage
+        try {
+            var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+            s.dragLimit = event.detail.dragLimit;
+            localStorage.setItem('live2dExtensionSettings', JSON.stringify(s));
+        } catch(e) {}
+        // 限位由 mousemove 实时读取 localStorage，无需额外操作
     });
     
     // ================================================
