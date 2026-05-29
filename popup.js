@@ -1883,23 +1883,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function updateMemoryUsage() {
     try {
-      var currentTabMemoryMB = 80;
-      var tabList = await tabs.query({ active: true, currentWindow: true });
-      if (tabList[0] && tabList[0].id) {
+      var allTabs = await tabs.query({});
+      var totalMemory = 0;
+      var tabCount = 0;
+
+      for (var ti = 0; ti < allTabs.length; ti++) {
         try {
           var resp = await new Promise(function(resolve, reject) {
-            browserAPI.tabs.sendMessage(tabList[0].id, { type: 'getMemoryUsage' }, function(r) {
+            browserAPI.tabs.sendMessage(allTabs[ti].id, { type: 'getMemoryUsage' }, function(r) {
               if (browserAPI.runtime.lastError) { reject(); } else { resolve(r); }
             });
           });
-          if (resp && resp.memoryMB) currentTabMemoryMB = resp.memoryMB;
+          if (resp && resp.memoryMB) { totalMemory += resp.memoryMB; tabCount++; }
         } catch(e) {}
       }
-      memoryUsageElement.textContent = `${currentTabMemoryMB.toFixed(1)} MB`;
-      var progressPercent = Math.min((currentTabMemoryMB / 300) * 100, 100);
+      
+      var avgMB = tabCount > 0 ? (totalMemory / tabCount) : 80;
+      memoryUsageElement.textContent = `${avgMB.toFixed(1)} MB`;
+      var progressPercent = Math.min((avgMB / 300) * 100, 100);
       updateProgressBar(progressPercent);
       await new Promise(function(r) { detectBrowserMemory(r); });
-      await updateBrowserMemory(currentTabMemoryMB);
+      await updateBrowserMemory(avgMB);
     } catch (e) {
       console.error('[Live2D Popup] Error getting memory:', e);
       memoryUsageElement.textContent = '错误';
