@@ -1935,44 +1935,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   async function updateBrowserMemory(currentTabMemoryMB) {
     try {
-      // 获取所有打开的标签页数量
-      const allTabs = await tabs.query({});
-      const activeTabsCount = allTabs.length;
-      
-      // 估算总内存：
-      // 当前标签页（运行中）+ 其他标签页（冻结或运行）
-      let totalPluginMemoryMB = 0;
-      
-      if (currentTabMemoryMB > 0) {
-        totalPluginMemoryMB = currentTabMemoryMB; // 当前标签页
-        
-        // 估算其他标签页
-        for (let i = 0; i < activeTabsCount - 1; i++) {
-          // 假设其他标签页约 50-80% 的内存（冻结状态更低）
-          totalPluginMemoryMB += currentTabMemoryMB * 0.6;
-        }
-        
-        // 加上扩展后台进程约 10-30MB
-        totalPluginMemoryMB += 20;
-      } else {
-        // 如果没有当前标签页的内存数据，使用默认估算
-        totalPluginMemoryMB = activeTabsCount * 60 + 20;
-      }
-      
-      browserMemoryUsageElement.textContent = `${totalPluginMemoryMB.toFixed(0)} MB`;
+      // 只显示当前标签页的实际内存占用（不估算其他标签页）
+      var displayMB = currentTabMemoryMB > 0 ? currentTabMemoryMB : 80;
+      browserMemoryUsageElement.textContent = `${displayMB.toFixed(0)} MB`;
       
       // 更新浏览器内存进度条
-      const browserProgressPercent = Math.min((totalPluginMemoryMB / browserTotalMemoryMB) * 100, 100);
+      const browserProgressPercent = Math.min((displayMB / browserTotalMemoryMB) * 100, 100);
       browserMemoryProgressBar.style.width = `${browserProgressPercent}%`;
       
-      // 计算插件占浏览器内存的百分比
-      const pluginPercent = (totalPluginMemoryMB / browserTotalMemoryMB) * 100;
+      // 计算占浏览器内存的百分比
+      const pluginPercent = (displayMB / browserTotalMemoryMB) * 100;
       pluginMemoryPercent.textContent = `${pluginPercent.toFixed(2)}%`;
       
       // 更新饼图
       updateMemoryPieChart(pluginPercent);
       
-      // 根据百分比调整颜色
       if (pluginPercent < 10) {
         pluginMemoryPercent.style.color = '#4CAF50';
       } else if (pluginPercent < 20) {
