@@ -1704,20 +1704,34 @@
         }
     } catch (e) {}
 
-    // 同步 freezeModelEnabled 和 freezeMode 设置到 localStorage（兼容旧版本）
+    // 同步 freezeModelEnabled 和 freezeMode 设置到 localStorage（优先读 chrome.storage）
     (function syncFreezeModelSetting() {
         try {
-            const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
-            if (settings.freezeModelEnabled === undefined) {
-                settings.freezeModelEnabled = true; // 默认开启
-            }
-            if (settings.freezeMode === undefined) {
-                settings.freezeMode = 'quick'; // 默认快速恢复
-            }
-            localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
-            console.log('[Live2D] Synced freeze settings, default:', { freezeModelEnabled: true, freezeMode: 'quick' });
+            // 先从 chrome.storage.local 读已保存的值
+            storage.get(['freezeModelEnabled', 'freezeMode'], function(stored) {
+                const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                if (stored.freezeModelEnabled !== undefined) {
+                    settings.freezeModelEnabled = stored.freezeModelEnabled;
+                } else if (settings.freezeModelEnabled === undefined) {
+                    settings.freezeModelEnabled = true; // 默认开启
+                }
+                if (stored.freezeMode !== undefined) {
+                    settings.freezeMode = stored.freezeMode;
+                } else if (settings.freezeMode === undefined) {
+                    settings.freezeMode = 'quick'; // 默认快速恢复
+                }
+                localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+                console.log('[Live2D] Synced freeze settings from chrome.storage:', stored);
+            });
         } catch (e) {
-            console.log('[Live2D] Could not sync freeze settings');
+            console.log('[Live2D] Could not sync freeze settings:', e);
+            // 回退到默认
+            try {
+                const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                if (settings.freezeModelEnabled === undefined) settings.freezeModelEnabled = true;
+                if (settings.freezeMode === undefined) settings.freezeMode = 'quick';
+                localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+            } catch(e2) {}
         }
     })();
 
@@ -3607,9 +3621,20 @@
     
     // 页面可见性监听器
     document.addEventListener('visibilitychange', function() {
-        // 检查是否开启了冻结功能
+        // 检查是否开启了冻结功能（同时查 localStorage 和 chrome.storage）
         var settingsData = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
         var freezeEnabled = settingsData.freezeModelEnabled !== false; // 默认开启
+        // 若 localStorage 没有值，尝试从 chrome.storage 读取
+        if (settingsData.freezeModelEnabled === undefined) {
+            try {
+                storage.get('freezeModelEnabled', function(val) {
+                    if (val.freezeModelEnabled === false) return; // 明确关了就不冻
+                    if (document.hidden) freezeLive2DModel();
+                    else unfreezeLive2DModel();
+                });
+                return; // 等回调处理
+            } catch(e) {}
+        }
         
         if (!freezeEnabled) {
             console.log('[Live2D] Freeze model disabled, skipping visibility change');

@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'localModel', 'cubism3Model', 'useCubism3', 'aiEnabled', 'aiApiKey', 'aiConnected',
     'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled',
     'selectedCursor', 'mouseCursorSize', 'theme', 'dragLimit', 'followSystemTheme',
-    'pageSummaryEnabled', 'freezeMode', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
+    'pageSummaryEnabled', 'freezeModelEnabled', 'freezeMode', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
     'positionAutoRefresh', 'atriApiKey',
     'dailyImageEnabled', 'dailyImageCustomApi', 'dailyImageApiList',
   ]);
