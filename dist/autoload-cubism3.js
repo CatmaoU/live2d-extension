@@ -3485,11 +3485,12 @@
     // ================================================
     
     let cubism3ModelFrozen = false;
+    let lastFreezeMode = 'quick';
     let cubism3AnimationFrameId = null;
-    let mirrorIntervalId = null; // 保存第1121行的setInterval
+    let mirrorIntervalId = null;
     let originalAutoQuoteTimer = null;
-    let originalModel = null; // 保存 Live2D 模型引用
-    let savedCubism3DisplayStates = {}; // 保存冻结前的显示状态
+    let originalModel = null;
+    let savedCubism3DisplayStates = {};
     
     // 保存原始的循环引用
     window.__cubism3Original = {
@@ -3505,6 +3506,7 @@
         
         console.log('[Live2D Cubism3] Freezing model for memory optimization, mode:', freezeMode);
         cubism3ModelFrozen = true;
+        lastFreezeMode = freezeMode;
         
         // 1. 保存当前显示状态并隐藏 UI 元素
         if (currentWaifuElement) {
@@ -3635,26 +3637,29 @@
             startAutoQuote();
         }
         
-        // 3. 尝试重新渲染
-        try {
-            if (window.live2d && window.live2d.start) {
-                window.live2d.start();
-            }
-            console.log('[Live2D Cubism3] Rendering resumed');
-        } catch (e) {
-            console.warn('[Live2D Cubism3] Failed to resume rendering:', e);
+        // 3. 尝试恢复
+        if (lastFreezeMode === 'full') {
+            // full 模式：重新初始化整个模型
+            console.log('[Live2D Cubism3] Full mode - reinitializing model');
             try {
-                if (currentModelName && currentModelName !== '') {
-                    console.log('[Live2D Cubism3] Reinitializing model:', currentModelName);
-                    window.__live2d_cubism3_initialized = false;
-                    var _w = document.getElementById('waifu');
-                    if (_w) _w.remove();
-                    var _s = document.getElementById('live2d-cubism3-styles');
-                    if (_s) _s.remove();
-                    setTimeout(initCubism3, 100);
+                window.__live2d_cubism3_initialized = false;
+                var _w = document.getElementById('waifu');
+                if (_w) _w.remove();
+                var _s = document.getElementById('live2d-cubism3-styles');
+                if (_s) _s.remove();
+                setTimeout(initCubism3, 100);
+            } catch (e) {
+                console.error('[Live2D Cubism3] Failed to reinitialize:', e);
+            }
+        } else {
+            // quick 模式：直接恢复动画
+            try {
+                if (window.live2d && window.live2d.start) {
+                    window.live2d.start();
                 }
-            } catch (e2) {
-                console.error('[Live2D Cubism3] Failed to reinitialize:', e2);
+                console.log('[Live2D Cubism3] Rendering resumed');
+            } catch (e) {
+                console.warn('[Live2D Cubism3] Failed to resume rendering:', e);
             }
         }
         
