@@ -3534,38 +3534,36 @@
             window.__cubism3Original.mirrorInterval = null;
         }
         
-        // 4. 根据冻结模式处理渲染
+        // 4. 停止渲染循环
         try {
-            if (window.live2d && window.live2d.model) {
-                originalModel = window.live2d.model;
-                
-                if (window.live2d.stop) {
-                    window.live2d.stop();
-                }
-                
-                if (freezeMode === 'full') {
-                    if (window.live2d.gl && window.live2d.gl.getExtension) {
-                        try {
-                            const loseContext = window.live2d.gl.getExtension('WEBGL_lose_context');
-                            if (loseContext) {
-                                loseContext.loseContext();
-                            }
-                        } catch (e) {
-                        }
-                    }
-                    console.log('[Live2D Cubism3] Model resources fully released');
-                } else {
-                    console.log('[Live2D Cubism3] Model frozen (rendering paused)');
-                }
+            if (window.live2d) {
+                if (window.live2d.stop) window.live2d.stop();
             }
         } catch (e) {
             console.warn('[Live2D Cubism3] Could not pause Live2D SDK:', e);
         }
         
+        // 5. 清理 Canvas 资源（两种模式都清理）
+        cleanupCubism3CanvasResources();
+        
+        // 6. 释放 WebGL 上下文
+        try {
+            const canvas = document.getElementById('live2d');
+            if (canvas) {
+                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                if (gl && gl.getExtension) {
+                    const loseContext = gl.getExtension('WEBGL_lose_context');
+                    if (loseContext) loseContext.loseContext();
+                }
+            }
+        } catch (e) {}
+        
+        // 7. full 模式额外触发 GC
         if (freezeMode === 'full') {
-            cleanupCubism3CanvasResources();
             triggerGCForCubism3();
         }
+        
+        console.log('[Live2D Cubism3] Model frozen, mode:', freezeMode);
     }
         
     function cleanupCubism3CanvasResources() {
@@ -3631,11 +3629,10 @@
             startAutoQuote();
         }
         
-        // 3. 如果模型已加载过，尝试重新渲染
-        if (window.live2d && window.live2d.model) {
-            try {
-                // 尝试重启渲染循环
-                if (window.live2d.start) {
+        // 3. 尝试重新渲染
+        try {
+            if (window.live2d && window.live2d.start) {
+                window.live2d.start();
                     window.live2d.start();
                 } else if (window.live2d.render) {
                     // 手动触发一次渲染
@@ -3692,14 +3689,15 @@
             window.__cubism3Original.mirrorInterval = null;
         }
         
-        // 4. 释放 WebGL 上下文
+        // 4. 停止渲染 + 释放 WebGL
         try {
-            if (window.live2d && window.live2d.model) {
-                if (window.live2d.stop) {
-                    window.live2d.stop();
-                }
-                
-                if (window.live2d.gl && window.live2d.gl.getExtension) {
+            if (window.live2d && window.live2d.stop) {
+                window.live2d.stop();
+            }
+            const l2dCanvas = document.getElementById('live2d');
+            if (l2dCanvas) {
+                const glCtx = l2dCanvas.getContext('webgl2') || l2dCanvas.getContext('webgl');
+                if (glCtx && glCtx.getExtension) {
                     try {
                         const loseContext = window.live2d.gl.getExtension('WEBGL_lose_context');
                         if (loseContext) {
