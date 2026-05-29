@@ -3213,8 +3213,8 @@
     // 监听设置变化，重新应用样式
     storage.onChanged.addListener((changes, areaName) => {
         if (areaName === 'local') {
-            // 同步 freezeModelEnabled 和 freezeMode 到 localStorage
-            if (changes.freezeModelEnabled || changes.freezeMode) {
+            // 同步 freeze/drag 设置到 localStorage
+            if (changes.freezeModelEnabled || changes.freezeMode || changes.dragLimit || changes.drag) {
                 const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
                 if (changes.freezeModelEnabled) {
                     settings.freezeModelEnabled = changes.freezeModelEnabled.newValue;
@@ -3222,8 +3222,14 @@
                 if (changes.freezeMode) {
                     settings.freezeMode = changes.freezeMode.newValue;
                 }
+                if (changes.dragLimit !== undefined) {
+                    settings.dragLimit = changes.dragLimit.newValue;
+                }
+                if (changes.drag !== undefined) {
+                    settings.drag = changes.drag.newValue;
+                }
                 localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
-                console.log('[Live2D] Freeze settings synced to localStorage');
+                console.log('[Live2D] Settings synced to localStorage');
             }
             
             // 当位置改变时，重置原始位置
