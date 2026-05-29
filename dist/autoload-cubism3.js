@@ -3543,23 +3543,29 @@
             console.warn('[Live2D Cubism3] Could not pause Live2D SDK:', e);
         }
         
-        // 5. 清理 Canvas 资源（两种模式都清理）
-        cleanupCubism3CanvasResources();
-        
-        // 6. 释放 WebGL 上下文
+        // 5. 清理 Canvas 资源（quick 模式不清空尺寸，保留上下文）
         try {
             const canvas = document.getElementById('live2d');
             if (canvas) {
-                const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
-                if (gl && gl.getExtension) {
-                    const loseContext = gl.getExtension('WEBGL_lose_context');
-                    if (loseContext) loseContext.loseContext();
-                }
+                const ctx2d = canvas.getContext('2d');
+                if (ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
             }
         } catch (e) {}
         
-        // 7. full 模式额外触发 GC
+        // 6. full 模式释放 WebGL 上下文 + GC
         if (freezeMode === 'full') {
+            try {
+                const canvas = document.getElementById('live2d');
+                if (canvas) {
+                    canvas.width = 0;
+                    canvas.height = 0;
+                    const gl = canvas.getContext('webgl2') || canvas.getContext('webgl');
+                    if (gl && gl.getExtension) {
+                        const lose = gl.getExtension('WEBGL_lose_context');
+                        if (lose) lose.loseContext();
+                    }
+                }
+            } catch (e) {}
             triggerGCForCubism3();
         }
         
