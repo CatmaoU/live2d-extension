@@ -41,18 +41,9 @@ live2d-widget-extension/
 - 默认 30 键映射（小键盘 0-9/*/-/+ + 主键盘 0-9/-=[]\\;\',./）
 - 小键盘与主键盘独立区分（可分别绑定不同动作）
 - 表情独立叠加模式：每个表情可独立开关，多表情参数合并
-- sortOrder 顺序值系统：从 1 开始编号，与映射列表一一对应
 - 表达式去重（按 file 字段），修复 model3.json 重复条目
-- 自动修复表情文件名（Expressions_.json → Expressions_0.json）
-- 纯数字名称自动补 expression 前缀（1 → expression1）
-- 绯英中文名映射（空、尾巴、人类、智慧…自动替换 expressionN 名称）
+- 修复表情文件名（Expressions_.json → Expressions_0.json）
 - 水印参数内建注入：build 时检测 expression13 参数并注入到所有表情
-- [水印] 快捷键（Ctrl+Alt+F1）：开关水印，仅含参数模型显示
-- [重置] 快捷键（Ctrl+Alt+F2）：恢复模型默认参数
-- [切换] 类动作从特殊区移至普通列表，显示为灰色删除线不可交互
-- 缓存优先加载（assets/actions_cache.json）→ fallback 消息发现
-- 刷新按钮强制从页面重新获取动作列表
-- 动作列表数值高亮显示（支持复数 >0 时蓝色加粗）
 - 表情恢复逻辑完善：刷新页面后通过 setExpression + setParameterById 双重恢复
 - 构建工具 v1.0.4：自动修复表情文件名匹配 model.json 引用
 - 修复按键气泡提示与映射列表不一致
