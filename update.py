@@ -82,45 +82,49 @@ def compare_versions(a, b):
     return 0
 
 
-def test_proxy(proxy_url, timeout=3):
-    """测试代理延迟，返回延迟秒数，失败返回 None"""
-    if not proxy_url:
-        return 0.01  # 直连
-    test_url = proxy_url + "https://github.com"
+def test_proxy_url(full_url, timeout=5):
+    """测试一个完整下载 URL 的延迟（HEAD 请求，只读响应头）"""
+    if not full_url:
+        return None
     start = time.time()
     try:
-        req = urllib.request.Request(test_url, headers={"User-Agent": "Live2D-Updater"})
+        req = urllib.request.Request(full_url, method="HEAD",
+                                     headers={"User-Agent": "Live2D-Updater"})
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            r.read(1024)  # 只读一点点
+            r.read(0)  # 只读头
         return time.time() - start
     except:
-        return None
+        # HEAD 可能不被支持，尝试 GET + range 只读头
+        try:
+            req = urllib.request.Request(full_url,
+                                         headers={"User-Agent": "Live2D-Updater", "Range": "bytes=0-0"})
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                r.read()
+            return time.time() - start
+        except:
+            return None
 
 
 def pick_fastest_proxy(zip_url, tag_name):
     """测试所有代理，返回最快的代理前缀"""
-    # 构造测试 URL（用 HEAD 请求测试小文件）
-    test_path = f"{tag_name}/live2d-extension.zip" if not zip_url else zip_url.split("/releases/download/")[-1]
-    
     results = []
     total = len(PROXIES)
     print(f"[测速] 正在测试 {total} 个镜像节点...")
     
     for i, proxy in enumerate(PROXIES):
         prefix = proxy or "直连"
-        print(f"  [{i+1}/{total}] {prefix}...", end=" ", flush=True)
         
+        # 构造完整下载 URL
         if not proxy:
             url = zip_url
+        elif "/releases/download/" in zip_url:
+            rel_path = zip_url.split("/releases/download/")[1]
+            url = proxy + "https://github.com/CatmaoU/live2d-extension/releases/download/" + rel_path
         else:
-            # 从 zip_url 提取下载路径
-            if "/releases/download/" in zip_url:
-                rel_path = zip_url.split("/releases/download/")[1]
-                url = proxy + "https://github.com/CatmaoU/live2d-extension/releases/download/" + rel_path
-            else:
-                url = proxy + zip_url
+            url = proxy + zip_url
         
-        latency = test_proxy(proxy if proxy else None)
+        print(f"  [{i+1}/{total}] {prefix}...", end=" ", flush=True)
+        latency = test_proxy_url(url)
         if latency is not None:
             results.append((latency, proxy, url))
             print(f"{latency*1000:.0f}ms")
