@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Live2D 看板娘",
-  "version": "1.0.5.1",
+  "version": "1.0.6",
   "description": "在浏览器中添加Live2D看板娘喵~",
   "icons": {
     "16": "icon_512.ico",

@@ -211,4 +211,52 @@ chrome.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
   }
 });
 
+// ─── 自动更新检查 ───
+const UPDATE_URL = 'https://api.github.com/repos/CatmaoU/live2d-extension/releases/latest';
+const DOWNLOAD_URL = 'https://github.com/CatmaoU/live2d-extension/releases/latest';
+
+function compareVersions(a, b) {
+  var pa = a.replace(/[^0-9.]/g, '').split('.');
+  var pb = b.replace(/[^0-9.]/g, '').split('.');
+  for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+    var na = parseInt(pa[i] || '0', 10);
+    var nb = parseInt(pb[i] || '0', 10);
+    if (na > nb) return 1;
+    if (na < nb) return -1;
+  }
+  return 0;
+}
+
+function checkForUpdate(callback) {
+  var currentVer = chrome.runtime.getManifest().version;
+  fetch(UPDATE_URL)
+    .then(function(r) { if (!r.ok) throw 'HTTP ' + r.status; return r.json(); })
+    .then(function(data) {
+      var latestVer = (data.tag_name || '').replace(/^v/i, '');
+      if (!latestVer) { callback(null); return; }
+      if (compareVersions(latestVer, currentVer) > 0) {
+        callback({ version: latestVer, url: data.html_url || DOWNLOAD_URL, notes: data.body || '' });
+      } else {
+        callback(null);
+      }
+    })
+    .catch(function() { callback(null); });
+}
+
+chrome.runtime.onInstalled.addListener(function() {
+  // 安装/更新后 1 小时首次检查，之后每 6 小时检查一次
+  setTimeout(function() { checkForUpdate(function() {}); }, 3600000);
+  setInterval(function() { checkForUpdate(function() {}); }, 21600000);
+});
+
+// 来自 popup 的更新检查请求
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+  if (request.action === 'checkUpdate') {
+    checkForUpdate(function(info) {
+      sendResponse(info || { version: chrome.runtime.getManifest().version, upToDate: true });
+    });
+    return true;
+  }
+});
+
 console.log('[Live2D Background] Title fetching service worker started');

@@ -1839,6 +1839,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
+  // 检查更新
+  var updateBtn = document.getElementById('checkUpdate');
+  if (updateBtn) {
+    updateBtn.addEventListener('click', function() {
+      updateBtn.disabled = true;
+      updateBtn.textContent = '检查中...';
+      chrome.runtime.sendMessage({ action: 'checkUpdate' }, function(info) {
+        updateBtn.disabled = false;
+        updateBtn.textContent = '检查更新';
+        if (info && info.upToDate) {
+          alert('当前已是最新版本：' + info.version);
+        } else if (info && info.version) {
+          if (confirm('发现新版本 ' + info.version + '，是否前往下载？')) {
+            window.open(info.url || 'https://github.com/CatmaoU/live2d-extension/releases/latest', '_blank');
+          }
+        } else {
+          alert('检查更新失败，请稍后重试');
+        }
+      });
+    });
+  }
+
   storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local' && (changes.localModel || changes.cubism3Model || changes.useCubism3)) {
       refreshDisplay();
