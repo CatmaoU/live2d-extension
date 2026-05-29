@@ -563,7 +563,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         browserAPI.system.memory.getInfo(function(info) {
           if (info && info.capacity) {
             browserTotalMemoryMB = Math.round(info.capacity / (1024 * 1024));
-            var usedGB = ((info.capacity - (info.availableCapacity || 0)) / (1024*1024*1024)).toFixed(1);
+            window.__availableMemoryMB = Math.round((info.availableCapacity || 0) / (1024 * 1024));
             var totalGB = (info.capacity / (1024*1024*1024)).toFixed(1);
             systemTotalMemoryDisplay.textContent = totalGB + ' GB';
           }
@@ -1950,24 +1950,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   async function updateBrowserMemory(currentTabMemoryMB) {
     try {
-      // 只显示当前标签页的实际内存占用（不估算其他标签页）
-      var displayMB = currentTabMemoryMB > 0 ? currentTabMemoryMB : 80;
-      browserMemoryUsageElement.textContent = `${displayMB.toFixed(0)} MB`;
+      // 显示可用内存
+      var availMB = window.__availableMemoryMB || 0;
+      browserMemoryUsageElement.textContent = availMB > 0 ? `${availMB.toFixed(0)} MB` : '-- MB';
       
-      // 更新浏览器内存进度条
-      const browserProgressPercent = Math.min((displayMB / browserTotalMemoryMB) * 100, 100);
-      browserMemoryProgressBar.style.width = `${browserProgressPercent}%`;
-      
-      // 计算占浏览器内存的百分比
-      const pluginPercent = (displayMB / browserTotalMemoryMB) * 100;
-      pluginMemoryPercent.textContent = `${pluginPercent.toFixed(2)}%`;
+      // 已用百分比 = 当前标签页插件内存 / 系统总内存
+      var usedPercent = browserTotalMemoryMB > 0 ? (currentTabMemoryMB / browserTotalMemoryMB) * 100 : 0;
+      pluginMemoryPercent.textContent = `${Math.min(usedPercent, 100).toFixed(2)}%`;
       
       // 更新饼图
-      updateMemoryPieChart(pluginPercent);
+      updateMemoryPieChart(Math.min(usedPercent, 100));
       
-      if (pluginPercent < 10) {
+      if (usedPercent < 10) {
         pluginMemoryPercent.style.color = '#4CAF50';
-      } else if (pluginPercent < 20) {
+      } else if (usedPercent < 20) {
         pluginMemoryPercent.style.color = '#FF9800';
       } else {
         pluginMemoryPercent.style.color = '#F44336';
