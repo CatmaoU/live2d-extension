@@ -556,15 +556,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     systemTotalMemoryDisplay.textContent = `${systemTotalMemoryGB} GB`;
   }
   
-  // 检测系统总内存（用作浏览器内存参考值）
-  function detectBrowserMemory() {
+  // 获取系统内存信息
+  function detectBrowserMemory(callback) {
     if (browserAPI.system && browserAPI.system.memory) {
       try {
         browserAPI.system.memory.getInfo(function(info) {
           if (info && info.capacity) {
             browserTotalMemoryMB = Math.round(info.capacity / (1024 * 1024));
-            console.log('[Live2D] System memory via chrome.system.memory:', browserTotalMemoryMB, 'MB');
+            var usedGB = ((info.capacity - (info.availableCapacity || 0)) / (1024*1024*1024)).toFixed(1);
+            var totalGB = (info.capacity / (1024*1024*1024)).toFixed(1);
+            systemTotalMemoryDisplay.textContent = totalGB + ' GB';
           }
+          if (callback) callback();
         });
         return;
       } catch(e) {}
@@ -577,7 +580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       browserTotalMemoryMB = 8 * 1024;
     }
-    console.log('[Live2D] Browser total memory (fallback):', browserTotalMemoryMB, 'MB');
+    if (callback) callback();
   }
 
    // 初始化主题的调用移到后面（在 DOM 元素定义之后）
@@ -1921,7 +1924,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         currentTabMemoryMB = 80;
       }
       
-      // 计算浏览器内存占用
+      // 先确保系统内存信息已加载，再计算浏览器占用
+      await new Promise(function(r) { detectBrowserMemory(r); });
       await updateBrowserMemory(currentTabMemoryMB);
     } catch (e) {
       console.error('[Live2D Popup] Error getting memory:', e);
