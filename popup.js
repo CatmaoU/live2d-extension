@@ -556,17 +556,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     systemTotalMemoryDisplay.textContent = `${systemTotalMemoryGB} GB`;
   }
   
-  // 自动检测浏览器进程内存
+  // 检测系统总内存（用作浏览器内存参考值）
   function detectBrowserMemory() {
-    // 通过 performance.memory 估算
-    if (performance && performance.memory) {
-      // performance.memory.jsHeapSizeLimit 通常是浏览器为当前标签页分配的堆内存上限
-      const heapLimitMB = performance.memory.jsHeapSizeLimit / (1024 * 1024);
-      // 浏览器总进程内存通常是堆内存的 2-4 倍
-      browserTotalMemoryMB = Math.round(heapLimitMB * 3);
+    if (systemTotalMemoryGB > 0) {
+      browserTotalMemoryMB = systemTotalMemoryGB * 1024;
+    } else if (performance && performance.memory) {
+      var hl = performance.memory.jsHeapSizeLimit / (1024 * 1024);
+      browserTotalMemoryMB = Math.round(hl * 4);
+    } else {
+      browserTotalMemoryMB = 8 * 1024;
     }
-    
-    console.log('[Live2D] Estimated browser total memory:', browserTotalMemoryMB, 'MB');
+    console.log('[Live2D] Browser total memory:', browserTotalMemoryMB, 'MB');
   }
 
    // 初始化主题的调用移到后面（在 DOM 元素定义之后）
