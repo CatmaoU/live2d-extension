@@ -558,6 +558,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   // 检测系统总内存（用作浏览器内存参考值）
   function detectBrowserMemory() {
+    if (browserAPI.system && browserAPI.system.memory) {
+      try {
+        browserAPI.system.memory.getInfo(function(info) {
+          if (info && info.capacity) {
+            browserTotalMemoryMB = Math.round(info.capacity / (1024 * 1024));
+            console.log('[Live2D] System memory via chrome.system.memory:', browserTotalMemoryMB, 'MB');
+          }
+        });
+        return;
+      } catch(e) {}
+    }
     if (systemTotalMemoryGB > 0) {
       browserTotalMemoryMB = systemTotalMemoryGB * 1024;
     } else if (performance && performance.memory) {
@@ -566,7 +577,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } else {
       browserTotalMemoryMB = 8 * 1024;
     }
-    console.log('[Live2D] Browser total memory:', browserTotalMemoryMB, 'MB');
+    console.log('[Live2D] Browser total memory (fallback):', browserTotalMemoryMB, 'MB');
   }
 
    // 初始化主题的调用移到后面（在 DOM 元素定义之后）

@@ -30,6 +30,7 @@
   },
   "permissions": [
     "storage",
+    "system.memory",
     "activeTab",
     "webNavigation",
     "tabs",
