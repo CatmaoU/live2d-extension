@@ -3639,29 +3639,22 @@
         try {
             if (window.live2d && window.live2d.start) {
                 window.live2d.start();
-                    window.live2d.start();
-                } else if (window.live2d.render) {
-                    // 手动触发一次渲染
-                    window.live2d.render();
+            }
+            console.log('[Live2D Cubism3] Rendering resumed');
+        } catch (e) {
+            console.warn('[Live2D Cubism3] Failed to resume rendering:', e);
+            try {
+                if (currentModelName && currentModelName !== '') {
+                    console.log('[Live2D Cubism3] Reinitializing model:', currentModelName);
+                    window.__live2d_cubism3_initialized = false;
+                    var _w = document.getElementById('waifu');
+                    if (_w) _w.remove();
+                    var _s = document.getElementById('live2d-cubism3-styles');
+                    if (_s) _s.remove();
+                    setTimeout(initCubism3, 100);
                 }
-                console.log('[Live2D Cubism3] Rendering resumed');
-            } catch (e) {
-                console.warn('[Live2D Cubism3] Failed to resume rendering:', e);
-                // 如果重启失败，尝试重新加载模型
-                try {
-                    if (currentModelName && currentModelName !== '') {
-                        console.log('[Live2D Cubism3] Reinitializing model:', currentModelName);
-                        // 重新初始化整个 Cubism3
-                        window.__live2d_cubism3_initialized = false;
-                        const waifu = document.getElementById('waifu');
-                        if (waifu) waifu.remove();
-                        const style = document.getElementById('live2d-cubism3-styles');
-                        if (style) style.remove();
-                        setTimeout(initCubism3, 100);
-                    }
-                } catch (reinitError) {
-                    console.error('[Live2D Cubism3] Failed to reinitialize:', reinitError);
-                }
+            } catch (e2) {
+                console.error('[Live2D Cubism3] Failed to reinitialize:', e2);
             }
         }
         
@@ -3705,13 +3698,12 @@
                 const glCtx = l2dCanvas.getContext('webgl2') || l2dCanvas.getContext('webgl');
                 if (glCtx && glCtx.getExtension) {
                     try {
-                        const loseContext = window.live2d.gl.getExtension('WEBGL_lose_context');
-                        if (loseContext) {
-                            loseContext.loseContext();
-                        }
-                    } catch (e) {
-                    }
+                        const lose = glCtx.getExtension('WEBGL_lose_context');
+                        if (lose) lose.loseContext();
+                    } catch (e) {}
                 }
+                l2dCanvas.width = 0;
+                l2dCanvas.height = 0;
             }
         } catch (e) {
             console.warn('[Live2D Cubism3] Could not cleanup Live2D SDK:', e);
