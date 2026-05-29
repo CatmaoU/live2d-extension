@@ -1283,7 +1283,7 @@
             let isDragLimitEnabled = true;
             try {
                 const settingsData = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
-                isDragLimitEnabled = settingsData.dragLimit !== false; // 默认开启
+                isDragLimitEnabled = settingsData.dragLimit !== false;
             } catch (e) {
                 isDragLimitEnabled = true;
             }
