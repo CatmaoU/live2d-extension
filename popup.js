@@ -1796,9 +1796,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-  // 清理其他标签页模型的按钮
+  // 清理所有其他标签页的模型（保留当前页）
   const cleanupOtherTabsBtn = document.getElementById('cleanupOtherTabsBtn');
-  cleanupOtherTabsBtn.addEventListener('click', async () => {
+  if (cleanupOtherTabsBtn) cleanupOtherTabsBtn.addEventListener('click', async () => {
     try {
       // 获取当前窗口的所有标签页
       const allTabs = await tabs.query({ currentWindow: true });
@@ -1883,40 +1883,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function updateMemoryUsage() {
     try {
-      // 收集所有标签页的扩展内存占用
-      var allTabs = await tabs.query({});
-      var memoryValues = [];
-      var totalMemory = 0;
-      var tabCount = 0;
-
-      // 向每个标签页发送内存查询
-      for (var ti = 0; ti < allTabs.length; ti++) {
+      var currentTabMemoryMB = 80;
+      var tabList = await tabs.query({ active: true, currentWindow: true });
+      if (tabList[0] && tabList[0].id) {
         try {
           var resp = await new Promise(function(resolve, reject) {
-            browserAPI.tabs.sendMessage(allTabs[ti].id, { type: 'getMemoryUsage' }, function(r) {
+            browserAPI.tabs.sendMessage(tabList[0].id, { type: 'getMemoryUsage' }, function(r) {
               if (browserAPI.runtime.lastError) { reject(); } else { resolve(r); }
             });
           });
-          if (resp && resp.memoryMB) {
-            memoryValues.push(resp.memoryMB);
-            totalMemory += resp.memoryMB;
-            tabCount++;
-          }
+          if (resp && resp.memoryMB) currentTabMemoryMB = resp.memoryMB;
         } catch(e) {}
       }
-      
-      // 计算平均每个标签页的内存
-      var avgMemoryMB = tabCount > 0 ? (totalMemory / tabCount) : 80;
-      memoryUsageElement.textContent = `${avgMemoryMB.toFixed(1)} MB`;
-      
-      // 更新进度条（最大限制 300MB）
-      var progressPercent = Math.min((avgMemoryMB / 300) * 100, 100);
+      memoryUsageElement.textContent = `${currentTabMemoryMB.toFixed(1)} MB`;
+      var progressPercent = Math.min((currentTabMemoryMB / 300) * 100, 100);
       updateProgressBar(progressPercent);
-      
-      // 传平均值给 updateBrowserMemory
-      var currentTabMemoryMB = avgMemoryMB;
-      
-      // 先确保系统内存信息已加载
       await new Promise(function(r) { detectBrowserMemory(r); });
       await updateBrowserMemory(currentTabMemoryMB);
     } catch (e) {
