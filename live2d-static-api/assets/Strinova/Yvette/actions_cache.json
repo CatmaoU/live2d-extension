@@ -1,0 +1,128 @@
+[
+	{
+		"type": "expression",
+		"name": "3×3",
+		"file": "3×3.exp3.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "QQ",
+		"file": "QQ.exp3.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "呆呆眼睛",
+		"file": "呆呆眼睛.exp3.json",
+		"sortOrder": 3
+	},
+	{
+		"type": "expression",
+		"name": "哭哭",
+		"file": "哭哭.exp3.json",
+		"sortOrder": 4
+	},
+	{
+		"type": "expression",
+		"name": "唱歌",
+		"file": "唱歌.exp3.json",
+		"sortOrder": 5
+	},
+	{
+		"type": "expression",
+		"name": "墨镜",
+		"file": "墨镜.exp3.json",
+		"sortOrder": 6
+	},
+	{
+		"type": "expression",
+		"name": "奶茶",
+		"file": "奶茶.exp3.json",
+		"sortOrder": 7
+	},
+	{
+		"type": "expression",
+		"name": "常态嘴型",
+		"file": "常态嘴型.exp3.json",
+		"sortOrder": 8
+	},
+	{
+		"type": "expression",
+		"name": "手",
+		"file": "手.exp3.json",
+		"sortOrder": 9
+	},
+	{
+		"type": "expression",
+		"name": "智慧眼",
+		"file": "智慧眼.exp3.json",
+		"sortOrder": 10
+	},
+	{
+		"type": "expression",
+		"name": "激动眼",
+		"file": "激动眼.exp3.json",
+		"sortOrder": 11
+	},
+	{
+		"type": "expression",
+		"name": "激动眼哭",
+		"file": "激动眼哭.exp3.json",
+		"sortOrder": 12
+	},
+	{
+		"type": "expression",
+		"name": "熊",
+		"file": "熊.exp3.json",
+		"sortOrder": 13
+	},
+	{
+		"type": "expression",
+		"name": "痴痴嘴",
+		"file": "痴痴嘴.exp3.json",
+		"sortOrder": 14
+	},
+	{
+		"type": "expression",
+		"name": "腿",
+		"file": "腿.exp3.json",
+		"sortOrder": 15
+	},
+	{
+		"type": "expression",
+		"name": "蝴蝶结",
+		"file": "蝴蝶结.exp3.json",
+		"sortOrder": 16
+	},
+	{
+		"type": "expression",
+		"name": "阴暗脸",
+		"file": "阴暗脸.exp3.json",
+		"sortOrder": 17
+	},
+	{
+		"type": "expression",
+		"name": "阴暗脸无眼睛",
+		"file": "阴暗脸无眼睛.exp3.json",
+		"sortOrder": 18
+	},
+	{
+		"type": "expression",
+		"name": "鞋子",
+		"file": "鞋子.exp3.json",
+		"sortOrder": 19
+	},
+	{
+		"type": "expression",
+		"name": "龇牙",
+		"file": "龇牙.exp3.json",
+		"sortOrder": 20
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

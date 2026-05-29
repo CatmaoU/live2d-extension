@@ -1,19 +1,13 @@
 [
 	{
+		"modelIntroduce": "Shizuku Talk ！这里是 Shizuku ~",
+		"modelPath": "ShizukuTalk/shizuku-48",
+		"isCubism3": false,
+		"sourceFolder": "models_Cubism2"
+	},
+	{
 		"modelIntroduce": "Nep! Nep! 超次元游戏：海王星 系列",
 		"modelPath": "HyperdimensionNeptunia/blanc_normal",
-		"isCubism3": false,
-		"sourceFolder": "models_Cubism2"
-	},
-	{
-		"modelIntroduce": "Nep! Nep! 超次元游戏：海王星 系列",
-		"modelPath": "HyperdimensionNeptunia/noir",
-		"isCubism3": false,
-		"sourceFolder": "models_Cubism2"
-	},
-	{
-		"modelIntroduce": "Nep! Nep! 超次元游戏：海王星 系列",
-		"modelPath": "HyperdimensionNeptunia/nepnep",
 		"isCubism3": false,
 		"sourceFolder": "models_Cubism2"
 	},
@@ -30,20 +24,26 @@
 		"sourceFolder": "models_Cubism2"
 	},
 	{
+		"modelIntroduce": "Nep! Nep! 超次元游戏：海王星 系列",
+		"modelPath": "HyperdimensionNeptunia/noir",
+		"isCubism3": false,
+		"sourceFolder": "models_Cubism2"
+	},
+	{
 		"modelIntroduce": "来自 Bilibili Live 的 22 ~",
 		"modelPath": "bilibili-live/22",
 		"isCubism3": false,
 		"sourceFolder": "models_Cubism2"
 	},
 	{
-		"modelIntroduce": "XiaoMai ！这里是 XiaoMai ~ ~",
-		"modelPath": "xiaomai/custom",
+		"modelIntroduce": "Nep! Nep! 超次元游戏：海王星 系列",
+		"modelPath": "HyperdimensionNeptunia/nepnep",
 		"isCubism3": false,
 		"sourceFolder": "models_Cubism2"
 	},
 	{
-		"modelIntroduce": "Shizuku Talk ！这里是 Shizuku ~",
-		"modelPath": "ShizukuTalk/shizuku-48",
+		"modelIntroduce": "XiaoMai ！这里是 XiaoMai ~ ~",
+		"modelPath": "xiaomai/custom",
 		"isCubism3": false,
 		"sourceFolder": "models_Cubism2"
 	},
@@ -55,31 +55,13 @@
 	},
 	{
 		"modelIntroduce": "Moc",
-		"modelPath": "Genshin_Impact/Columbina",
-		"isCubism3": true,
-		"sourceFolder": "models_Cubism3"
-	},
-	{
-		"modelIntroduce": "Moc",
-		"modelPath": "Zenless_Zone_Zero/qianxia",
-		"isCubism3": true,
-		"sourceFolder": "models_Cubism3"
-	},
-	{
-		"modelIntroduce": "Moc",
-		"modelPath": "Honkai_StarRail/liuying",
-		"isCubism3": true,
-		"sourceFolder": "models_Cubism3"
-	},
-	{
-		"modelIntroduce": "Moc",
 		"modelPath": "Zenless_Zone_Zero/3xiaozhi",
 		"isCubism3": true,
 		"sourceFolder": "models_Cubism3"
 	},
 	{
-		"modelIntroduce": "Moc",
-		"modelPath": "Honkai_StarRail/xilian",
+		"modelIntroduce": "Michele",
+		"modelPath": "Strinova/Michele",
 		"isCubism3": true,
 		"sourceFolder": "models_Cubism3"
 	},
@@ -91,25 +73,19 @@
 	},
 	{
 		"modelIntroduce": "Moc",
-		"modelPath": "Honkai_StarRail/baie",
+		"modelPath": "Zenless_Zone_Zero/qianxia",
 		"isCubism3": true,
 		"sourceFolder": "models_Cubism3"
 	},
 	{
 		"modelIntroduce": "Moc",
-		"modelPath": "Honkai_StarRail/xingqiri",
+		"modelPath": "Genshin_Impact/Columbina",
 		"isCubism3": true,
 		"sourceFolder": "models_Cubism3"
 	},
 	{
-		"modelIntroduce": "Moc",
-		"modelPath": "Honkai_StarRail/yaoguang",
-		"isCubism3": true,
-		"sourceFolder": "models_Cubism3"
-	},
-	{
-		"modelIntroduce": "Audrey",
-		"modelPath": "Strinova/Audrey",
+		"modelIntroduce": "Kanami",
+		"modelPath": "Strinova/Kanami",
 		"isCubism3": true,
 		"sourceFolder": "models_Cubism3"
 	},
@@ -120,8 +96,38 @@
 		"sourceFolder": "models_Cubism3"
 	},
 	{
-		"modelIntroduce": "Michele",
-		"modelPath": "Strinova/Michele",
+		"modelIntroduce": "Moc",
+		"modelPath": "Honkai_StarRail/yaoguang",
+		"isCubism3": true,
+		"sourceFolder": "models_Cubism3"
+	},
+	{
+		"modelIntroduce": "Moc",
+		"modelPath": "Honkai_StarRail/xilian",
+		"isCubism3": true,
+		"sourceFolder": "models_Cubism3"
+	},
+	{
+		"modelIntroduce": "Audrey",
+		"modelPath": "Strinova/Audrey",
+		"isCubism3": true,
+		"sourceFolder": "models_Cubism3"
+	},
+	{
+		"modelIntroduce": "Moc",
+		"modelPath": "Honkai_StarRail/baie",
+		"isCubism3": true,
+		"sourceFolder": "models_Cubism3"
+	},
+	{
+		"modelIntroduce": "Moc",
+		"modelPath": "Honkai_StarRail/liuying",
+		"isCubism3": true,
+		"sourceFolder": "models_Cubism3"
+	},
+	{
+		"modelIntroduce": "Moc",
+		"modelPath": "Honkai_StarRail/xingqiri",
 		"isCubism3": true,
 		"sourceFolder": "models_Cubism3"
 	},
@@ -138,8 +144,8 @@
 		"sourceFolder": "models_Cubism3"
 	},
 	{
-		"modelIntroduce": "Kanami",
-		"modelPath": "Strinova/Kanami",
+		"modelIntroduce": "feiying",
+		"modelPath": "Honkai_StarRail/feiying",
 		"isCubism3": true,
 		"sourceFolder": "models_Cubism3"
 	}

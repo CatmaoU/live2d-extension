@@ -1,0 +1,90 @@
+[
+	{
+		"type": "expression",
+		"file": "3口型.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "QQ.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "ys.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "yx.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "z's.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "zx.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "叹气.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "墨镜.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "手.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "智慧眼睛.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "比耶.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "汗.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "游戏手.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "激动.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "激动2.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "激动（哭）.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "激动（正常）.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "痴痴嘴.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "腿.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "阴暗脸.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "鞋子袜子.exp3.json"
+	},
+	{
+		"type": "expression",
+		"file": "龇牙.exp3.json"
+	}
+]

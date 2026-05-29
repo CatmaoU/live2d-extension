@@ -1,0 +1,32 @@
+[
+	{
+		"type": "expression",
+		"name": "害羞",
+		"file": "Expressions_0.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "自信",
+		"file": "Expressions_1.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "认真",
+		"file": "Expressions_2.json",
+		"sortOrder": 3
+	},
+	{
+		"type": "expression",
+		"name": "复位",
+		"file": "Expressions_3.json",
+		"sortOrder": 4
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

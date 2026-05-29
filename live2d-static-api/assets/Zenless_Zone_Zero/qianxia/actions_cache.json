@@ -1,0 +1,26 @@
+[
+	{
+		"type": "expression",
+		"name": "1红脸",
+		"file": "Expressions_0.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "2燃烬",
+		"file": "Expressions_1.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "3复原",
+		"file": "Expressions_2.json",
+		"sortOrder": 3
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

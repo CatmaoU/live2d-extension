@@ -1474,7 +1474,7 @@
 
             console.log('[Live2D Cubism3] Loading model:', cubism3Model);
 
-            const modelPath = actualModelBase + cubism3Model + '/';
+            var modelPath = actualModelBase + cubism3Model + '/';
             console.log('[Live2D Cubism3] Model path:', modelPath);
             
             // 保存当前位置
@@ -2476,6 +2476,162 @@
                     console.log('[Live2D DailyImage] Keybinding triggered');
                     showTips('来张美图喵~');
                     fetchAndShowDailyImage();
+                } else if (e.ctrlKey || e.altKey || e.shiftKey) {
+                    // 特殊组合键检测（从 localStorage 读取）
+                    var specials = {};
+                    try { specials = JSON.parse(localStorage.getItem('live2dSpecialBindings') || '{}'); } catch(e) {}
+                    // 默认特殊快捷键
+                    if (!specials.watermark) specials.watermark = 'ctrl+alt+F1';
+                    if (!specials.reset) specials.reset = 'ctrl+alt+F2';
+
+                    var combo = '';
+                    if (e.ctrlKey) combo += 'ctrl+';
+                    if (e.altKey) combo += 'alt+';
+                    if (e.shiftKey) combo += 'shift+';
+                    combo += e.key.length === 1 ? e.key.toUpperCase() : e.key;
+                    if (specials.watermark === combo) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (window.live2d) {
+                            var wmState = localStorage.getItem('live2d_watermarkHidden') === '1';
+                            if (wmState) {
+                                // 显示水印：恢复默认参数
+                                if (window.live2d.resetParameters) window.live2d.resetParameters();
+                                window.live2d.setParameterById('Param196', 0);
+                                window.live2d.setParameterById('Param197', 1);
+                                window.live2d.setParameterById('Param198', 1);
+                                window.live2d.setParameterById('Param199', 0);
+                                localStorage.setItem('live2d_watermarkHidden', '0');
+                                showTips('水印已显示');
+                            } else {
+                                // 隐藏水印：用 setExpression 启动 expression13（表达式系统持续维持）
+                                if (window.live2d.setExpression) window.live2d.setExpression('expression13');
+                                window.live2d.setParameterById('Param196', 1);
+                                window.live2d.setParameterById('Param197', 0);
+                                window.live2d.setParameterById('Param198', 0);
+                                window.live2d.setParameterById('Param199', 1);
+                                localStorage.setItem('live2d_watermarkHidden', '1');
+                                showTips('水印已隐藏');
+                            }
+                        }
+                    } else if (specials.reset === combo) {
+                        // ... already handled above
+
+                        if (window.live2d) {
+                            if (window.live2d.resetParameters) window.live2d.resetParameters();
+                            localStorage.setItem('live2d_activeExpressionList', '[]');
+                            showTips('表情已重置');
+                        }
+                    }
+                } else if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+                    // 动作快捷键：支持自定义按键映射（用 e.code 区分主键盘和小键盘）
+                    var keyMap = {};
+                    try { keyMap = JSON.parse(localStorage.getItem('live2dModelKeyBindings') || '{}'); } catch(e) {}
+                    var actions = window.__live2d_actions || [];
+                    var code = e.code || '';
+                    var lookupKey = code.startsWith('Digit') ? code.slice(5) : code.startsWith('Numpad') ? code : (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+                    var keyIdx = keyMap[lookupKey];
+                    if (keyIdx === undefined) {
+                        // 默认映射：先小键盘，后主键盘
+                        var allDefaultKeys = ['Numpad1','Numpad2','Numpad3','Numpad4','Numpad5','Numpad6','Numpad7','Numpad8','Numpad9','Numpad0','NumpadMultiply','NumpadSubtract','NumpadAdd','1','2','3','4','5','6','7','8','9','0','-','=','[',']','\\',';','\'',',','.','/'];
+                        var fallbackIdx = allDefaultKeys.indexOf(lookupKey);
+                        var taken = false;
+                        if (fallbackIdx >= 0) {
+                            for (var tk in keyMap) {
+                                if (keyMap.hasOwnProperty(tk) && keyMap[tk] === fallbackIdx) { taken = true; break; }
+                            }
+                        }
+                        if (!taken) keyIdx = fallbackIdx;
+                    }
+                    if (keyIdx >= 0 && keyIdx < actions.length) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        var action = actions[keyIdx];
+                        // [切换] 类动作：提示不可用
+                        if (action.name && action.name.indexOf('[切换]') === 0) {
+                            showTips('需在 VTube Studio 中使用');
+                            return;
+                        }
+
+                        if (action.type === 'motion') {
+                            if (window.live2d && window.live2d.startMotion) {
+                                // Motion: 解析 JSON 提取最终参数值永久应用
+                                fetch(modelPath + action.file).then(function(r) {
+                                    if (!r.ok) { window.live2d.startMotion(action.group, action.index, 3); throw 'no motion file'; }
+                                    return r.json();
+                                }).then(function(motionData) {
+                                    if (!motionData.Curves || !window.live2d) return;
+                                    motionData.Curves.forEach(function(curve) {
+                                        var segs = curve.Segments;
+                                        if (!segs || segs.length < 2) return;
+                                        var lastVal = segs[segs.length - 1];
+                                        if (curve.Target === 'Parameter') {
+                                            window.live2d.setParameterById(curve.Id, lastVal);
+                                        } else if (curve.Target === 'PartOpacity') {
+                                            window.live2d.setPartOpacityById(curve.Id, lastVal);
+                                        }
+                                    });
+                                    console.log('[Live2D Motion] Applied state:', action.name);
+                                }).catch(function() {});
+                                showTips('动作: ' + action.name);
+                                console.log('[Live2D Motion] Triggered:', action.name);
+                            }
+                        } else if (action.type === 'expression') {
+                            if (window.live2d && window.live2d.setExpression) {
+                                var stateKey = 'live2d_activeExpressionList';
+                                var activeList = [];
+                                try {
+                                    var raw = localStorage.getItem(stateKey);
+                                    if (raw) activeList = JSON.parse(raw);
+                                    if (!Array.isArray(activeList)) activeList = [];
+                                } catch(e) { activeList = []; }
+                                function applyExpression(name, fileUrl, sdkName) {
+                                    var actualName = sdkName || name;
+                                    // 1) 用 SDK 原始名调用 setExpression（保证在 _expressions 映射表中找到）
+                                    if (window.live2d.setExpression) window.live2d.setExpression(actualName);
+                                    // 2) 如果有文件，动态注册到 SDK 的 _expressions 映射表
+                                    if (fileUrl && window.live2d.loadAndRegisterExpression) {
+                                        window.live2d.loadAndRegisterExpression(actualName, fileUrl);
+                                    }
+                                }
+                                // 独立叠加模式：每个表情可独立开关，多个表情可同时叠加
+                                var pos = activeList.indexOf(keyIdx);
+                                if (pos >= 0) {
+                                    activeList.splice(pos, 1);
+                                } else {
+                                    activeList.push(keyIdx);
+                                }
+                                // 1) 激活最近开启的表情（无论是否在 SDK 中注册）
+                                if (activeList.length > 0) {
+                                    var last = activeList[activeList.length - 1];
+                                    var lastAct = actions[last];
+                                    if (lastAct && lastAct.type === 'expression') {
+                                        var sdkName = lastAct.sdkName || lastAct.name;
+                                        if (window.live2d && window.live2d.loadAndRegisterExpression && lastAct.file) {
+                                            window.live2d.loadAndRegisterExpression(sdkName, modelPath + lastAct.file);
+                                        } else if (window.live2d && window.live2d.setExpression) {
+                                            window.live2d.setExpression(sdkName);
+                                        }
+                                    }
+                                }
+                                // 2) 叠加所有开启表情的独立参数
+                                var allParams = [];
+                                activeList.forEach(function(idx) {
+                                    if (idx >= 0 && idx < actions.length && actions[idx].type === 'expression') {
+                                        var cached = window.__live2d_expParams && window.__live2d_expParams[idx];
+                                        if (cached && cached.length > 0) {
+                                            cached.forEach(function(p) { allParams.push(p); });
+                                        }
+                                    }
+                                });
+                                if (window.live2d && window.live2d.setParameterById) {
+                                    allParams.forEach(function(p) { window.live2d.setParameterById(p.Id, p.Value); });
+                                }
+                                localStorage.setItem(stateKey, JSON.stringify(activeList));
+                                showTips(pos >= 0 ? '表情已关闭' : '表情: ' + action.name);
+                            }
+                        }
+                    }
                 }
             });
 
@@ -2902,6 +3058,217 @@
                     achievementShown = true;
                 }
             }
+
+            // ============================================================
+            // Cubism3 动作快捷键系统
+            // ============================================================
+            // startMotion / setExpression 方法已由 live2d-sdk.js 暴露
+            
+            // 新模型加载时清除旧缓存
+            try { localStorage.removeItem('live2dModelActions'); } catch(e) {}
+            window.__live2d_actions = [];
+            
+            // 发现模型动作并设置快捷键
+            var _allActions = [];
+            function pushActions(acts) { if (acts && acts.length > 0) { _allActions = _allActions.concat(acts); } }
+            function finalizeActions() {
+                if (_allActions.length === 0) return;
+                var seen = {}, merged = [];
+                _allActions.forEach(function(a) { var k = a.type + ':' + a.name; if (!seen[k]) { seen[k] = true; var na = JSON.parse(JSON.stringify(a)); na.sortOrder = merged.length + 1; merged.push(na); } });
+                // expression13 保留 + 名称映射（绯英，下移一位）
+                if (cubism3Model.indexOf('Honkai_StarRail/feiying') >= 0) {
+                    var feiyingNames = {'expression13':'空','expression12':'尾巴','expression1':'人类','expression10':'智慧','expression11':'狐耳','expression2':'新狐耳','expression3':'脸红','expression4':'星星眼','expression5':'拜托拜托','expression6':'爱心眼','expression7':'生气','expression8':'无语','expression9':'叼面包'};
+                    merged.forEach(function(a) {
+                        if (a.type === 'expression' && feiyingNames[a.name]) a.name = feiyingNames[a.name];
+                        if (a.file === '14哭哭.exp3.json') a.name = '没脸见人了';
+                    });
+                }
+                // 按原始顺序保留，特殊排最后
+                var normActs = [], specActs = [];
+                merged.forEach(function(a) { (a.type === 'special' ? specActs : normActs).push(a); });
+                merged = normActs.concat(specActs);
+                // 重新分配 sortOrder（从1开始）
+                merged.forEach(function(a, idx) { a.sortOrder = idx + 1; });
+
+                // 找 expression13 并异步验证是否为水印去除表情（含 Param196）
+                var wmAction = null;
+                for (var wi = 0; wi < merged.length; wi++) {
+                    if ((merged[wi].sdkName || merged[wi].name) === 'expression13' && merged[wi].type === 'expression') {
+                        wmAction = merged[wi];
+                        break;
+                    }
+                }
+                // 移除 expression13 和所有 motion
+                merged = merged.filter(function(a) {
+                    if (a.type === 'motion') return false;
+                    var check = a.sdkName || a.name;
+                    return !(a.type === 'expression' && check === 'expression13');
+                });
+                // 异步验证水印参数
+                if (wmAction && wmAction.file) {
+                    (function(wmFile) {
+                        fetch(wmFile).then(function(r) {
+                            if (!r.ok) return null;
+                            return r.json();
+                        }).then(function(d) {
+                            if (d && d.Parameters && d.Parameters.some(function(p) { return p.Id === 'Param196'; })) {
+                                merged.push({ type: 'special', name: '水印', id: 'watermark', combo: 'ctrl+alt+F1' });
+                                // 更新 localStorage 和 __live2d_actions
+                                window.__live2d_actions = merged;
+                                try { localStorage.setItem('live2dModelActions', JSON.stringify(merged)); } catch(e) {}
+                            }
+                        }).catch(function() {});
+                    })(modelPath + wmAction.file);
+                }
+                // 只有有实际表情的模型才添加特殊按键
+                if (merged.some(function(a) { return a.type === 'expression'; })) {
+                    merged.push({ type: 'special', name: '重置', id: 'reset', combo: 'ctrl+alt+F2' });
+                }
+                window.__live2d_actions = merged;
+                try { localStorage.setItem('live2dModelActions', JSON.stringify(merged)); } catch(e) {}
+                // 预缓存所有表情的参数
+                window.__live2d_expParams = [];
+                merged.forEach(function(a, i) {
+                    if (a.type === 'expression' && a.file) {
+                        fetch(modelPath + a.file).then(function(r) {
+                            if (!r.ok) return null;
+                            return r.json();
+                        }).then(function(d) {
+                            window.__live2d_expParams[i] = (d && d.Parameters) || [];
+                        }).catch(function() {});
+                    }
+                });
+                // 恢复上次保存的表情状态
+                setTimeout(function() {
+                    try {
+                        var raw = localStorage.getItem('live2d_activeExpressionList');
+                        if (raw) {
+                            var savedList = JSON.parse(raw);
+                            if (Array.isArray(savedList) && window.live2d) {
+                                // 用 setExpression 激活最近的表情（确保表达式系统恢复）
+                                if (savedList.length > 0) {
+                                    var lastIdx = savedList[savedList.length - 1];
+                                    if (lastIdx >= 0 && lastIdx < merged.length && merged[lastIdx].type === 'expression') {
+                                        var lastAct = merged[lastIdx];
+                                        if (window.live2d.setExpression) {
+                                            window.live2d.setExpression(lastAct.sdkName || lastAct.name);
+                                        }
+                                    }
+                                }
+                                // 叠加所有表情的参数
+                                var restoreParams = [];
+                                savedList.forEach(function(idx) {
+                                    if (idx >= 0 && idx < merged.length && merged[idx].type === 'expression') {
+                                        var cached = window.__live2d_expParams && window.__live2d_expParams[idx];
+                                        if (cached && cached.length > 0) {
+                                            cached.forEach(function(p) { restoreParams.push(p); });
+                                        }
+                                    }
+                                });
+                                restoreParams.forEach(function(p) { window.live2d.setParameterById(p.Id, p.Value); });
+                            }
+                        }
+                        // 恢复水印状态
+                        if (localStorage.getItem('live2d_watermarkHidden') === '1' && window.live2d) {
+                            if (window.live2d.setExpression) window.live2d.setExpression('expression13');
+                            window.live2d.setParameterById('Param196', 1);
+                            window.live2d.setParameterById('Param197', 0);
+                            window.live2d.setParameterById('Param198', 0);
+                            window.live2d.setParameterById('Param199', 1);
+                        }
+                    } catch(e) {}
+                }, 800);
+                console.log('[Live2D Cubism3] Discovered', merged.length, 'actions for', cubism3Model);
+                merged.forEach(function(a, i) {
+                    var key = ['1','2','3','4','5','6','7','8','9','0','-','='][i] || '';
+                    console.log('[Live2D Cubism3]  Shortcut', key, '→', a.name);
+                });
+            }
+            window.__live2d_discoverActions = function discoverModelActions() {
+                var modelName = cubism3Model.split('/').pop();
+                var modelDir = modelPath;
+                // actions_index.json 在 indexes/ 目录下（由 build.js 生成）
+                var indexDir = modelDir.replace('/models_Cubism3/', '/indexes/');
+                // 1. 轮询 SDK，持续收集已加载的动作
+                var sdkTimer = setInterval(function() {
+                    if (window.live2d && window.live2d.getModelActions) {
+                        pushActions(window.live2d.getModelActions());
+                    }
+                }, 400);
+                // 2. 2.5 秒后停止轮询，开始尝试其他来源
+                setTimeout(function() {
+                    clearInterval(sdkTimer);
+                    // 3. actions_index.json（由 build.js 生成到 indexes/ 目录）
+                    fetch(indexDir + 'actions_index.json')
+                        .then(function(r) { if (!r.ok) throw 'no idx'; return r.json(); })
+                        .then(function(list) {
+                            if (list && list.length > 0) {
+                                pushActions(list.map(function(item) {
+                                    var name = item.file.replace(/\.(motion3|exp3)\.json$/, '');
+                                    return item.type === 'motion'
+                                        ? { type:'motion', group:name, index:0, name:name, file:item.file }
+                                        : { type:'expression', name:name, file:item.file };
+                                }));
+                            }
+                        })
+                        .catch(function() {})
+                        .then(function() {
+                            // 4. model.json（自定义配置）
+                            return fetch(modelDir + 'model.json')
+                                .then(function(r) { if (!r.ok) throw 'no'; return r.json(); })
+                                .then(function(config) {
+                                    var acts = [];
+                                    if (config.FileReferences && config.FileReferences.Motions) {
+                                        var addedSwitches = {};
+                                        Object.keys(config.FileReferences.Motions).forEach(function(g) {
+                                            config.FileReferences.Motions[g].forEach(function(m, i) {
+                                                if (m.Sound && !m.File && !m.Expression) {
+                                                    var name2 = g.replace(/^Tap/, '').replace(/[0-9]/g, '');
+                                                    var tModel = '';
+                                                    if (name2.indexOf('爱芮') >= 0) tModel = 'Zenless_Zone_Zero/irui';
+                                                    else if (name2.indexOf('南宫') >= 0) tModel = 'Zenless_Zone_Zero/nangongyu';
+                                                    else if (name2.indexOf('千夏') >= 0) tModel = 'Zenless_Zone_Zero/qianxia';
+                                                    if (tModel && !addedSwitches[tModel]) {
+                                                        addedSwitches[tModel] = true;
+                                                        acts.push({ type: 'expression', name: '[切换]' + name2 });
+                                                    }
+                                                } else {
+                                                    acts.push({ type: 'motion', group: g, index: i, name: m.Name || g, file: m.File });
+                                                }
+                                            });
+                                        });
+                                    }
+                                    if (config.FileReferences && config.FileReferences.Expressions) {
+                                        config.FileReferences.Expressions.forEach(function(e) { acts.push({ type:'expression', name:e.Name, file:e.File }); });
+                                    }
+                                    pushActions(acts);
+                                })
+                                .catch(function() {})
+                                .then(function() {
+                                    // 5. 原生 .model3.json
+                                    return fetch(modelDir + modelName + '.model3.json')
+                                        .then(function(r) { if (!r.ok) throw 'no'; return r.json(); })
+                                        .then(function(config) {
+                                            var acts = [];
+                                            if (config.FileReferences) {
+                                                if (config.FileReferences.Motions) {
+                                                    Object.keys(config.FileReferences.Motions).forEach(function(g) {
+                                                        config.FileReferences.Motions[g].forEach(function(m, i) { acts.push({ type:'motion', group:g, index:i, name:m.Name||g, file:m.File }); });
+                                                    });
+                                                }
+                                                if (config.FileReferences.Expressions) {
+                                                    config.FileReferences.Expressions.forEach(function(e) { acts.push({ type:'expression', name:e.Name, file:e.File }); });
+                                                }
+                                            }
+                                            pushActions(acts);
+                                        })
+                                        .catch(function() {})
+                                        .then(function() { finalizeActions(); });
+                                });
+                        });
+                }, 2500);
+            };
+            window.__live2d_discoverActions();
 
             if (typeof window.live2d !== 'undefined') {
                 try {

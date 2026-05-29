@@ -1,0 +1,140 @@
+[
+	{
+		"type": "expression",
+		"name": "33嘴开关",
+		"file": "33嘴开关.exp3.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "Q嘴常态切换",
+		"file": "Q嘴常态切换.exp3.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "Q嘴张嘴切换",
+		"file": "Q嘴张嘴切换.exp3.json",
+		"sortOrder": 3
+	},
+	{
+		"type": "expression",
+		"name": "不二家",
+		"file": "不二家.exp3.json",
+		"sortOrder": 4
+	},
+	{
+		"type": "expression",
+		"name": "呆呆眼睛",
+		"file": "呆呆眼睛.exp3.json",
+		"sortOrder": 5
+	},
+	{
+		"type": "expression",
+		"name": "哭哭",
+		"file": "哭哭.exp3.json",
+		"sortOrder": 6
+	},
+	{
+		"type": "expression",
+		"name": "墨镜",
+		"file": "墨镜.exp3.json",
+		"sortOrder": 7
+	},
+	{
+		"type": "expression",
+		"name": "手",
+		"file": "手.exp3.json",
+		"sortOrder": 8
+	},
+	{
+		"type": "expression",
+		"name": "星星",
+		"file": "星星.exp3.json",
+		"sortOrder": 9
+	},
+	{
+		"type": "expression",
+		"name": "星星手",
+		"file": "星星手.exp3.json",
+		"sortOrder": 10
+	},
+	{
+		"type": "expression",
+		"name": "智慧眼",
+		"file": "智慧眼.exp3.json",
+		"sortOrder": 11
+	},
+	{
+		"type": "expression",
+		"name": "汗",
+		"file": "汗.exp3.json",
+		"sortOrder": 12
+	},
+	{
+		"type": "expression",
+		"name": "激动眼睛",
+		"file": "激动眼睛.exp3.json",
+		"sortOrder": 13
+	},
+	{
+		"type": "expression",
+		"name": "激动眼（哭",
+		"file": "激动眼（哭.exp3.json",
+		"sortOrder": 14
+	},
+	{
+		"type": "expression",
+		"name": "激动眼（泪",
+		"file": "激动眼（泪.exp3.json",
+		"sortOrder": 15
+	},
+	{
+		"type": "expression",
+		"name": "痴痴嘴巴",
+		"file": "痴痴嘴巴.exp3.json",
+		"sortOrder": 16
+	},
+	{
+		"type": "expression",
+		"name": "腿",
+		"file": "腿.exp3.json",
+		"sortOrder": 17
+	},
+	{
+		"type": "expression",
+		"name": "艹",
+		"file": "艹.exp3.json",
+		"sortOrder": 18
+	},
+	{
+		"type": "expression",
+		"name": "节奏棒",
+		"file": "节奏棒.exp3.json",
+		"sortOrder": 19
+	},
+	{
+		"type": "expression",
+		"name": "阴暗脸",
+		"file": "阴暗脸.exp3.json",
+		"sortOrder": 20
+	},
+	{
+		"type": "expression",
+		"name": "阴暗脸（无眼",
+		"file": "阴暗脸（无眼.exp3.json",
+		"sortOrder": 21
+	},
+	{
+		"type": "expression",
+		"name": "龇牙",
+		"file": "龇牙.exp3.json",
+		"sortOrder": 22
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

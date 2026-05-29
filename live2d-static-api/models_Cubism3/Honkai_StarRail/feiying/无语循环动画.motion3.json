@@ -1,0 +1,53 @@
+{
+	"Version": 3,
+	"Meta": {
+		"Duration": 8,
+		"Fps": 30.0,
+		"Loop": true,
+		"AreBeziersRestricted": false,
+		"CurveCount": 2,
+		"TotalSegmentCount": 7,
+		"TotalPointCount": 9,
+		"UserDataCount": 0,
+		"TotalUserDataSize": 0
+	},
+	"Curves": [
+		{
+			"Target": "Model",
+			"Id": "Opacity",
+			"Segments": [
+				0,
+				1,
+				0,
+				8,
+				1
+			]
+		},
+		{
+			"Target": "Parameter",
+			"Id": "Param163",
+			"Segments": [
+				0,
+				0,
+				0,
+				1.5,
+				0.245,
+				0,
+				2,
+				0.343,
+				0,
+				3,
+				0.4,
+				0,
+				6.133,
+				1,
+				0,
+				7.967,
+				1,
+				0,
+				8,
+				1
+			]
+		}
+	]
+}

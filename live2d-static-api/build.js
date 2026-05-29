@@ -150,7 +150,7 @@ class Setting {
 init()
 
 async function init() {
-  await Helper.deleteFolder(toBasePath)
+  // 不再删除 indexes，仅确保目录存在
   await Helper.ensureExistFolder(toBasePath)
 
   // 先更新模型分类文件
@@ -161,10 +161,17 @@ async function init() {
   await createModelsNameJsonFile(modelPaths)
 
   for (const { modelPath, isCubism3, sourceFolder } of modelPaths) {
-    console.log(`开始转换：${modelPath}${isCubism3 ? ' (Cubism 3格式)' : ''} [来自: ${sourceFolder}]`)
-
     const fromModelPath = `${sourceFolder}/${modelPath}`
     const toModelPath = `${toBasePath}/${modelPath}`
+
+    // 检查是否已存在索引，跳过已生成的
+    const indexExists = await fs.access(`${toModelPath}/default.json`).then(() => true).catch(() => false)
+    if (indexExists) {
+      console.log(`跳过已存在：${modelPath}`)
+      continue
+    }
+
+    console.log(`生成索引：${modelPath}${isCubism3 ? ' (Cubism 3格式)' : ''}`)
 
     await Helper.ensureExistFolder(toModelPath)
 
@@ -175,8 +182,181 @@ async function init() {
       await createTexturesIndexJsonFile(toModelPath)
     }
 
-    console.log(`转换完成：${modelPath}`)
+    console.log(`  完成：${modelPath}`)
   }
+
+  // 扫描所有模型目录中的动作/表情文件，生成动作索引
+  console.log(`\n开始扫描动作/表情文件...`)
+  const watermarkedModels = new Set()
+  for (const { modelPath, sourceFolder } of modelPaths) {
+    const fromModelPath = `${sourceFolder}/${modelPath}`
+    const toModelPath = `${toBasePath}/${modelPath}`
+    try {
+      const dirents = await fs.readdir(fromModelPath, { withFileTypes: true })
+      const actions = []
+      for (const dirent of dirents) {
+        if (dirent.isFile()) {
+          const name = dirent.name
+          if (name.endsWith('.motion3.json')) {
+            // .motion3.json 不映射到按键列表（VTS 专用，标准 SDK 无法渲染）
+          } else if (name.endsWith('.exp3.json')) {
+            actions.push({ type: 'expression', file: name })
+          }
+        }
+      }
+      // 检测水印去除表情（expression13），将其参数注入所有其他 .exp3.json
+      let watermarkParams = null
+      try {
+        const wmFile = `${fromModelPath}/expression13.exp3.json`
+        await fs.access(wmFile)
+        const wmContent = JSON.parse(await fs.readFile(wmFile, 'utf-8'))
+        if (wmContent.Parameters && wmContent.Parameters.length > 0) {
+          watermarkParams = wmContent.Parameters
+          watermarkedModels.add(modelPath)
+          console.log(`   ${modelPath}: 检测到水印去除参数 (${watermarkParams.length}个)，注入到其他表情中`)
+        }
+      } catch (e) {}
+      if (watermarkParams) {
+        for (const dirent of dirents) {
+          if (!dirent.isFile()) continue
+          const name = dirent.name
+          if (!name.endsWith('.exp3.json') || name === 'expression13.exp3.json') continue
+          try {
+            const filePath = `${fromModelPath}/${name}`
+            let content = JSON.parse(await fs.readFile(filePath, 'utf-8'))
+            if (!content.Parameters) content.Parameters = []
+            // 去重合并：只添加水印去重中不存在于原表情的参数
+            const existingIds = new Set(content.Parameters.map(p => p.Id))
+            for (const wp of watermarkParams) {
+              if (!existingIds.has(wp.Id)) {
+                content.Parameters.push(wp)
+              }
+            }
+            await fs.writeFile(filePath, Helper.stringify(content))
+            console.log(`     ← 注入 ${name}`)
+          } catch (e) {}
+        }
+      }
+      if (actions.length > 0) {
+        // 重新读取目录（因为文件可能已被修改），生成 actions_index.json
+        const updatedDirents = await fs.readdir(fromModelPath, { withFileTypes: true })
+        const updatedActions = []
+        for (const ud of updatedDirents) {
+          if (ud.isFile()) {
+            if (ud.name.endsWith('.motion3.json')) { /* 不映射 motion */ }
+            else if (ud.name.endsWith('.exp3.json')) updatedActions.push({ type: 'expression', file: ud.name })
+          }
+        }
+        await fs.writeFile(`${toModelPath}/actions_index.json`, Helper.stringify(updatedActions))
+        console.log(`   ${modelPath}: 发现 ${updatedActions.length} 个动作/表情文件`)
+      }
+    } catch (e) {}
+  }
+
+  // 生成按键映射缓存文件（按来源/游戏 → 角色 → actions_cache.json）
+  console.log(`\n生成按键映射缓存文件...`)
+  const cacheDir = 'assets'
+  let cacheCount = 0
+  for (const { modelPath, sourceFolder } of modelPaths) {
+    const fromModelPath = `${sourceFolder}/${modelPath}`
+    const toModelPath = `${toBasePath}/${modelPath}`
+    let allActs = []
+    // 从 model.json / .model3.json 读取注册的动作
+    let modelConfig = null
+    try { modelConfig = JSON.parse(await fs.readFile(`${fromModelPath}/model.json`, 'utf-8')) } catch(e) {}
+    if (!modelConfig) {
+      const modelName = modelPath.split('/').pop()
+      try { modelConfig = JSON.parse(await fs.readFile(`${fromModelPath}/${modelName}.model3.json`, 'utf-8')) } catch(e) {}
+    }
+    if (modelConfig && modelConfig.FileReferences) {
+      // FileReferences.Motions 不映射到按键列表
+      if (modelConfig.FileReferences.Expressions) {
+        var expSeen = {};
+        modelConfig.FileReferences.Expressions.forEach(function(e) {
+          var ek = e.File || e.Name;
+          if (!expSeen[ek]) {
+            expSeen[ek] = true;
+            var ename = e.Name;
+            if (/^\d+$/.test(ename)) ename = 'expression' + ename;
+            allActs.push({ type: 'expression', name: ename, file: e.File })
+          }
+        })
+      }
+    }
+    // 补充松散文件（去重）
+    try {
+      const idxData = JSON.parse(await fs.readFile(`${toModelPath}/actions_index.json`, 'utf-8'))
+      const seenFiles = new Set(allActs.map(a => a.file))
+      for (const item of idxData) {
+        if (!seenFiles.has(item.file)) {
+          const name = item.file.replace(/\.(motion3|exp3)\.json$/, '')
+          allActs.push({ type: item.type, name: name, file: item.file })
+          seenFiles.add(item.file)
+        }
+      }
+    } catch(e) {}
+    // 绯英名称映射（名字整体下移一位，1→空，14→没脸见人了）
+    if (modelPath.indexOf('Honkai_StarRail/feiying') >= 0) {
+      var feiyingNames = {
+        'expression13': '空', 'expression12': '尾巴', 'expression1': '人类',
+        'expression10': '智慧', 'expression11': '狐耳', 'expression2': '新狐耳',
+        'expression3': '脸红', 'expression4': '星星眼', 'expression5': '拜托拜托',
+        'expression6': '爱心眼', 'expression7': '生气', 'expression8': '无语',
+        'expression9': '叼面包'
+      };
+      allActs.forEach(function(a) {
+        if (a.type === 'expression' && feiyingNames[a.name]) a.name = feiyingNames[a.name];
+      });
+      // 14哭哭 → 没脸见人了
+      allActs.forEach(function(a) {
+        if (a.file === '14哭哭.exp3.json') a.name = '没脸见人了';
+      });
+    }
+    // 按 model.json 原始顺序保留，特殊排最后
+    var normActs = [], specActs = [];
+    allActs.forEach(function(a) { (a.type === 'special' ? specActs : normActs).push(a); });
+    allActs = normActs.concat(specActs);
+    // 分配顺序值（从1开始）
+    allActs.forEach(function(a, idx) { a.sortOrder = idx + 1; });
+    // 已检测到水印参数并注入的模型才添加水印按键
+    // 检测 Sound-only 的 motion（模型切换触发）
+    var addedSwitches = {};
+    if (modelConfig && modelConfig.FileReferences && modelConfig.FileReferences.Motions) {
+      Object.keys(modelConfig.FileReferences.Motions).forEach(function(g) {
+        modelConfig.FileReferences.Motions[g].forEach(function(m) {
+          if (m.Sound && !m.File && !m.Expression) {
+            var name = g.replace(/^Tap/, '').replace(/[0-9]/g, '');
+            var targetModel = '';
+            if (name.indexOf('爱芮') >= 0) targetModel = 'Zenless_Zone_Zero/irui';
+            else if (name.indexOf('南宫') >= 0) targetModel = 'Zenless_Zone_Zero/nangongyu';
+            else if (name.indexOf('千夏') >= 0) targetModel = 'Zenless_Zone_Zero/qianxia';
+            if (targetModel && !addedSwitches[targetModel]) {
+              addedSwitches[targetModel] = true;
+              allActs.push({ type: 'expression', name: '[切换]' + name });
+            }
+          }
+        });
+      });
+    }
+    // 只有有实际表情的模型才添加特殊按键
+    var hasRealActions = allActs.some(function(a) { return a.type === 'expression'; });
+    if (hasRealActions) {
+      if (watermarkedModels.has(modelPath)) {
+        allActs.push({ type: 'special', name: '水印', id: 'watermark', combo: 'ctrl+alt+F1' })
+      }
+      allActs.push({ type: 'special', name: '重置', id: 'reset', combo: 'ctrl+alt+F2' })
+    }
+    // 按来源/游戏生成文件夹 → 角色文件夹 → actions_cache.json
+    const parts = modelPath.split('/')
+    const category = parts[0]
+    const charName = parts.slice(1).join('/')
+    const charDir = `${cacheDir}/${category}/${charName}`
+    await Helper.ensureExistFolder(charDir)
+    await fs.writeFile(`${charDir}/actions_cache.json`, Helper.stringify(allActs))
+    cacheCount++
+    console.log(`   ${category}/${charName}: ${allActs.length} 个动作`)
+  }
+  console.log(`   已生成 ${cacheCount} 个角色的按键映射缓存`)
 }
 
 async function createModelsIndexJsonFile() {

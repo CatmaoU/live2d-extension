@@ -1,0 +1,140 @@
+[
+	{
+		"type": "expression",
+		"name": "3口型",
+		"file": "3口型.exp3.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "QQ",
+		"file": "QQ.exp3.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "ys",
+		"file": "ys.exp3.json",
+		"sortOrder": 3
+	},
+	{
+		"type": "expression",
+		"name": "yx",
+		"file": "yx.exp3.json",
+		"sortOrder": 4
+	},
+	{
+		"type": "expression",
+		"name": "z's",
+		"file": "z's.exp3.json",
+		"sortOrder": 5
+	},
+	{
+		"type": "expression",
+		"name": "zx",
+		"file": "zx.exp3.json",
+		"sortOrder": 6
+	},
+	{
+		"type": "expression",
+		"name": "叹气",
+		"file": "叹气.exp3.json",
+		"sortOrder": 7
+	},
+	{
+		"type": "expression",
+		"name": "墨镜",
+		"file": "墨镜.exp3.json",
+		"sortOrder": 8
+	},
+	{
+		"type": "expression",
+		"name": "手",
+		"file": "手.exp3.json",
+		"sortOrder": 9
+	},
+	{
+		"type": "expression",
+		"name": "智慧眼睛",
+		"file": "智慧眼睛.exp3.json",
+		"sortOrder": 10
+	},
+	{
+		"type": "expression",
+		"name": "比耶",
+		"file": "比耶.exp3.json",
+		"sortOrder": 11
+	},
+	{
+		"type": "expression",
+		"name": "汗",
+		"file": "汗.exp3.json",
+		"sortOrder": 12
+	},
+	{
+		"type": "expression",
+		"name": "游戏手",
+		"file": "游戏手.exp3.json",
+		"sortOrder": 13
+	},
+	{
+		"type": "expression",
+		"name": "激动",
+		"file": "激动.exp3.json",
+		"sortOrder": 14
+	},
+	{
+		"type": "expression",
+		"name": "激动2",
+		"file": "激动2.exp3.json",
+		"sortOrder": 15
+	},
+	{
+		"type": "expression",
+		"name": "激动（哭）",
+		"file": "激动（哭）.exp3.json",
+		"sortOrder": 16
+	},
+	{
+		"type": "expression",
+		"name": "激动（正常）",
+		"file": "激动（正常）.exp3.json",
+		"sortOrder": 17
+	},
+	{
+		"type": "expression",
+		"name": "痴痴嘴",
+		"file": "痴痴嘴.exp3.json",
+		"sortOrder": 18
+	},
+	{
+		"type": "expression",
+		"name": "腿",
+		"file": "腿.exp3.json",
+		"sortOrder": 19
+	},
+	{
+		"type": "expression",
+		"name": "阴暗脸",
+		"file": "阴暗脸.exp3.json",
+		"sortOrder": 20
+	},
+	{
+		"type": "expression",
+		"name": "鞋子袜子",
+		"file": "鞋子袜子.exp3.json",
+		"sortOrder": 21
+	},
+	{
+		"type": "expression",
+		"name": "龇牙",
+		"file": "龇牙.exp3.json",
+		"sortOrder": 22
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

@@ -1,40 +1,44 @@
 @echo off
-chcp 65001 >nul
-echo ========================================
-echo Live2Dæ¨¡å‹ç´¢å¼•æ›´æ–°å·¥å…· v1.0.2
-echo ========================================
-echo æ›´æ–°è¯´æ˜ï¼š
-echo   - ä¿®å¤äº†æ–‡ä»¶ä¸­æ–‡æ–‡ä»¶åä¹±ç çš„é—®é¢˜
-echo   - ä¼˜å…ˆä½¿ç”¨è‡ªå®šä¹‰ model.json é…ç½®
-echo   - æ·»åŠ äº†å¯¹ VTube Studio æ ¼å¼æ¨¡å‹
-echo ========================================
+title Live2D Ä£ĞÍË÷Òı¸üĞÂ
+echo ================================================
+echo        Live2D Ä£ĞÍË÷Òı¸üĞÂ
+echo ================================================
+echo.
+echo     Ä£ĞÍË÷ÒıÎÄ¼ş
+echo     ¶¯×÷/±íÇé»º´æ (assets)
+echo     ×Ô¶¯ĞŞ¸´±íÇéÎÄ¼şÃû
+echo.
+echo  Ö§³ÖµÄÄ£ĞÍ¸ñÊ½£º
+echo    Cubism 2.0 / 3.0+ / VTS
+echo.
+echo ================================================
 echo.
 
-REM æ£€æŸ¥ node æ˜¯å¦å­˜åœ¨
 where node >nul 2>nul
-if %errorlevel% neq 0 (
-    echo é”™è¯¯ï¼šæœªæ‰¾åˆ° Node.jsï¼Œè¯·å…ˆå®‰è£… Node.js
-    echo.
+if not %errorlevel% == 0 (
+    echo [´íÎó] Î´ÕÒµ½ Node.js
     pause
     exit /b 1
 )
 
-echo [1/2] æ­£åœ¨è¿è¡Œ build.js...
-echo       ï¼ˆæ£€æµ‹ä¸­æ–‡æ–‡ä»¶åå¹¶è‡ªåŠ¨ä¿®å¤ä¸­...ï¼‰
+echo [²½Öè 1/2] ÔËĞĞ build.js...
 node build.js
-if %errorlevel% neq 0 (
-    echo é”™è¯¯ï¼šè¿è¡Œ build.js å¤±è´¥
-    echo.
+if not %errorlevel% == 0 (
+    echo [´íÎó] build.js ÔËĞĞÊ§°Ü
     pause
     exit /b 1
 )
 
 echo.
-echo [2/2] å®Œæˆï¼
+echo [²½Öè 2/2] Íê³É£¡
 echo.
-echo æ¨¡å‹ç´¢å¼•å·²æˆåŠŸæ›´æ–°åˆ° indexes æ–‡ä»¶å¤¹
+echo Ë÷Òı: indexes\
+echo »º´æ: assets\£¨°´ÓÎÏ·/½ÇÉ«£©
 echo.
-echo æç¤ºï¼šå¦‚æœæ¨¡å‹æ–‡ä»¶å¤¹ä¸­æœ‰ä¸­æ–‡å‘½åçš„ .model3.json æ–‡ä»¶ï¼Œ
-echo       å·²è‡ªåŠ¨åˆ›å»ºè‹±æ–‡å‰¯æœ¬ä»¥ç¡®ä¿å…¼å®¹æ€§
+echo ÌáÊ¾:
+echo   Ìí¼ÓĞÂÄ£ĞÍºóÇëÖØĞÂÔËĞĞ
+echo   Cubism3-only: node build.js fromBasePath=models_Cubism3
+echo   Cubism2-only: node build.js fromBasePath=models_Cubism2
+echo ================================================
 echo.
 pause

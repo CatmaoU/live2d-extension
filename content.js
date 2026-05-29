@@ -154,6 +154,13 @@
         browserAPI.storage.onChanged.addListener((changes, areaName) => {
             if (areaName === 'local') {
                 syncSettingsFromStorage();
+                // 同步模型按键映射到页面 localStorage
+                if (changes.live2dModelKeyBindings && changes.live2dModelKeyBindings.newValue) {
+                    try { localStorage.setItem('live2dModelKeyBindings', JSON.stringify(changes.live2dModelKeyBindings.newValue)); } catch(e) {}
+                }
+                if (changes.live2dSpecialBindings && changes.live2dSpecialBindings.newValue) {
+                    try { localStorage.setItem('live2dSpecialBindings', JSON.stringify(changes.live2dSpecialBindings.newValue)); } catch(e) {}
+                }
             }
         });
     }
@@ -402,6 +409,28 @@
                 localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
                 // 通知页面脚本刷新
                 window.dispatchEvent(new CustomEvent('live2dUpdateSettings'));
+                sendResponse({ success: true });
+            } else if (message.type === 'getModelActions') {
+                var actions = [];
+                try {
+                    var raw = localStorage.getItem('live2dModelActions');
+                    if (raw) actions = JSON.parse(raw);
+                } catch(e) {}
+                sendResponse({ actions: actions });
+            } else if (message.type === 'getCurrentModel') {
+                var model = '';
+                try {
+                    var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                    model = s.cubism3Model || s.localModel || '';
+                } catch(e) {}
+                sendResponse({ model: model });
+            } else if (message.type === 'updateModelKeyBindings') {
+                if (message.bindings) {
+                    try { localStorage.setItem('live2dModelKeyBindings', JSON.stringify(message.bindings)); } catch(e) {}
+                }
+                if (message.specials) {
+                    try { localStorage.setItem('live2dSpecialBindings', JSON.stringify(message.specials)); } catch(e) {}
+                }
                 sendResponse({ success: true });
             }
         return true;

@@ -1,0 +1,20 @@
+[
+	{
+		"type": "expression",
+		"name": "动作",
+		"file": "Expressions_0.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "还原",
+		"file": "Expressions_1.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

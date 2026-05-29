@@ -1221,6 +1221,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       const storageKey = currentFormatIsCubism3 ? 'cubism3Model' : 'localModel';
       await storage.set({ [storageKey]: selectedModel });
       console.log('[Live2D] Model selected:', selectedModel, 'Format:', currentFormatIsCubism3 ? 'Cubism3' : 'Cubism2');
+      // 自动刷新页面使新模型生效
+      try {
+        const tabs = await new Promise(resolve => browserAPI.tabs.query({ active: true, currentWindow: true }, resolve));
+        const tab = tabs && tabs[0];
+        if (tab && tab.id) {
+          browserAPI.tabs.reload(tab.id);
+          window.close();
+        }
+      } catch(e) {
+        console.log('[Live2D] Auto-reload failed:', e);
+      }
     }
   });
 
@@ -2274,6 +2285,368 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // ─── 结束按键绑定系统 ───
 
+  // ─── 模型按键映射系统 ───
+
+  var DEFAULT_MODEL_KEYS = ['Numpad1','Numpad2','Numpad3','Numpad4','Numpad5','Numpad6','Numpad7','Numpad8','Numpad9','Numpad0','NumpadMultiply','NumpadSubtract','NumpadAdd','1','2','3','4','5','6','7','8','9','0','-','=','[',']','\\',';','\'',',','.','/'];
+  var _modelKeyBindings = {};
+  var _modelKeyRecording = null;
+  var _modelSpecialBindings = {}; // { "watermark": "ctrl+alt+F1", ... }
+
+  function loadModelKeyBindings() {
+    try {
+      var raw = localStorage.getItem('live2dModelKeyBindings');
+      if (raw) { _modelKeyBindings = JSON.parse(raw); return; }
+    } catch(e) {}
+    _modelKeyBindings = {};
+    DEFAULT_MODEL_KEYS.forEach(function(k, i) { _modelKeyBindings[k] = i; });
+    try {
+      var raw2 = localStorage.getItem('live2dSpecialBindings');
+      if (raw2) _modelSpecialBindings = JSON.parse(raw2);
+    } catch(e) {}
+    if (!_modelSpecialBindings.watermark) _modelSpecialBindings.watermark = 'ctrl+alt+F1';
+    if (!_modelSpecialBindings.reset) _modelSpecialBindings.reset = 'ctrl+alt+F2';
+  }
+  function saveModelKeyBindings() {
+    try { localStorage.setItem('live2dModelKeyBindings', JSON.stringify(_modelKeyBindings)); } catch(e) {}
+    try { localStorage.setItem('live2dSpecialBindings', JSON.stringify(_modelSpecialBindings)); } catch(e) {}
+    try { chrome.storage.local.set({ live2dModelKeyBindings: _modelKeyBindings, live2dSpecialBindings: _modelSpecialBindings }); } catch(e) {}
+    browserAPI.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (!tabs[0]) return;
+      browserAPI.tabs.sendMessage(tabs[0].id, { type: 'updateModelKeyBindings', bindings: _modelKeyBindings, specials: _modelSpecialBindings }).catch(function() {});
+    });
+  }
+  function fmtKey(k) {
+    if (k.startsWith('Numpad')) {
+      var n = k.replace('Numpad','').replace('Multiply','*').replace('Subtract','-').replace('Add','+');
+      return 'Num' + n;
+    }
+    var map = { '[':'[', ']':']', '\\':'\\', ';':';', '\'':'\'', ',':',', '.':'.', '/':'/' };
+    return map[k] || k;
+  }
+  function getKeyForAction(index) {
+    for (var k in _modelKeyBindings) {
+      if (_modelKeyBindings.hasOwnProperty(k) && _modelKeyBindings[k] === index) return fmtKey(k);
+    }
+    return DEFAULT_MODEL_KEYS[index] || '?';
+  }
+
+  function renderModelActions(actions) {
+    var list = document.getElementById('modelActionDialogList');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!actions || actions.length === 0) {
+      list.innerHTML = '<div style="color: #666; font-size: 12px; text-align: center; padding: 20px;">暂无可用动作，请先加载 Cubism3 模型</div>';
+      return;
+    }
+    // 去重
+    var seen = {};
+    actions = actions.filter(function(a) {
+      var k = a.type + ':' + a.name + ':' + (a.id || '');
+      if (seen[k]) return false;
+      seen[k] = true;
+      return true;
+    });
+    loadModelKeyBindings();
+    var hasSpecial = false;
+    actions.forEach(function(action, i) {
+      if (action.type === 'special') {
+        if (!hasSpecial) {
+          hasSpecial = true;
+          var sep = document.createElement('div');
+          sep.style.cssText = 'border-top: 1px solid #444; margin: 4px 0;';
+          list.appendChild(sep);
+        }
+        var key = _modelSpecialBindings[action.id] || action.combo || '未绑定';
+        var row = document.createElement('div');
+        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between;';
+        var label = document.createElement('span');
+        label.style.cssText = 'color: #4fa3ff; font-size: 12px; font-weight: bold;';
+        label.textContent = '[' + action.name + ']';
+        var kbd = document.createElement('span');
+        kbd.style.cssText = 'background: #2a2a2a; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; min-width: 80px; text-align: center; font-size: 12px; cursor: pointer; color: #4fa3ff;';
+        kbd.textContent = key;
+        kbd.dataset.actionIdx = i;
+        kbd.dataset.special = action.id;
+        kbd.title = '点击更改组合键';
+        kbd.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var idx = parseInt(this.dataset.actionIdx, 10);
+          _modelKeyRecording = idx;
+          this.textContent = '按下组合键...';
+          this.style.color = '#ff8800';
+          this.style.borderColor = '#ff8800';
+        });
+        row.appendChild(label);
+        row.appendChild(kbd);
+        list.appendChild(row);
+        return;
+      }
+      var key = getKeyForAction(i);
+      var row = document.createElement('div');
+      row.style.cssText = 'display: flex; align-items: center; justify-content: space-between;';
+      var label = document.createElement('span');
+      label.style.cssText = 'color: #bbb; font-size: 12px;';
+      var isSwitch = action.name && action.name.indexOf('[切换]') === 0;
+      label.textContent = isSwitch ? action.name : '[表情] ' + action.name;
+      if (isSwitch) label.style.textDecoration = 'line-through';
+      var kbd = document.createElement('span');
+      kbd.style.cssText = 'background: #2a2a2a; border: 1px solid #555; border-radius: 4px; padding: 4px 10px; min-width: 40px; text-align: center; font-size: 12px; cursor: ' + (isSwitch ? 'default' : 'pointer') + '; color: ' + (isSwitch ? '#666' : '#4fa3ff') + ';';
+      if (isSwitch) kbd.style.textDecoration = 'line-through';
+      kbd.textContent = key;
+      kbd.dataset.actionIdx = i;
+      if (!isSwitch) {
+        kbd.title = '点击更改按键';
+        kbd.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var idx = parseInt(this.dataset.actionIdx, 10);
+          _modelKeyRecording = idx;
+          this.textContent = '...';
+          this.style.color = '#ff8800';
+          this.style.borderColor = '#ff8800';
+        });
+      }
+      row.appendChild(label);
+      row.appendChild(kbd);
+      list.appendChild(row);
+    });
+  }
+
+  // 键盘录制
+  document.addEventListener('keydown', function(e) {
+    if (_modelKeyRecording === null) return;
+    var overlay = document.getElementById('modelActionOverlay');
+    if (!overlay || overlay.style.display !== 'flex') { _modelKeyRecording = null; return; }
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.key === 'Escape') { _modelKeyRecording = null; fetchModelActionsAndRender(); return; }
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      // 删除此动作的绑定
+      for (var k in _modelKeyBindings) {
+        if (_modelKeyBindings.hasOwnProperty(k) && _modelKeyBindings[k] === _modelKeyRecording) {
+          delete _modelKeyBindings[k];
+          break;
+        }
+      }
+      _modelKeyRecording = null;
+      saveModelKeyBindings();
+      // 重新获取最新 actions 并渲染
+      fetchModelActionsAndRender();
+      return;
+    }
+    // 检查当前录制的是否为特殊动作（组合键）
+    var isSpecial = false;
+    var specialId = '';
+    if (_lastFetchedActions[_modelKeyRecording] && _lastFetchedActions[_modelKeyRecording].type === 'special') {
+      isSpecial = true;
+      specialId = _lastFetchedActions[_modelKeyRecording].id || '';
+    }
+    if (isSpecial) {
+      // 组合键录制：捕获修饰键 + 普通键
+      if (e.key === 'Control' || e.key === 'Shift' || e.key === 'Alt' || e.key === 'Meta') return;
+      var parts = [];
+      if (e.ctrlKey) parts.push('ctrl');
+      if (e.altKey) parts.push('alt');
+      if (e.shiftKey) parts.push('shift');
+      parts.push(e.key.length === 1 ? e.key.toUpperCase() : e.key);
+      var combo = parts.join('+');
+      _modelSpecialBindings[specialId] = combo;
+      _modelKeyRecording = null;
+      saveModelKeyBindings();
+      fetchModelActionsAndRender();
+      return;
+    }
+    // 用 e.code 区分主键盘和小键盘
+    var code = e.code || '';
+    var pressed = code.startsWith('Numpad') ? code : (e.key.length === 1 ? e.key.toUpperCase() : e.key);
+    // 如果按的是小键盘键，自动解除对应主键盘键的绑定（避免冲突）
+    if (code.startsWith('Numpad')) {
+        var mainKey = code.replace('Numpad','').replace('Subtract','-').replace('Add','=');
+        for (var mk in _modelKeyBindings) {
+            if (_modelKeyBindings.hasOwnProperty(mk) && mk === mainKey && _modelKeyBindings[mk] === _modelKeyRecording) {
+                delete _modelKeyBindings[mk];
+            }
+        }
+    }
+    // 检查新键是否已被其他动作占用
+    var conflictIdx = null;
+    for (var k in _modelKeyBindings) {
+      if (_modelKeyBindings.hasOwnProperty(k) && k === pressed && _modelKeyBindings[k] !== _modelKeyRecording) {
+        conflictIdx = _modelKeyBindings[k];
+        break;
+      }
+    }
+    if (conflictIdx !== null) {
+      // 查找冲突的动作名称
+      var conflictName = '';
+      if (_lastFetchedActions[conflictIdx]) {
+        conflictName = _lastFetchedActions[conflictIdx].name;
+      }
+      if (!confirm('按键 "' + pressed + '" 已被 "' + conflictName + '" 占用，是否覆盖？')) {
+        _modelKeyRecording = null;
+        fetchModelActionsAndRender();
+        return;
+      }
+      // 用户确认覆盖，删除冲突绑定
+      delete _modelKeyBindings[pressed];
+      // 被覆盖的动作自动获得其默认快捷键
+      var defaultKeyForConflict = DEFAULT_MODEL_KEYS[conflictIdx];
+      if (defaultKeyForConflict) {
+        // 检查是否已有其他键指向此动作（说明用户之前自定义过）
+        var alreadyBound = false;
+        for (var kk in _modelKeyBindings) {
+          if (_modelKeyBindings.hasOwnProperty(kk) && _modelKeyBindings[kk] === conflictIdx) {
+            alreadyBound = true;
+            break;
+          }
+        }
+        if (!alreadyBound) {
+          // 默认键已被其他动作占用？则解除旧占用
+          for (var kk in _modelKeyBindings) {
+            if (_modelKeyBindings.hasOwnProperty(kk) && kk === defaultKeyForConflict) {
+              delete _modelKeyBindings[kk];
+              break;
+            }
+          }
+          _modelKeyBindings[defaultKeyForConflict] = conflictIdx;
+        }
+      }
+    }
+    // 移除旧绑定（同一动作只能绑一个键）
+    for (var k in _modelKeyBindings) {
+      if (_modelKeyBindings.hasOwnProperty(k) && _modelKeyBindings[k] === _modelKeyRecording) {
+        delete _modelKeyBindings[k];
+      }
+    }
+    _modelKeyBindings[pressed] = _modelKeyRecording;
+    _modelKeyRecording = null;
+    saveModelKeyBindings();
+    fetchModelActionsAndRender();
+  });
+
+  var _lastFetchedActions = [];
+  var _fetchRetryTimer = null;
+  // 默认使用缓存，fallback 到消息获取
+  function tryCacheThenFetch(forceRefresh) {
+    if (forceRefresh) {
+      fetchModelActionsAndRender();
+      return;
+    }
+    // 1) 优先从 assets/ 缓存读取
+    browserAPI.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (!tabs[0]) { fetchModelActionsAndRender(); return; }
+      browserAPI.tabs.sendMessage(tabs[0].id, { type: 'getCurrentModel' }).then(function(resp) {
+        var modelName = (resp && resp.model) || '';
+        if (!modelName) { fetchModelActionsAndRender(); return; }
+        var parts = modelName.split('/');
+        var cacheUrl = chrome.runtime.getURL('live2d-static-api/assets/' + parts[0] + '/' + parts.slice(1).join('/') + '/actions_cache.json');
+        fetch(cacheUrl).then(function(r) {
+          if (!r.ok) throw new Error('no cache');
+          return r.json();
+        }).then(function(cached) {
+          if (cached && cached.length > 0) {
+            // 按与运行时 finalizeActions 相同的排序规则排序，保证按键映射一致
+            cached.sort(function(a, b) {
+              var ao = a.sortOrder !== undefined ? a.sortOrder : 9999;
+              var bo = b.sortOrder !== undefined ? b.sortOrder : 9999;
+              return ao - bo;
+            });
+            _lastFetchedActions = cached;
+            renderModelActions(cached);
+            var hint = document.getElementById('modelActionHint');
+            if (hint) hint.innerHTML = '加载模型后可设置动作快捷键（' + (cached.length > 0 ? '<span style="color:#4fa3ff;font-weight:bold;">' + cached.length + '</span>' : '0') + '表情）';
+          } else {
+            fetchModelActionsAndRender();
+          }
+        }).catch(function() { fetchModelActionsAndRender(); });
+      }).catch(function() { fetchModelActionsAndRender(); });
+    });
+  }
+  // 2) fallback：通过消息从页面获取
+  function fetchModelActionsAndRender() {
+    if (_fetchRetryTimer) { clearTimeout(_fetchRetryTimer); _fetchRetryTimer = null; }
+    browserAPI.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+      if (!tabs[0]) { scheduleRetry(); return; }
+      browserAPI.tabs.sendMessage(tabs[0].id, { type: 'getModelActions' })
+        .then(function(response) {
+          var actions = (response && response.actions) || [];
+          _lastFetchedActions = actions;
+          renderModelActions(actions);
+          var hint = document.getElementById('modelActionHint');
+          if (hint) {
+            hint.innerHTML = actions.length > 0
+              ? '发现 <span style="color:#4fa3ff;font-weight:bold;">' + actions.length + '</span> 个可用动作，点击按键可更改'
+              : '当前模型没有可用的动作/表情文件';
+          }
+          if (actions.length === 0) scheduleRetry();
+        })
+        .catch(function() {
+          renderModelActions([]);
+          var hint = document.getElementById('modelActionHint');
+          if (hint) hint.textContent = '请先在有 Live2D 模型的页面打开此弹窗';
+          scheduleRetry();
+        });
+    });
+  }
+  function scheduleRetry() {
+    if (_fetchRetryTimer) clearTimeout(_fetchRetryTimer);
+    _fetchRetryTimer = setTimeout(function() { fetchModelActionsAndRender(); }, 1500);
+  }
+
+  // 模型按键映射按钮 → 默认用缓存
+  var modelActionBindBtn = document.getElementById('modelActionBindBtn');
+  if (modelActionBindBtn) {
+    modelActionBindBtn.addEventListener('click', function() {
+      var overlay = document.getElementById('modelActionOverlay');
+      if (overlay) overlay.style.display = 'flex';
+      loadModelKeyBindings();
+      tryCacheThenFetch(false);
+    });
+  }
+
+  // 刷新按钮 → 强制从页面重新获取
+  var modelActionRefreshBtn = document.getElementById('modelActionRefreshBtn');
+  if (modelActionRefreshBtn) {
+    modelActionRefreshBtn.addEventListener('click', function() {
+      tryCacheThenFetch(true);
+    });
+  }
+
+  // 重置按钮
+  var modelActionResetBtn = document.getElementById('modelActionResetBtn');
+  if (modelActionResetBtn) {
+    modelActionResetBtn.addEventListener('click', function() {
+      _modelKeyBindings = {};
+      DEFAULT_MODEL_KEYS.forEach(function(k, i) { _modelKeyBindings[k] = i; });
+      _modelSpecialBindings = { watermark: 'ctrl+alt+F1', reset: 'ctrl+alt+F2' };
+      _modelKeyRecording = null;
+      saveModelKeyBindings();
+      tryCacheThenFetch(true);
+    });
+  }
+
+  // 关闭按钮
+  var modelActionCloseBtn = document.getElementById('modelActionCloseBtn');
+  if (modelActionCloseBtn) {
+    modelActionCloseBtn.addEventListener('click', function() {
+      document.getElementById('modelActionOverlay').style.display = 'none';
+      _modelKeyRecording = null;
+    });
+  }
+
+  // 点击蒙层背景关闭
+  document.addEventListener('click', function(e) {
+    var overlay = document.getElementById('modelActionOverlay');
+    if (overlay && overlay.style.display === 'flex' && e.target === overlay) {
+      overlay.style.display = 'none';
+      _modelKeyRecording = null;
+    }
+  });
+
+  // ─── 结束模型按键映射系统 ───
+
+  // 初始加载时从缓存读取（forceRefresh=false）
+  setTimeout(function() { tryCacheThenFetch(false); }, 300);
+
   // 立即更新一次
   updateMemoryUsage();
 
@@ -2284,4 +2657,4 @@ document.addEventListener('DOMContentLoaded', async () => {
   window.addEventListener('beforeunload', () => {
     clearInterval(memoryUpdateInterval);
   });
-});                                                                                                                                                                                                                                                         
+});

@@ -1,0 +1,62 @@
+[
+	{
+		"type": "expression",
+		"name": "亲亲",
+		"file": "亲亲.exp3.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "唱歌",
+		"file": "唱歌.exp3.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "思考",
+		"file": "思考.exp3.json",
+		"sortOrder": 3
+	},
+	{
+		"type": "expression",
+		"name": "摊手",
+		"file": "摊手.exp3.json",
+		"sortOrder": 4
+	},
+	{
+		"type": "expression",
+		"name": "星星",
+		"file": "星星.exp3.json",
+		"sortOrder": 5
+	},
+	{
+		"type": "expression",
+		"name": "智慧眼",
+		"file": "智慧眼.exp3.json",
+		"sortOrder": 6
+	},
+	{
+		"type": "expression",
+		"name": "激动眼",
+		"file": "激动眼.exp3.json",
+		"sortOrder": 7
+	},
+	{
+		"type": "expression",
+		"name": "腿",
+		"file": "腿.exp3.json",
+		"sortOrder": 8
+	},
+	{
+		"type": "expression",
+		"name": "龇牙",
+		"file": "龇牙.exp3.json",
+		"sortOrder": 9
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

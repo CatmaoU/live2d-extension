@@ -412,6 +412,9 @@
       color: #c0c0ff;
       border-color: #c0c0ff;
     }
+    body.dark-theme #modelActionHint {
+      color: #888 !important;
+    }
     body.dark-theme .position-btn {
       background: #252542;
       border-color: #4a4a6c;
@@ -641,6 +644,34 @@
           <option value="">加载中...</option>
         </select>
         <small>目前支持Cubism2、Cubism3模型，兼容VTS模型（动作和语音等没做，只做到了兼容）</small>
+
+        <!-- 模型按键映射 -->
+        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: 600; color: #667eea; font-size: 13px;">模型按键映射</span>
+            <div style="display: flex; gap: 4px;">
+              <button id="modelActionRefreshBtn" style="background: #2a2a2a; border: 1px solid #555; color: #aaa; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">刷新</button>
+              <button id="modelActionBindBtn" style="background: #2a2a2a; border: 1px solid #555; color: #aaa; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">按键绑定</button>
+            </div>
+          </div>
+          <div style="font-size: 12px; color: #999;" id="modelActionHint">加载模型后可设置动作快捷键（0表情）</div>
+        </div>
+        <!-- 模型按键映射蒙层 -->
+        <div id="modelActionOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center;">
+          <div style="background: #1e1e1e; border: 1px solid #444; border-radius: 12px; padding: 20px; width: 320px; max-width: 90%;">
+            <div style="font-weight: bold; color: #ddd; font-size: 14px; margin-bottom: 16px;">模型按键映射</div>
+            <div style="max-height: 370px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #555 #1e1e1e;">
+              <div style="display: flex; flex-direction: column; gap: 10px;" id="modelActionDialogList">
+                <!-- 由 JS 动态渲染 -->
+              </div>
+            </div>
+            <div style="font-size: 11px; color: #666; margin-top: 12px;">按数字键 1-9,0,-,= 触发对应的动作/表情</div>
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
+              <button id="modelActionResetBtn" style="flex: 1; background: #2a1a1a; border: 1px solid #553333; color: #cc8888; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px;">重置</button>
+              <button id="modelActionCloseBtn" style="flex: 1; background: #333; border: 1px solid #555; color: #ccc; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px;">关闭</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1016,9 +1047,9 @@
     <button class="btn" id="refresh">刷新页面</button>
 
     <div class="footer">
-      基于 <a href="https://github.com/stevenjoezhang/live2d-widget" target="_blank">live2d-widget</a> 制作 | v1.0.5 <span style="color: #ff6b6b;">(beta-1)</span>
+      基于 <a href="https://github.com/stevenjoezhang/live2d-widget" target="_blank">live2d-widget</a> 制作 | v1.0.6
     </div>
   </div>
   <script src="popup.js"></script>
 </body>
-</html>                                                                           
+</html>

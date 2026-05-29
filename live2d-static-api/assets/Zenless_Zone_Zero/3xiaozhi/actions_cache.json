@@ -1,0 +1,32 @@
+[
+	{
+		"type": "expression",
+		"name": "TO白天",
+		"file": "Expressions_0.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "TO夜晚",
+		"file": "Expressions_1.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "[切换]爱芮"
+	},
+	{
+		"type": "expression",
+		"name": "[切换]南宫"
+	},
+	{
+		"type": "expression",
+		"name": "[切换]千夏"
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]

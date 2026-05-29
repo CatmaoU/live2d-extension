@@ -1,0 +1,17 @@
+{
+	"modelIntroduce": "feiying",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Honkai_StarRail/feiying/绯英Q版l2d0_15.moc3",
+	"textures": [
+		"../../../models_Cubism3/Honkai_StarRail/feiying/绯英Q版l2d0_15.4096/texture_00.png"
+	],
+	"physics": "../../../models_Cubism3/Honkai_StarRail/feiying/绯英Q版l2d0_15.physics3.json",
+	"motions": {
+		"Idle": [
+			{}
+		],
+		"TapBody": [
+			{}
+		]
+	}
+}

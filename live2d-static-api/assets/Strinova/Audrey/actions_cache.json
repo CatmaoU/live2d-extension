@@ -1,0 +1,128 @@
+[
+	{
+		"type": "expression",
+		"name": "33口型开关",
+		"file": "33口型开关.exp3.json",
+		"sortOrder": 1
+	},
+	{
+		"type": "expression",
+		"name": "Q嘴常态切换1",
+		"file": "Q嘴常态切换1.exp3.json",
+		"sortOrder": 2
+	},
+	{
+		"type": "expression",
+		"name": "Q嘴常态切换2",
+		"file": "Q嘴常态切换2.exp3.json",
+		"sortOrder": 3
+	},
+	{
+		"type": "expression",
+		"name": "傲娇",
+		"file": "傲娇.exp3.json",
+		"sortOrder": 4
+	},
+	{
+		"type": "expression",
+		"name": "傲娇眼睛（眯眼",
+		"file": "傲娇眼睛（眯眼.exp3.json",
+		"sortOrder": 5
+	},
+	{
+		"type": "expression",
+		"name": "呆呆眼睛",
+		"file": "呆呆眼睛.exp3.json",
+		"sortOrder": 6
+	},
+	{
+		"type": "expression",
+		"name": "哭哭",
+		"file": "哭哭.exp3.json",
+		"sortOrder": 7
+	},
+	{
+		"type": "expression",
+		"name": "哭哭眼",
+		"file": "哭哭眼.exp3.json",
+		"sortOrder": 8
+	},
+	{
+		"type": "expression",
+		"name": "墨镜",
+		"file": "墨镜.exp3.json",
+		"sortOrder": 9
+	},
+	{
+		"type": "expression",
+		"name": "手",
+		"file": "手.exp3.json",
+		"sortOrder": 10
+	},
+	{
+		"type": "expression",
+		"name": "智慧眼睛",
+		"file": "智慧眼睛.exp3.json",
+		"sortOrder": 11
+	},
+	{
+		"type": "expression",
+		"name": "流汗",
+		"file": "流汗.exp3.json",
+		"sortOrder": 12
+	},
+	{
+		"type": "expression",
+		"name": "激动眼睛",
+		"file": "激动眼睛.exp3.json",
+		"sortOrder": 13
+	},
+	{
+		"type": "expression",
+		"name": "痴痴嘴",
+		"file": "痴痴嘴.exp3.json",
+		"sortOrder": 14
+	},
+	{
+		"type": "expression",
+		"name": "脸红",
+		"file": "脸红.exp3.json",
+		"sortOrder": 15
+	},
+	{
+		"type": "expression",
+		"name": "腿",
+		"file": "腿.exp3.json",
+		"sortOrder": 16
+	},
+	{
+		"type": "expression",
+		"name": "阴暗脸",
+		"file": "阴暗脸.exp3.json",
+		"sortOrder": 17
+	},
+	{
+		"type": "expression",
+		"name": "阴暗脸（无眼",
+		"file": "阴暗脸（无眼.exp3.json",
+		"sortOrder": 18
+	},
+	{
+		"type": "expression",
+		"name": "鞋子",
+		"file": "鞋子.exp3.json",
+		"sortOrder": 19
+	},
+	{
+		"type": "expression",
+		"name": "龇牙",
+		"file": "龇牙.exp3.json",
+		"sortOrder": 20
+	},
+	{
+		"type": "special",
+		"name": "重置",
+		"id": "reset",
+		"combo": "ctrl+alt+F2"
+	}
+]
