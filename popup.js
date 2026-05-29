@@ -1851,7 +1851,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (info && info.upToDate) {
           alert('当前已是最新版本：' + info.version);
         } else if (info && info.version) {
-          if (confirm('发现新版本 ' + info.version + '，是否前往下载？')) {
+          var msg = '发现新版本 ' + info.version + '\n\n';
+          msg += '[1] 下载 ZIP：点确定后下载\n';
+          msg += '[2] 解压到扩展文件夹覆盖\n';
+          msg += '[3] chrome://extensions → 刷新\n\n';
+          msg += '或双击项目中的 update.py 自动更新';
+          if (confirm(msg + '\n\n是否下载更新包？')) {
             window.open(info.url || 'https://github.com/CatmaoU/live2d-extension/releases/latest', '_blank');
           }
         } else {

@@ -133,6 +133,42 @@ def replace_extension(extracted_dir):
     print("[完成] 更新文件已替换！")
 
 
+def check_only():
+    """仅检查更新，JSON 输出供 native_host 调用"""
+    try:
+        release = get_latest_release()
+        current = get_current_version()
+        data = {
+            "current": current,
+            "latest": release["version"],
+            "has_update": compare_versions(release["version"], current) > 0,
+            "url": release["html_url"],
+        }
+        print(json.dumps(data, ensure_ascii=False))
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
+def apply_update():
+    """执行更新，JSON 输出供 native_host 调用"""
+    try:
+        release = get_latest_release()
+        if compare_versions(release["version"], get_current_version()) <= 0:
+            print(json.dumps({"message": "已是最新版本", "done": True}, ensure_ascii=False))
+            return 0
+        extracted = download_and_extract(release["zip_url"])
+        replace_extension(extracted)
+        shutil.rmtree(extracted.parent if extracted.parent.name.startswith("live2d_update_") else extracted,
+                      ignore_errors=True)
+        print(json.dumps({"message": "更新成功！请重新加载扩展", "done": True}, ensure_ascii=False))
+        return 0
+    except Exception as e:
+        print(json.dumps({"error": str(e)}, ensure_ascii=False))
+        return 1
+
+
 def main():
     print("=" * 50)
     print("  Live2D 看板娘 - 自动更新工具")
@@ -174,7 +210,6 @@ def main():
     try:
         extracted = download_and_extract(release["zip_url"])
         replace_extension(extracted)
-        # 清理临时目录
         shutil.rmtree(extracted.parent if extracted.parent.name.startswith("live2d_update_") else extracted,
                       ignore_errors=True)
         print()
@@ -193,4 +228,9 @@ def main():
 
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--check":
+            sys.exit(check_only())
+        elif sys.argv[1] == "--apply":
+            sys.exit(apply_update())
     main()
