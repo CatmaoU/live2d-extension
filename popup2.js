@@ -983,17 +983,51 @@ async function checkGitHubUpdate() {
 }
 
 // 版本号比较（返回 1: a>b, 0: a=b, -1: a<b）
-// 自动忽略 pre-release 后缀（如 -beta.2、-alpha.1），只比较纯数字部分
+// 支持 pre-release 后缀：1.0.5-beta.1 < 1.0.5-beta.2
 function compareVersions(a, b) {
-  // 去掉 pre-release 后缀（-xxx）只保留数字部分
-  const clean = function(v) { return v.replace(/-.*$/, ''); };
-  const pa = clean(a).split('.').map(Number);
-  const pb = clean(b).split('.').map(Number);
-  for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
-    const na = pa[i] || 0;
-    const nb = pb[i] || 0;
+  // 分离基础版本和 pre-release 后缀
+  const parse = function(v) {
+    const idx = v.indexOf('-');
+    const base = idx >= 0 ? v.substring(0, idx) : v;
+    const suffix = idx >= 0 ? v.substring(idx + 1) : '';
+    return {
+      base: base.split('.').map(Number),
+      suffix: suffix ? suffix.split('.').map(function(s) { return isNaN(Number(s)) ? s : Number(s); }) : []
+    };
+  };
+  
+  const pa = parse(a);
+  const pb = parse(b);
+  
+  // 比较基础版本数字部分
+  for (let i = 0; i < Math.max(pa.base.length, pb.base.length); i++) {
+    const na = pa.base[i] || 0;
+    const nb = pb.base[i] || 0;
     if (na > nb) return 1;
     if (na < nb) return -1;
+  }
+  
+  // 基础版本相同 → 比较 pre-release 后缀
+  // 正式版 > beta（无后缀 > 有后缀）
+  if (pa.suffix.length === 0 && pb.suffix.length > 0) return 1;    // a 正式版, b beta → a > b
+  if (pa.suffix.length > 0 && pb.suffix.length === 0) return -1;   // a beta, b 正式版 → a < b
+  if (pa.suffix.length === 0 && pb.suffix.length === 0) return 0;  // 都无后缀 → 版本相同
+  
+  // 比较后缀各部分（beta.1 vs beta.2）
+  for (let i = 0; i < Math.max(pa.suffix.length, pb.suffix.length); i++) {
+    const na = pa.suffix[i];
+    const nb = pb.suffix[i];
+    if (na === undefined) return -1;
+    if (nb === undefined) return 1;
+    if (typeof na === 'number' && typeof nb === 'number') {
+      if (na > nb) return 1;
+      if (na < nb) return -1;
+    } else {
+      const sa = String(na);
+      const sb = String(nb);
+      if (sa > sb) return 1;
+      if (sa < sb) return -1;
+    }
   }
   return 0;
 }
