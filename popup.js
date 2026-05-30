@@ -1834,10 +1834,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
       }
       
-      await new Promise(function(resolve) { setTimeout(resolve, 200); });
+      await new Promise(function(resolve) { setTimeout(resolve, 1000); });
 
-      // 更新内存显示
-      updateMemoryUsage();
+      await updateMemoryUsage();
 
       // 显示提示
       alert(`已尝试清理其他标签页的模型喵~`);
