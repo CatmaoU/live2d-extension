@@ -315,14 +315,14 @@
                 localStorage.setItem('live2dExtensionSettings', JSON.stringify(settingsData));
                 console.log('[Live2D] Freeze model status updated to:', message.freezeModel, 'mode:', settingsData.freezeMode);
                 
-                // 如果关闭冻结功能，立即解冻模型
+                // 实时生效
                 if (message.freezeModel) {
-                    // 开启冻结功能，如果页面当前是隐藏的，则冻结
-                    if (document.hidden) {
+                    // 先解冻再重新冻结（让新模式生效）
+                    unfreezeLive2DModel();
+                    setTimeout(function() {
                         freezeLive2DModel();
-                    }
+                    }, 50);
                 } else {
-                    // 关闭冻结功能，立即解冻
                     unfreezeLive2DModel();
                 }
                 
@@ -3229,6 +3229,15 @@
                     settings.drag = changes.drag.newValue;
                 }
                 localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
+                // 同步到其他标签页：冻结模式变化时重新冻结
+                if (changes.freezeMode || changes.freezeModelEnabled) {
+                    if (settings.freezeModelEnabled) {
+                        unfreezeLive2DModel();
+                        setTimeout(freezeLive2DModel, 50);
+                    } else {
+                        unfreezeLive2DModel();
+                    }
+                }
                 console.log('[Live2D] Settings synced to localStorage');
             }
             
