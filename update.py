@@ -21,11 +21,19 @@ from pathlib import Path
 # ─── 启动验证 ───
 BASE_DIR = Path(sys.executable if getattr(sys, 'frozen', False) else __file__).resolve().parent
 if not (BASE_DIR / "manifest.json").exists():
+    EXE_NAME = os.path.basename(sys.executable) if getattr(sys, 'frozen', False) else "update.py"
+    # 启用 Windows 控制台彩色输出
+    try:
+        import ctypes
+        kernel32 = ctypes.windll.kernel32
+        kernel32.SetConsoleMode(kernel32.GetStdHandle(-11), 7)
+    except: pass
+    RED = '\033[31m'; GREEN = '\033[32m'; RESET = '\033[0m'
     print("=" * 50)
-    print("  错误：未在扩展文件夹中运行！")
+    print(f"  {RED}错误：未在扩展文件夹中运行！{RESET}")
     print()
-    print("  请将 update.py 放入扩展文件夹目录内")
-    print("  （与 manifest.json 同目录）后再运行。")
+    print(f"  {GREEN}请将 {EXE_NAME} 放入扩展文件夹目录内{RESET}")
+    print(f"  {GREEN}（与 manifest.json 同目录）后再运行。{RESET}")
     print("=" * 50)
     input("\n按 Enter 退出...")
     sys.exit(1)
