@@ -3545,16 +3545,7 @@
             console.warn('[Live2D Cubism3] Could not pause Live2D SDK:', e);
         }
         
-        // 5. 清理 Canvas 资源（quick 模式不清空尺寸，保留上下文）
-        try {
-            const canvas = document.getElementById('live2d');
-            if (canvas) {
-                const ctx2d = canvas.getContext('2d');
-                if (ctx2d) ctx2d.clearRect(0, 0, canvas.width, canvas.height);
-            }
-        } catch (e) {}
-        
-        // 6. full 模式释放 WebGL 上下文 + GC
+        // 5. full 模式释放 WebGL 上下文（quick 模式不动 Canvas，避免白框）
         if (freezeMode === 'full') {
             try {
                 const canvas = document.getElementById('live2d');

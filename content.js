@@ -1713,7 +1713,7 @@
                 if (stored.freezeModelEnabled !== undefined) {
                     settings.freezeModelEnabled = stored.freezeModelEnabled;
                 } else if (settings.freezeModelEnabled === undefined) {
-                    settings.freezeModelEnabled = true; // 默认开启
+                    settings.freezeModelEnabled = false; // 默认关闭
                 }
                 if (stored.freezeMode !== undefined) {
                     settings.freezeMode = stored.freezeMode;
@@ -1728,7 +1728,7 @@
             // 回退到默认
             try {
                 const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
-                if (settings.freezeModelEnabled === undefined) settings.freezeModelEnabled = true;
+                if (settings.freezeModelEnabled === undefined) settings.freezeModelEnabled = false;
                 if (settings.freezeMode === undefined) settings.freezeMode = 'quick';
                 localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
             } catch(e2) {}
@@ -3627,21 +3627,8 @@
     
     // 页面可见性监听器
     document.addEventListener('visibilitychange', function() {
-        // 检查是否开启了冻结功能（同时查 localStorage 和 chrome.storage）
         var settingsData = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
-        var freezeEnabled = settingsData.freezeModelEnabled !== false; // 默认开启
-        // 若 localStorage 没有值，尝试从 chrome.storage 读取
-        if (settingsData.freezeModelEnabled === undefined) {
-            try {
-                storage.get('freezeModelEnabled', function(val) {
-                    if (val.freezeModelEnabled === false) return; // 明确关了就不冻
-                    if (document.hidden) freezeLive2DModel();
-                    else unfreezeLive2DModel();
-                });
-                return; // 等回调处理
-            } catch(e) {}
-        }
-        
+        var freezeEnabled = settingsData.freezeModelEnabled === true; // 默认关闭
         if (!freezeEnabled) {
             console.log('[Live2D] Freeze model disabled, skipping visibility change');
             return;
@@ -3658,7 +3645,7 @@
     
     // 窗口可见时立即检查一次
     var settingsDataInit = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
-    var freezeEnabledInit = settingsDataInit.freezeModelEnabled !== false; // 默认开启
+    var freezeEnabledInit = settingsDataInit.freezeModelEnabled === true; // 默认关闭
     if (document.hidden && freezeEnabledInit) {
         // 如果初始加载时页面已经隐藏，且开启了冻结功能，立即冻结
         setTimeout(freezeLive2DModel, 500);
