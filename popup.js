@@ -1820,36 +1820,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   const cleanupOtherTabsBtn = document.getElementById('cleanupOtherTabsBtn');
   if (cleanupOtherTabsBtn) cleanupOtherTabsBtn.addEventListener('click', async () => {
     try {
-      // 获取当前窗口的所有标签页
-      const allTabs = await tabs.query({ currentWindow: true });
-      const [currentTab] = await tabs.query({ active: true, currentWindow: true });
+      var allTabs = await tabs.query({});
+      var [currentTab] = await tabs.query({ active: true, currentWindow: true });
+      var cleanedCount = 0;
       
-      // 发送消息给所有非当前标签页，让它们清理模型
-      let cleanedCount = 0;
-      let failedCount = 0;
-      
-      for (const tab of allTabs) {
-        if (tab.id !== currentTab.id && tab.id !== undefined) {
+      for (var ci = 0; ci < allTabs.length; ci++) {
+        var tab = allTabs[ci];
+        if (tab.id !== currentTab.id) {
           try {
-            // 使用回调方式发送消息，兼容所有浏览器
-            browserAPI.tabs.sendMessage(tab.id, { type: 'cleanupModel' }, (response) => {
-              if (browserAPI.runtime.lastError) {
-                // 忽略没有 content script 的标签页
-                console.log('[Live2D Popup] Tab not ready for message:', browserAPI.runtime.lastError);
-                failedCount++;
-              } else {
-                cleanedCount++;
-              }
-            });
-          } catch (err) {
-            // 忽略无法发送消息的标签页（可能没有加载扩展）
-            failedCount++;
-          }
+            browserAPI.tabs.sendMessage(tab.id, { type: 'cleanupModel', skipReload: true }, function() { cleanedCount++; });
+          } catch(e) {}
         }
       }
       
-      // 等待一下，让消息发送完成
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(function(resolve) { setTimeout(resolve, 200); });
 
       // 更新内存显示
       updateMemoryUsage();

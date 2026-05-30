@@ -329,7 +329,8 @@
                 sendResponse({ success: true });
             } else if (message.type === 'cleanupModel') {
                 // 清理当前标签页的模型（只要是隐藏页面就清理）
-                console.log('[Live2D] Received cleanupModel request');
+                window.__live2d_skipReload = message.skipReload === true;
+                console.log('[Live2D] Received cleanupModel request, skipReload:', window.__live2d_skipReload);
                 
                 // 总是清理模型（发送清理命令的代码会确保只发送给非当前标签页）
                 console.log('[Live2D] Cleaning up model for this tab');
@@ -3546,6 +3547,13 @@
         
         console.log('[Live2D] Page visible, unfreezing Live2D model');
         isModelFrozen = false;
+        
+        // 如果被 cleanupModel 标记了跳过加载，则不解冻
+        if (window.__live2d_skipReload) {
+          console.log('[Live2D] Skip reload flag set, clearing and returning');
+          window.__live2d_skipReload = false;
+          return;
+        }
         
         // 彻底释放模式：检查是否在保留标签页范围内
         try {
