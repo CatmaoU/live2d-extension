@@ -1662,8 +1662,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 显示/隐藏保留标签页输入框
   var freezeKeepTabsInput = document.getElementById('freezeKeepTabs');
   function updateFreezeKeepTabsVis() {
-    if (freezeKeepTabsInput) {
-      freezeKeepTabsInput.style.display = freezeModeSelect.value === 'full' ? 'inline-block' : 'none';
+    var wrap = document.getElementById('freezeKeepTabsWrap');
+    if (wrap) {
+      wrap.style.display = freezeModeSelect.value === 'full' ? 'flex' : 'none';
     }
   }
   
