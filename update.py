@@ -18,6 +18,18 @@ import time
 import threading
 from pathlib import Path
 
+# ─── 启动验证 ───
+BASE_DIR = Path(__file__).resolve().parent
+if not (BASE_DIR / "manifest.json").exists():
+    print("=" * 50)
+    print("  错误：未在扩展文件夹中运行！")
+    print()
+    print("  请将 update.py 放入扩展文件夹目录内")
+    print("  （与 manifest.json 同目录）后再运行。")
+    print("=" * 50)
+    input("\n按 Enter 退出...")
+    sys.exit(1)
+
 # ─── 配置 ───
 GITHUB_API = "https://api.github.com/repos/CatmaoU/live2d-extension/releases/latest"
 PROXIES = [
@@ -27,7 +39,6 @@ PROXIES = [
     "https://v6.gh-proxy.org/",
     "https://cdn.gh-proxy.org/",
 ]
-BASE_DIR = Path(__file__).resolve().parent
 
 
 def get_current_version():
