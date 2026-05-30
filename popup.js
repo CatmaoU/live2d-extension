@@ -444,7 +444,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'localModel', 'cubism3Model', 'useCubism3', 'aiEnabled', 'aiApiKey', 'aiConnected',
     'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled',
     'selectedCursor', 'mouseCursorSize', 'theme', 'dragLimit', 'followSystemTheme',
-    'pageSummaryEnabled', 'freezeModelEnabled', 'freezeMode', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
+    'pageSummaryEnabled', 'freezeModelEnabled', 'freezeMode', 'freezeKeepTabs', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
     'positionAutoRefresh', 'atriApiKey',
     'dailyImageEnabled', 'dailyImageCustomApi', 'dailyImageApiList',
   ]);
@@ -923,6 +923,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 初始化冻结模式下拉菜单
   const freezeModeSelect = document.getElementById('freezeModeSelect');
   freezeModeSelect.value = config.freezeMode || 'quick';
+
+  var freezeKeepTabsInput = document.getElementById('freezeKeepTabs');
+  if (freezeKeepTabsInput) freezeKeepTabsInput.value = config.freezeKeepTabs || 5;
+  setTimeout(function() { if (typeof updateFreezeKeepTabsVis === 'function') updateFreezeKeepTabsVis(); }, 0);
 
   // 检测暗色主题
   const isDark = document.body.classList.contains('dark-theme');
@@ -1655,24 +1659,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
   
+  // 显示/隐藏保留标签页输入框
+  var freezeKeepTabsInput = document.getElementById('freezeKeepTabs');
+  function updateFreezeKeepTabsVis() {
+    if (freezeKeepTabsInput) {
+      freezeKeepTabsInput.style.display = freezeModeSelect.value === 'full' ? 'inline-block' : 'none';
+    }
+  }
+  
   // 下拉菜单改变事件
   freezeModeSelect.addEventListener('change', async () => {
     const freezeMode = freezeModeSelect.value;
     await storage.set({ freezeMode: freezeMode });
-    
-    // 发送消息到 content.js 更新冻结模式
+    updateFreezeKeepTabsVis();
     browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
         browserAPI.tabs.sendMessage(tabs[0].id, {
           type: 'updateFreezeModelStatus',
           freezeModel: freezeModelEnabledCheckbox.checked,
           freezeMode: freezeMode
-        }).catch(err => {
-          console.log('[Live2D Popup] Could not send freeze mode:', err);
-        });
+        }).catch(function() {});
       }
     });
   });
+  
+  // 保存保留标签页数量
+  if (freezeKeepTabsInput) {
+    freezeKeepTabsInput.addEventListener('change', function() {
+      var val = parseInt(this.value, 10);
+      if (isNaN(val) || val < 1) val = 5;
+      if (val > 50) val = 50;
+      this.value = val;
+      storage.set({ freezeKeepTabs: val });
+    });
+  }
 
   // 新标签页开关事件
   let previousSakanaState = config.sakanaWidgetEnabled || false;

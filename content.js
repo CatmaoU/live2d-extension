@@ -3547,13 +3547,41 @@
         console.log('[Live2D] Page visible, unfreezing Live2D model');
         isModelFrozen = false;
         
-        // 发送事件通知 Cubism3 渲染器解冻
-        const cubism3UnfreezeEvent = new CustomEvent('live2dUnfreezeModel');
-        window.dispatchEvent(cubism3UnfreezeEvent);
+        // 彻底释放模式：检查是否在保留标签页范围内
+        try {
+          var unfreezeSettings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+          if (unfreezeSettings.freezeModelEnabled && unfreezeSettings.freezeMode === 'full') {
+            var keepTabs = parseInt(unfreezeSettings.freezeKeepTabs, 10) || 5;
+            if (typeof chrome !== 'undefined' && chrome.tabs) {
+              chrome.tabs.query({ currentWindow: true }, function(allTabs) {
+                if (allTabs && allTabs.length > keepTabs) {
+                  // 找到当前标签页在标签栏中的位置（从左到右，最右为最新）
+                  for (var ui = 0; ui < allTabs.length; ui++) {
+                    if (allTabs[ui].active) {
+                      // 从右往左数，索引 >= length - keepTabs 的保留
+                      if (ui < allTabs.length - keepTabs) {
+                        console.log('[Live2D] Tab beyond keep limit (' + keepTabs + '), skipping model init');
+                        return;
+                      }
+                      break;
+                    }
+                  }
+                }
+                // 在保留范围内，正常解冻
+                dispatchUnfreeze();
+              });
+              return;
+            }
+          }
+        } catch(e) {}
+        dispatchUnfreeze();
+        function dispatchUnfreeze() {
+          var settingsData = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+          var cubism3UnfreezeEvent = new CustomEvent('live2dUnfreezeModel');
+          window.dispatchEvent(cubism3UnfreezeEvent);
+        }
         
-        // 对于 Cubism2：恢复之前保存的显示状态（如果用户之前手动关闭了看板娘，保持关闭状态）
-        // Cubism3 由 autoload-cubism3.js 自己处理
-        var settingsData = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+        // 对于 Cubism2：恢复之前保存的显示状态
         const wasVisible = savedDisplayStates.waifu !== 'none';
         if (!settingsData.useCubism3) {
             const waifu = document.getElementById('waifu');
