@@ -213,10 +213,10 @@ class UpdateApp:
         self.progress_var = tk.DoubleVar()
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Highlight.TProgressbar", background="#667eea",
+        style.configure("purple.Horizontal.TProgressbar", background="#667eea",
                         troughcolor="#e8e8e8", borderwidth=0, lightcolor="#667eea",
                         darkcolor="#667eea", thickness=6)
-        self.progress_bar = ttk.Progressbar(self.root, style="Highlight.TProgressbar",
+        self.progress_bar = ttk.Progressbar(self.root, style="purple.Horizontal.TProgressbar",
                                              variable=self.progress_var, maximum=100, length=440)
         self.progress_bar.pack(padx=20, pady=(0, 4))
 
