@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Live2D 看板娘 - 自动更新工具
-支持 GitHub 代理加速 + 下载进度条
+Live2D 看板娘 - 自动更新
+支持 GitHub 代理加速
 """
 
 import os
@@ -19,7 +19,7 @@ import threading
 from pathlib import Path
 
 # ─── 启动验证 ───
-BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(sys.executable if getattr(sys, 'frozen', False) else __file__).resolve().parent
 if not (BASE_DIR / "manifest.json").exists():
     print("=" * 50)
     print("  错误：未在扩展文件夹中运行！")
@@ -258,7 +258,7 @@ def apply_update():
 
 def main():
     print("=" * 50)
-    print("  Live2D 看板娘 - 自动更新工具")
+    print("  Live2D 看板娘 - 自动更新")
     print("=" * 50)
     print()
     current = get_current_version()
