@@ -18,6 +18,14 @@ import time
 import threading
 from pathlib import Path
 
+# 隐藏 Windows 控制台窗口（双击 .py 时不弹 CMD）
+if sys.platform == "win32":
+    try:
+        import ctypes
+        ctypes.windll.user32.ShowWindow(ctypes.windll.kernel32.GetConsoleWindow(), 0)
+    except:
+        pass
+
 try:
     import tkinter as tk
     from tkinter import ttk, messagebox
