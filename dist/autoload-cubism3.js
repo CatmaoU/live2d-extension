@@ -3634,10 +3634,14 @@
             console.log('[Live2D Cubism3] Full mode - reinitializing model');
             try {
                 window.__live2d_cubism3_initialized = false;
+                if (window.live2d) {
+                    try { window.live2d.releaseInstance(); } catch(e) {}
+                }
                 var _w = document.getElementById('waifu');
                 if (_w) _w.remove();
                 var _s = document.getElementById('live2d-cubism3-styles');
                 if (_s) _s.remove();
+                document.querySelectorAll('canvas[id^="live2d"]').forEach(function(c) { c.remove(); });
                 setTimeout(initCubism3, 100);
             } catch (e) {
                 console.error('[Live2D Cubism3] Failed to reinitialize:', e);
