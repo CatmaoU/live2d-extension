@@ -164,82 +164,114 @@ class UpdateApp:
 
     def _build_ui(self):
         bg = self.root.cget("bg")
+        self.root.update_idletasks()
+        W = self.root.winfo_width()
 
-        # ─── 顶部标题区 ───
-        header = tk.Frame(self.root, bg="#667eea", height=80)
-        header.pack(fill="x")
-        header.pack_propagate(False)
+        # ─── 左侧栏 ───
+        sidebar = tk.Frame(self.root, bg="#5b3cc4", width=120)
+        sidebar.pack(side="left", fill="y")
+        sidebar.pack_propagate(False)
 
-        tk.Label(header, text="Live2D 看板娘", font=("Segoe UI", 16, "bold"),
-                 bg="#667eea", fg="#fff").place(relx=0.5, rely=0.35, anchor="center")
-        tk.Label(header, text="自动更新工具", font=("Segoe UI", 10),
-                 bg="#667eea", fg="#dde4ff").place(relx=0.5, rely=0.7, anchor="center")
+        tk.Label(sidebar, text="⬡", font=("Segoe UI", 28),
+                 bg="#5b3cc4", fg="#a88dff").pack(pady=(20, 2))
+        tk.Label(sidebar, text="更新工具", font=("Segoe UI", 10, "bold"),
+                 bg="#5b3cc4", fg="#fff").pack()
+
+        sep = tk.Frame(sidebar, bg="#7a5de0", height=1)
+        sep.pack(fill="x", padx=20, pady=15)
+
+        for label, val in [("当前", self.current_version), ("最新", "---")]:
+            f = tk.Frame(sidebar, bg="#5b3cc4")
+            f.pack(fill="x", padx=16, pady=2)
+            tk.Label(f, text=label, font=("Segoe UI", 8), bg="#5b3cc4", fg="#b8a5ff").pack(anchor="w")
+            lbl = tk.Label(f, text=f"v{val}", font=("Segoe UI", 11, "bold"),
+                           bg="#5b3cc4", fg="#fff")
+            lbl.pack(anchor="w")
+            if label == "最新":
+                self.latest_label = lbl
+
+        # ─── 主内容区 ───
+        main = tk.Frame(self.root, bg=bg)
+        main.pack(side="left", fill="both", expand=True, padx=(0, 0), pady=0)
+
+        # ─── 标题 ───
+        tk.Label(main, text="Live2D 看板娘", font=("Segoe UI", 16, "bold"),
+                 bg=bg, fg="#222").pack(anchor="w", padx=24, pady=(24, 0))
+        tk.Label(main, text="检查并更新到最新版本", font=("Segoe UI", 9),
+                 bg=bg, fg="#999").pack(anchor="w", padx=24, pady=(2, 18))
 
         # ─── 版本卡片 ───
-        card = tk.Frame(self.root, bg="#fff", highlightbackground="#e0e0e0",
-                        highlightthickness=1, padx=16, pady=12)
-        card.place(relx=0.5, rely=0.32, anchor="center", width=420)
+        card = tk.Frame(main, bg="#fff", highlightbackground="#e8e8e8",
+                        highlightthickness=1)
+        card.pack(padx=24, fill="x", ipady=4)
 
-        row1 = tk.Frame(card, bg="#fff")
-        row1.pack(fill="x")
-        tk.Label(row1, text="当前版本", font=("Segoe UI", 9), bg="#fff", fg="#888").pack(side="left")
-        tk.Label(row1, text=f"v{self.current_version}", font=("Segoe UI", 11, "bold"),
-                 bg="#fff", fg="#333").pack(side="right")
-
-        row2 = tk.Frame(card, bg="#fff")
-        row2.pack(fill="x", pady=(6, 0))
-        tk.Label(row2, text="最新版本", font=("Segoe UI", 9), bg="#fff", fg="#888").pack(side="left")
-        self.latest_label = tk.Label(row2, text="---", font=("Segoe UI", 11, "bold"),
-                                     bg="#fff", fg="#333")
-        self.latest_label.pack(side="right")
+        for label, key in [("当前版本", "current"), ("最新版本", "latest")]:
+            r = tk.Frame(card, bg="#fff")
+            r.pack(fill="x", padx=16, pady=(8, 2))
+            tk.Label(r, text=label, font=("Segoe UI", 9), bg="#fff", fg="#888").pack(side="left")
+            v = self.current_version if key == "current" else "---"
+            tk.Label(r, text=f"v{v}", font=("Segoe UI", 11, "bold"),
+                     bg="#fff", fg="#333").pack(side="right")
 
         # ─── 更新内容 ───
-        self._mkframe(self.root, pady=(190, 2)).pack_forget()
-        note_header = tk.Frame(self.root, bg=bg)
-        note_header.pack(padx=20, pady=(150, 2), fill="x")
-        tk.Label(note_header, text="更新内容", font=("Segoe UI", 9), bg=bg, fg="#888").pack(anchor="w")
-
-        self.notes_text = tk.Text(self.root, height=5,
-                                  font=("Segoe UI", 9), wrap="word",
-                                  bg="#fafafa", fg="#444",
+        tk.Label(main, text="更新内容", font=("Segoe UI", 9),
+                 bg=bg, fg="#888").pack(anchor="w", padx=24, pady=(14, 4))
+        self.notes_text = tk.Text(main, height=4, font=("Segoe UI", 9),
+                                  wrap="word", bg="#fafafa", fg="#444",
                                   relief="flat", bd=0,
                                   state="disabled",
                                   highlightbackground="#e8e8e8",
-                                  highlightthickness=1,
-                                  padx=10, pady=8)
-        self.notes_text.pack(padx=20, pady=(0, 6), fill="x")
+                                  highlightthickness=1, padx=12, pady=8)
+        self.notes_text.pack(padx=24, fill="x")
 
         # ─── 进度条 ───
         self.progress_var = tk.DoubleVar()
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("purple.Horizontal.TProgressbar", background="#667eea",
-                        troughcolor="#e8e8e8", borderwidth=0, lightcolor="#667eea",
-                        darkcolor="#667eea", thickness=6)
-        self.progress_bar = ttk.Progressbar(self.root, style="purple.Horizontal.TProgressbar",
-                                             variable=self.progress_var, maximum=100, length=440)
-        self.progress_bar.pack(padx=20, pady=(0, 4))
+        style.configure("purple.Horizontal.TProgressbar", background="#5b3cc4",
+                        troughcolor="#eee", borderwidth=0, lightcolor="#5b3cc4",
+                        darkcolor="#5b3cc4", thickness=5)
+        self.progress_bar = ttk.Progressbar(main, style="purple.Horizontal.TProgressbar",
+                                             variable=self.progress_var, maximum=100)
+        self.progress_bar.pack(padx=24, pady=(10, 4), fill="x")
 
         # ─── 状态 ───
-        self.status_label = tk.Label(self.root, text="", font=("Segoe UI", 9),
+        self.status_label = tk.Label(main, text="", font=("Segoe UI", 9),
                                      bg=bg, fg="#999")
-        self.status_label.pack()
+        self.status_label.pack(padx=24, anchor="w")
 
         # ─── 按钮 ───
-        btn_frame = tk.Frame(self.root, bg=bg)
-        btn_frame.pack(pady=(10, 16))
+        btn_frame = tk.Frame(main, bg=bg)
+        btn_frame.pack(pady=(12, 20), padx=24, fill="x")
 
-        self.check_btn = self._mkbtn(btn_frame, "检查更新", "#667eea", "#5a6fd6",
-                                      self._on_check)
-        self.check_btn.pack(side="left", padx=6)
+        self.check_btn = tk.Button(btn_frame, text="🔍 检查更新",
+                                   font=("Segoe UI", 10),
+                                   bg="#5b3cc4", fg="#fff",
+                                   activebackground="#4a2ea3",
+                                   activeforeground="#fff",
+                                   padx=20, pady=6, bd=0,
+                                   cursor="hand2",
+                                   command=self._on_check)
+        self.check_btn.pack(side="left", padx=(0, 6))
 
-        self.update_btn = self._mkbtn(btn_frame, "下载并更新", "#4CAF50", "#43a047",
-                                       self._on_update, state="disabled")
+        self.update_btn = tk.Button(btn_frame, text="⬇ 下载并更新",
+                                    font=("Segoe UI", 10),
+                                    bg="#4CAF50", fg="#fff",
+                                    activebackground="#388E3C",
+                                    activeforeground="#fff",
+                                    padx=20, pady=6, bd=0,
+                                    cursor="hand2", state="disabled",
+                                    command=self._on_update)
         self.update_btn.pack(side="left", padx=6)
 
-        quit_btn = self._mkbtn(btn_frame, "退出", "#999", "#888",
-                                self.root.destroy)
-        quit_btn.pack(side="left", padx=6)
+        tk.Button(btn_frame, text="✕ 退出",
+                  font=("Segoe UI", 10),
+                  bg="#e0e0e0", fg="#666",
+                  activebackground="#ccc",
+                  activeforeground="#333",
+                  padx=20, pady=6, bd=0,
+                  cursor="hand2",
+                  command=self.root.destroy).pack(side="right", padx=(6, 0))
 
     def _update_status(self, text):
         self.status_label.config(text=text)
@@ -252,19 +284,12 @@ class UpdateApp:
         self.notes_text.config(state="disabled")
 
     def _set_btn_state(self, btn, state, text=None):
-        btn._state = state
+        btn.config(state=state)
         if text:
-            btn.itemconfig("txt", text=text)
-            btn._text = text
-        if state == "disabled":
-            btn.configure(bg="#bbb")
-            btn.itemconfig("txt", fill="#ddd")
-        else:
-            btn.configure(bg=btn._color)
-            btn.itemconfig("txt", fill="#fff")
+            btn.config(text=text)
 
     def _on_check(self):
-        self._set_btn_state(self.check_btn, "disabled", "检查中...")
+        self.check_btn.config(state="disabled", text="检查中...")
         self._update_status("正在检查更新...")
         self.latest_label.config(text="最新版本：检查中...")
         self.progress_var.set(0)
@@ -289,13 +314,13 @@ class UpdateApp:
         except Exception as e:
             self.root.after(0, lambda: self._update_status(f"检查失败：{e}"))
         finally:
-            self.root.after(0, lambda: self._set_btn_state(self.check_btn, "normal", "检查更新"))
+            self.root.after(0, lambda: self.check_btn.config(state="normal", text="检查更新"))
 
     def _on_update(self):
         if not self.latest_info:
             return
-        self._set_btn_state(self.update_btn, "disabled", "下载中...")
-        self._set_btn_state(self.check_btn, "disabled")
+        self.update_btn.config(state="disabled", text="下载中...")
+        self.check_btn.config(state="disabled")
         self._update_status("正在测速选择最快节点...")
         threading.Thread(target=self._do_update, daemon=True).start()
 
@@ -347,7 +372,7 @@ class UpdateApp:
                           ignore_errors=True)
 
             self.root.after(0, lambda: self._update_status("更新成功！请重新加载扩展"))
-            self.root.after(0, lambda: self._set_btn_state(self.update_btn, "disabled", "更新完成"))
+            self.root.after(0, lambda: self.update_btn.config(state="disabled", text="更新完成"))
             self.root.after(0, lambda: messagebox.showinfo("更新成功",
                                                            "更新完成！请重新加载浏览器扩展：\n"
                                                            "chrome://extensions → 点击 ↻ 刷新"))
@@ -355,8 +380,8 @@ class UpdateApp:
             self.root.after(0, lambda: self._update_status(f"更新失败：{e}"))
             self.root.after(0, lambda: messagebox.showerror("更新失败", str(e)))
         finally:
-            self.root.after(0, lambda: self._set_btn_state(self.check_btn, "normal"))
-            self.root.after(0, lambda: self._set_btn_state(self.update_btn, "normal", "下载并更新"))
+            self.root.after(0, lambda: self.check_btn.config(state="normal"))
+            self.root.after(0, lambda: self.update_btn.config(state="normal", text="下载并更新"))
 
     def _pick_fastest_proxy(self, zip_url, tag_name):
         results = []
