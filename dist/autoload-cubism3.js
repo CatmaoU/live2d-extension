@@ -3589,14 +3589,9 @@
     
     function triggerGCForCubism3() {
         try {
-            const tempArray = new Array(512 * 1024);
-            for (let i = 0; i < tempArray.length; i++) {
-                tempArray[i] = Math.random();
+            if (window.gc) {
+                setTimeout(function() { window.gc(); }, 50);
             }
-            setTimeout(() => {
-                tempArray.length = 0;
-                if (window.gc) window.gc();
-            }, 100);
         } catch (e) {
             // 忽略
         }

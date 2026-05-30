@@ -3524,21 +3524,10 @@
     
     function triggerGarbageCollection() {
         try {
-            // 创建一个大型数组然后释放，帮助浏览器回收内存
-            const tempArray = new Array(1024 * 1024); // 约 8MB
-            // 填充一些数据确保被分配
-            for (let i = 0; i < tempArray.length; i++) {
-                tempArray[i] = Math.random();
+            if (window.gc) {
+                setTimeout(function() { window.gc(); }, 50);
             }
-            // 清除引用
-            setTimeout(() => {
-                tempArray.length = 0;
-                if (window.gc) {
-                    window.gc(); // 尝试调用垃圾回收（如果暴露了的话）
-                }
-            }, 100);
         } catch (e) {
-            // 忽略错误
         }
     }
     
