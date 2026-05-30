@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Live2D 看板娘 - 自动更新工具
+Live2D 看板娘 - 自动更新工具（图形界面）
 支持 GitHub 代理加速 + 下载进度条
 """
 
@@ -17,6 +17,14 @@ import tempfile
 import time
 import threading
 from pathlib import Path
+
+try:
+    import tkinter as tk
+    from tkinter import ttk, messagebox
+except ImportError:
+    print("错误：需要 tkinter 支持。请安装 Python 时勾选 'tcl/tk and IDLE'。")
+    input("按 Enter 退出...")
+    sys.exit(1)
 
 # ─── 启动验证 ───
 BASE_DIR = Path(__file__).resolve().parent
@@ -93,216 +101,281 @@ def compare_versions(a, b):
     return 0
 
 
-def test_proxy_url(full_url, timeout=5):
-    """测试一个完整下载 URL 的延迟（HEAD 请求，只读响应头）"""
-    if not full_url:
-        return None
-    start = time.time()
-    try:
-        req = urllib.request.Request(full_url, method="HEAD",
-                                     headers={"User-Agent": "Live2D-Updater"})
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            r.read(0)  # 只读头
-        return time.time() - start
-    except:
-        # HEAD 可能不被支持，尝试 GET + range 只读头
+class UpdateApp:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("Live2D 看板娘 - 自动更新工具")
+        self.root.geometry("520x420")
+        self.root.resizable(False, False)
+        self.root.configure(bg="#f5f5f5")
+
         try:
-            req = urllib.request.Request(full_url,
-                                         headers={"User-Agent": "Live2D-Updater", "Range": "bytes=0-0"})
+            self.root.iconbitmap(default=str(BASE_DIR / "icon.ico"))
+        except:
+            pass
+
+        self.current_version = get_current_version()
+        self.latest_info = None
+        self._build_ui()
+        self._update_status("就绪")
+
+    def _build_ui(self):
+        # 标题
+        title = tk.Label(self.root, text="Live2D 看板娘 - 自动更新工具",
+                         font=("Microsoft YaHei", 14, "bold"),
+                         bg="#f5f5f5", fg="#333")
+        title.pack(pady=(15, 5))
+
+        # 版本信息
+        info_frame = tk.Frame(self.root, bg="#fff", relief="solid", bd=1)
+        info_frame.pack(padx=20, pady=5, fill="x")
+
+        tk.Label(info_frame, text=f"当前版本：v{self.current_version}",
+                 font=("Microsoft YaHei", 11), bg="#fff", fg="#555").pack(anchor="w", padx=10, pady=(8, 2))
+        self.latest_label = tk.Label(info_frame, text="最新版本：---",
+                                     font=("Microsoft YaHei", 11), bg="#fff", fg="#555")
+        self.latest_label.pack(anchor="w", padx=10, pady=(0, 8))
+
+        # 更新内容
+        tk.Label(self.root, text="更新内容：",
+                 font=("Microsoft YaHei", 10), bg="#f5f5f5", fg="#666").pack(anchor="w", padx=20, pady=(5, 2))
+        self.notes_text = tk.Text(self.root, height=6, width=60,
+                                  font=("Microsoft YaHei", 9),
+                                  bg="#fff", fg="#444", relief="solid", bd=1,
+                                  wrap="word", state="disabled")
+        self.notes_text.pack(padx=20, pady=(0, 5), fill="x")
+
+        # 进度条
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(self.root, variable=self.progress_var,
+                                             maximum=100, length=480)
+        self.progress_bar.pack(padx=20, pady=(0, 5))
+
+        # 状态
+        self.status_label = tk.Label(self.root, text="",
+                                     font=("Microsoft YaHei", 9),
+                                     bg="#f5f5f5", fg="#888")
+        self.status_label.pack()
+
+        # 按钮
+        btn_frame = tk.Frame(self.root, bg="#f5f5f5")
+        btn_frame.pack(pady=(10, 15))
+
+        self.check_btn = tk.Button(btn_frame, text="检查更新",
+                                   font=("Microsoft YaHei", 10),
+                                   bg="#667eea", fg="#fff",
+                                   activebackground="#5a6fd6",
+                                   padx=20, pady=5, relief="flat",
+                                   cursor="hand2",
+                                   command=self._on_check)
+        self.check_btn.pack(side="left", padx=5)
+
+        self.update_btn = tk.Button(btn_frame, text="下载并更新",
+                                    font=("Microsoft YaHei", 10),
+                                    bg="#4CAF50", fg="#fff",
+                                    activebackground="#43a047",
+                                    padx=20, pady=5, relief="flat",
+                                    cursor="hand2",
+                                    state="disabled",
+                                    command=self._on_update)
+        self.update_btn.pack(side="left", padx=5)
+
+        tk.Button(btn_frame, text="退出",
+                  font=("Microsoft YaHei", 10),
+                  bg="#999", fg="#fff",
+                  activebackground="#888",
+                  padx=20, pady=5, relief="flat",
+                  cursor="hand2",
+                  command=self.root.destroy).pack(side="left", padx=5)
+
+    def _update_status(self, text):
+        self.status_label.config(text=text)
+        self.root.update_idletasks()
+
+    def _set_notes(self, text):
+        self.notes_text.config(state="normal")
+        self.notes_text.delete("1.0", "end")
+        self.notes_text.insert("1.0", text or "（无说明）")
+        self.notes_text.config(state="disabled")
+
+    def _on_check(self):
+        self.check_btn.config(state="disabled", text="检查中...")
+        self._update_status("正在检查更新...")
+        self.latest_label.config(text="最新版本：检查中...")
+        self.progress_var.set(0)
+        threading.Thread(target=self._do_check, daemon=True).start()
+
+    def _do_check(self):
+        try:
+            release = get_latest_release()
+            self.latest_info = release
+            latest = release["version"]
+            self.root.after(0, lambda: self.latest_label.config(
+                text=f"最新版本：v{latest}" + ("  ✓ 已是最新" if compare_versions(latest, self.current_version) <= 0 else "")))
+            self.root.after(0, lambda: self._set_notes(release.get("body", "")))
+            if compare_versions(latest, self.current_version) > 0:
+                self.root.after(0, lambda: self.update_btn.config(state="normal"))
+                self.root.after(0, lambda: self._update_status(f"发现新版本 v{latest}，可点击下载更新"))
+            else:
+                self.root.after(0, lambda: self._update_status("已是最新版本"))
+        except urllib.error.HTTPError as e:
+            self.root.after(0, lambda: self._update_status(f"检查失败 (HTTP {e.code})"))
+            self.root.after(0, lambda: messagebox.showerror("错误", f"GitHub API 请求失败 (HTTP {e.code})\n请检查网络连接。"))
+        except Exception as e:
+            self.root.after(0, lambda: self._update_status(f"检查失败：{e}"))
+        finally:
+            self.root.after(0, lambda: self.check_btn.config(state="normal", text="检查更新"))
+
+    def _on_update(self):
+        if not self.latest_info:
+            return
+        self.update_btn.config(state="disabled", text="下载中...")
+        self.check_btn.config(state="disabled")
+        self._update_status("正在测速选择最快节点...")
+        threading.Thread(target=self._do_update, daemon=True).start()
+
+    def _do_update(self):
+        try:
+            zip_url = self.latest_info["zip_url"]
+            tag_name = self.latest_info.get("tag_name", "")
+
+            # 测速
+            best_proxy, best_url = self._pick_fastest_proxy(zip_url, tag_name)
+            self.root.after(0, lambda: self._update_status("正在下载更新包..."))
+
+            # 下载
+            tmp_zip = Path(tempfile.mkdtemp(prefix="live2d_update_")) / "update.zip"
+            self._download_with_progress(best_url, tmp_zip)
+
+            self.root.after(0, lambda: self._update_status("正在解压..."))
+
+            # 解压
+            tmp_dir = tmp_zip.parent
+            with zipfile.ZipFile(tmp_zip, "r") as zf:
+                zf.extractall(tmp_dir)
+            tmp_zip.unlink()
+
+            items = list(tmp_dir.iterdir())
+            extracted = items[0] if len(items) == 1 and items[0].is_dir() else tmp_dir
+
+            self.root.after(0, lambda: self._update_status("正在替换文件..."))
+
+            # 替换文件
+            exclude = {".git", "node_modules", "__pycache__", "live2d-static-api/assets"}
+            for item in BASE_DIR.iterdir():
+                if item.name in exclude or item.name.startswith("."):
+                    continue
+                if item.is_dir():
+                    shutil.rmtree(item, ignore_errors=True)
+                else:
+                    item.unlink()
+            for item in extracted.iterdir():
+                if item.name.startswith("."):
+                    continue
+                dst = BASE_DIR / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dst, dirs_exist_ok=True)
+                else:
+                    shutil.copy2(item, dst)
+
+            shutil.rmtree(tmp_dir.parent if tmp_dir.parent.name.startswith("live2d_update_") else tmp_dir,
+                          ignore_errors=True)
+
+            self.root.after(0, lambda: self._update_status("更新成功！请重新加载扩展"))
+            self.root.after(0, lambda: self.update_btn.config(text="更新完成", state="disabled"))
+            self.root.after(0, lambda: messagebox.showinfo("更新成功",
+                                                           "更新完成！请重新加载浏览器扩展：\n"
+                                                           "chrome://extensions → 点击 ↻ 刷新"))
+        except Exception as e:
+            self.root.after(0, lambda: self._update_status(f"更新失败：{e}"))
+            self.root.after(0, lambda: messagebox.showerror("更新失败", str(e)))
+        finally:
+            self.root.after(0, lambda: self.check_btn.config(state="normal"))
+            self.root.after(0, lambda: self.update_btn.config(text="下载并更新"))
+
+    def _pick_fastest_proxy(self, zip_url, tag_name):
+        results = []
+        total = len(PROXIES)
+        self.root.after(0, lambda: self._update_status(f"正在测试 {total} 个镜像节点..."))
+        for i, proxy in enumerate(PROXIES):
+            prefix = proxy or "直连"
+            if not proxy:
+                url = zip_url
+            elif "/releases/download/" in zip_url:
+                rel_path = zip_url.split("/releases/download/")[1]
+                url = proxy + "https://github.com/CatmaoU/live2d-extension/releases/download/" + rel_path
+            else:
+                url = proxy + zip_url
+            latency = self._test_url(url)
+            if latency is not None:
+                results.append((latency, proxy, url))
+        if not results:
+            return "", zip_url
+        results.sort(key=lambda x: x[0])
+        return results[0][1], results[0][2]
+
+    def _test_url(self, url, timeout=5):
+        start = time.time()
+        try:
+            req = urllib.request.Request(url, method="HEAD",
+                                         headers={"User-Agent": "Live2D-Updater"})
             with urllib.request.urlopen(req, timeout=timeout) as r:
-                r.read()
+                r.read(0)
             return time.time() - start
         except:
-            return None
+            try:
+                req = urllib.request.Request(url,
+                                             headers={"User-Agent": "Live2D-Updater", "Range": "bytes=0-0"})
+                with urllib.request.urlopen(req, timeout=timeout) as r:
+                    r.read()
+                return time.time() - start
+            except:
+                return None
 
+    def _download_with_progress(self, url, target_path):
+        req = urllib.request.Request(url, headers={"User-Agent": "Live2D-Updater"})
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            total = int(resp.headers.get("Content-Length", 0))
+            downloaded = 0
+            with open(target_path, "wb") as f:
+                while True:
+                    chunk = resp.read(65536)
+                    if not chunk:
+                        break
+                    f.write(chunk)
+                    downloaded += len(chunk)
+                    if total > 0:
+                        pct = int(downloaded / total * 100)
+                        self.root.after(0, lambda v=pct: self.progress_var.set(v))
+                        self.root.after(0, lambda d=downloaded, t=total:
+                                        self._update_status(
+                                            f"下载中 {d//1024//1024}MB/{t//1024//1024}MB ({pct}%)"))
+                    else:
+                        self.root.after(0, lambda d=downloaded:
+                                        self._update_status(f"下载中 {d//1024//1024}MB..."))
+            if total > 0:
+                self.root.after(0, lambda: self.progress_var.set(100))
+                self.root.after(0, lambda: self._update_status("下载完成"))
 
-def pick_fastest_proxy(zip_url, tag_name):
-    """测试所有代理，返回最快的代理前缀"""
-    results = []
-    total = len(PROXIES)
-    print(f"[测速] 正在测试 {total} 个镜像节点...")
-    
-    for i, proxy in enumerate(PROXIES):
-        prefix = proxy or "直连"
-        
-        # 构造完整下载 URL
-        if not proxy:
-            url = zip_url
-        elif "/releases/download/" in zip_url:
-            rel_path = zip_url.split("/releases/download/")[1]
-            url = proxy + "https://github.com/CatmaoU/live2d-extension/releases/download/" + rel_path
-        else:
-            url = proxy + zip_url
-        
-        print(f"  [{i+1}/{total}] {prefix}...", end=" ", flush=True)
-        latency = test_proxy_url(url)
-        if latency is not None:
-            results.append((latency, proxy, url))
-            print(f"{latency*1000:.0f}ms")
-        else:
-            print("超时")
-    
-    if not results:
-        print("[测速] 所有节点均超时，使用直连")
-        return "", zip_url
-    
-    results.sort(key=lambda x: x[0])
-    best = results[0]
-    print(f"[测速] 选中最快节点: {'直连' if not best[1] else best[1]} ({best[0]*1000:.0f}ms)")
-    return best[1], best[2]
-
-
-def download_with_progress(url, target_path, desc="下载中"):
-    """下载文件并显示进度条"""
-    req = urllib.request.Request(url, headers={"User-Agent": "Live2D-Updater"})
-    
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        total = int(resp.headers.get("Content-Length", 0))
-        downloaded = 0
-        bar_width = 40
-        
-        with open(target_path, "wb") as f:
-            while True:
-                chunk = resp.read(65536)
-                if not chunk:
-                    break
-                f.write(chunk)
-                downloaded += len(chunk)
-                
-                if total > 0:
-                    pct = downloaded / total * 100
-                    filled = int(bar_width * downloaded / total)
-                    bar = "█" * filled + "░" * (bar_width - filled)
-                    sys.stdout.write(f"\r{desc} [{bar}] {pct:.0f}% ({downloaded//1024//1024}MB/{total//1024//1024}MB)")
-                else:
-                    sys.stdout.write(f"\r{desc} ... {downloaded//1024//1024}MB")
-                sys.stdout.flush()
-        
-        sys.stdout.write("\n")
-
-
-def download_and_extract(zip_url, tag_name):
-    """智能选择最快代理下载并解压"""
-    # 选择最快代理
-    proxy_prefix, fast_url = pick_fastest_proxy(zip_url, tag_name)
-    
-    # 下载到临时文件
-    tmp_zip = Path(tempfile.mkdtemp(prefix="live2d_update_")) / "update.zip"
-    print()
-    download_with_progress(fast_url, tmp_zip, "下载更新包")
-    
-    # 解压
-    print("[解压中] 正在解压更新包...")
-    tmp_dir = tmp_zip.parent
-    with zipfile.ZipFile(tmp_zip, "r") as zf:
-        zf.extractall(tmp_dir)
-    tmp_zip.unlink()
-    
-    items = list(tmp_dir.iterdir())
-    if len(items) == 1 and items[0].is_dir():
-        return items[0]
-    return tmp_dir
-
-
-def replace_extension(extracted_dir):
-    print("[替换中] 正在更新本地文件...")
-    exclude = {".git", "node_modules", "__pycache__", "live2d-static-api/assets"}
-    for item in BASE_DIR.iterdir():
-        if item.name in exclude or item.name.startswith("."):
-            continue
-        if item.is_dir():
-            shutil.rmtree(item, ignore_errors=True)
-        else:
-            item.unlink()
-    for item in extracted_dir.iterdir():
-        if item.name.startswith("."):
-            continue
-        dst = BASE_DIR / item.name
-        if item.is_dir():
-            shutil.copytree(item, dst, dirs_exist_ok=True)
-        else:
-            shutil.copy2(item, dst)
-    print("[完成] 更新文件已替换！")
-
-
-def check_only():
-    try:
-        release = get_latest_release()
-        current = get_current_version()
-        data = {"current": current, "latest": release["version"],
-                "has_update": compare_versions(release["version"], current) > 0,
-                "url": release["html_url"]}
-        print(json.dumps(data, ensure_ascii=False))
-        return 0
-    except Exception as e:
-        print(json.dumps({"error": str(e)}, ensure_ascii=False))
-        return 1
-
-
-def apply_update():
-    try:
-        release = get_latest_release()
-        if compare_versions(release["version"], get_current_version()) <= 0:
-            print(json.dumps({"message": "已是最新版本", "done": True}, ensure_ascii=False))
-            return 0
-        extracted = download_and_extract(release["zip_url"], release["tag_name"])
-        replace_extension(extracted)
-        shutil.rmtree(extracted.parent if extracted.parent.name.startswith("live2d_update_") else extracted,
-                      ignore_errors=True)
-        print(json.dumps({"message": "更新成功！请重新加载扩展", "done": True}, ensure_ascii=False))
-        return 0
-    except Exception as e:
-        print(json.dumps({"error": str(e)}, ensure_ascii=False))
-        return 1
-
-
-def main():
-    print("=" * 50)
-    print("  Live2D 看板娘 - 自动更新工具")
-    print("=" * 50)
-    print()
-    current = get_current_version()
-    print(f"当前版本：v{current}")
-    try:
-        release = get_latest_release()
-    except Exception as e:
-        print(f"[错误] 无法获取版本信息：{e}")
-        input("\n按 Enter 退出...")
-        return
-    latest = release["version"]
-    print(f"最新版本：v{latest}")
-    if compare_versions(latest, current) <= 0:
-        print("\n当前已是最新版本，无需更新。")
-        input("\n按 Enter 退出...")
-        return
-    print(f"\n发现新版本 v{latest}！")
-    if release.get("body"):
-        print(f"更新内容：\n{release['body']}\n")
-    ans = input("是否下载并更新？(Y/n): ").strip().lower()
-    if ans == "n":
-        print("已取消。")
-        return
-    try:
-        extracted = download_and_extract(release["zip_url"], release["tag_name"])
-        replace_extension(extracted)
-        shutil.rmtree(extracted.parent if extracted.parent.name.startswith("live2d_update_") else extracted,
-                      ignore_errors=True)
-        print("\n" + "=" * 50)
-        print("  更新成功！")
-        print("  请重新加载浏览器扩展：")
-        print("  chrome://extensions → 点击 ↻ 刷新")
-        print("=" * 50)
-    except Exception as e:
-        print(f"\n[错误] 更新失败：{e}")
-        import traceback
-        traceback.print_exc()
-    input("\n按 Enter 退出...")
+    def run(self):
+        self.root.mainloop()
 
 
 if __name__ == "__main__":
+    # 支持命令行参数 --check（JSON 输出供扩展内部调用）
     if len(sys.argv) > 1:
         if sys.argv[1] == "--check":
-            sys.exit(check_only())
-        elif sys.argv[1] == "--apply":
-            sys.exit(apply_update())
-    main()
+            try:
+                release = get_latest_release()
+                current = get_current_version()
+                data = {"current": current, "latest": release["version"],
+                        "has_update": compare_versions(release["version"], current) > 0,
+                        "url": release["html_url"]}
+                print(json.dumps(data, ensure_ascii=False))
+                sys.exit(0)
+            except Exception as e:
+                print(json.dumps({"error": str(e)}, ensure_ascii=False))
+                sys.exit(1)
+
+    app = UpdateApp()
+    app.run()
