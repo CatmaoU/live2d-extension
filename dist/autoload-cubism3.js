@@ -3895,17 +3895,21 @@
                     var cx2 = dts && dts.invertTransformX ? dts.invertTransformX(ndx2) : ndx2;
                     var cy2 = dts && dts.invertTransformY ? dts.invertTransformY(ndy2) : ndy2;
                     
-                    ctx.strokeStyle = 'rgba(255,100,100,0.8)';
-                    ctx.lineWidth = 1.5;
-                    ctx.strokeRect(
-                        Math.min(cx1, cx2),
-                        Math.min(cy1, cy2),
-                        Math.abs(cx2 - cx1),
-                        Math.abs(cy2 - cy1)
-                    );
-                    ctx.fillStyle = 'rgba(255,100,100,0.5)';
-                    ctx.font = '10px sans-serif';
-                    ctx.fillText(ha.Name || did, Math.min(cx1, cx2) + 2, Math.min(cy1, cy2) - 2);
+                    // 跳过被大框覆盖的小框（如 Zmuji/Zmuji2 袖子）
+                    var isSmall = (Math.abs(cx2 - cx1) < 15 && Math.abs(cy2 - cy1) < 15);
+                    if (!isSmall) {
+                        ctx.strokeStyle = 'rgba(255,100,100,0.8)';
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeRect(
+                            Math.min(cx1, cx2),
+                            Math.min(cy1, cy2),
+                            Math.abs(cx2 - cx1),
+                            Math.abs(cy2 - cy1)
+                        );
+                        ctx.fillStyle = 'rgba(255,100,100,0.5)';
+                        ctx.font = '10px sans-serif';
+                        ctx.fillText(ha.Name || did, Math.min(cx1, cx2) + 2, Math.min(cy1, cy2) - 2);
+                    }
                 }
             }
             _hitAreaAnimId = requestAnimationFrame(drawLoop);
