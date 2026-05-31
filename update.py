@@ -69,10 +69,21 @@ def _read_manifest(path):
 
 
 def get_latest_release():
-    req = urllib.request.Request(GITHUB_API, headers={"User-Agent": "Live2D-Updater"})
-    with urllib.request.urlopen(req, timeout=15) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
+    try:
+        req = urllib.request.Request(GITHUB_API, headers={"User-Agent": "Live2D-Updater"})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        raise Exception("无法连接 GitHub，请检查网络")
+    
+    # 检查 API 返回是否有效
+    if data.get("message") and "Not Found" in str(data.get("message")):
+        raise Exception("项目不存在或未发布版本，请检查发布页")
+    
     tag = data.get("tag_name", "").lstrip("v")
+    if not tag:
+        raise Exception("项目不存在或未发布版本，请检查发布页")
+    
     zip_url = None
     for asset in data.get("assets", []):
         name = asset.get("name", "")
@@ -81,6 +92,9 @@ def get_latest_release():
             break
     if not zip_url:
         zip_url = data.get("zipball_url")
+    if not zip_url:
+        raise Exception("项目不存在或未发布版本，请检查发布页")
+    
     return {
         "version": tag,
         "zip_url": zip_url,
