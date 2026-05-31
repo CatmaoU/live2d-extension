@@ -3361,25 +3361,36 @@
                         return;
                     }
                     // ===== HitArea 点击检测 =====
+                    console.log('[Live2D HitArea] Click at', e.clientX, e.clientY, 'modelPath:', modelPath);
                     try {
-                        var haResp = await fetch(modelPath + 'model.json', { cache: 'force-cache' }).catch(function(){});
+                        var haUrl = modelPath + 'model.json';
+                        var haResp = await fetch(haUrl, { cache: 'force-cache' }).catch(function(e){ console.log('[Live2D HitArea] Fetch error:', e); });
+                        console.log('[Live2D HitArea] Fetch result:', haResp ? haResp.status : 'null');
                         if (haResp && haResp.ok) {
                             var haCfg = await haResp.json();
-                            if (haCfg && haCfg.HitAreas && haCfg.HitAreas.length > 0 && typeof window.live2d.hitTest === 'function') {
-                                for (var hi = 0; hi < haCfg.HitAreas.length; hi++) {
+                            var haCount = haCfg && haCfg.HitAreas ? haCfg.HitAreas.length : 0;
+                            console.log('[Live2D HitArea] Config loaded, HitAreas:', haCount);
+                            if (haCount > 0 && typeof window.live2d.hitTest === 'function') {
+                                for (var hi = 0; hi < haCount; hi++) {
                                     var ha = haCfg.HitAreas[hi];
-                                    if (window.live2d.hitTest(ha.Name || ha.Id, e.clientX, e.clientY)) {
+                                    var haName = ha.Name || ha.Id;
+                                    var hit = window.live2d.hitTest(haName, e.clientX, e.clientY);
+                                    console.log('[Live2D HitArea] Test', haName, ':', hit);
+                                    if (hit) {
                                         var mg = ha.Motion || ha.Name || ha.Id;
+                                        console.log('[Live2D HitArea] HIT! Motion:', mg);
                                         window.live2d.startMotion(mg, 0, 9);
                                         if (haCfg.FileReferences && haCfg.FileReferences.Motions && haCfg.FileReferences.Motions[mg] && haCfg.FileReferences.Motions[mg][0] && haCfg.FileReferences.Motions[mg][0].Sound) {
-                                            try { new Audio(modelPath + haCfg.FileReferences.Motions[mg][0].Sound).play(); } catch(ex){}
+                                            try { new Audio(modelPath + haCfg.FileReferences.Motions[mg][0].Sound).play(); } catch(ex){ console.log('[Live2D HitArea] Audio fail'); }
                                         }
                                         return;
                                     }
                                 }
+                            } else {
+                                console.log('[Live2D HitArea] No HitAreas or hitTest not available');
                             }
                         }
-                    } catch(ex){}
+                    } catch(ex){ console.log('[Live2D HitArea] Error:', ex); }
                     // ===== =====
                     // 先检查是否开启 AI，如果开启则处理抚摸交互并返回
                     const latestSettings = await waitForSettings(2000);
