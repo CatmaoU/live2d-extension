@@ -3280,6 +3280,10 @@
                     window.live2d.init();
                     window.live2d.loadModel(modelPath);
                     console.log('[Live2D Cubism3] Model loaded successfully');
+                    // 重置 HitArea 标志，由 discoverModelActions 在检测到时重新设置
+                    try { localStorage.setItem('live2d_hasHitAreas', 'false'); } catch(exx) {}
+                    // 关闭任何残留的线框
+                    if (typeof window.stopHitAreaOverlay === 'function') { try { window.stopHitAreaOverlay(); } catch(exx) {} }
 
                     
                     // 启用拖拽功能
