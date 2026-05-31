@@ -2624,6 +2624,40 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 每 3 秒更新一次
   const memoryUpdateInterval = setInterval(updateMemoryUsage, 3000);
 
+  // ========== HitArea 包围盒显示开关 ==========
+  var hitAreaToggle = document.getElementById('hitAreaToggle');
+  var hitAreaCheckbox = document.getElementById('hitAreaCheckbox');
+  if (hitAreaCheckbox) {
+    // 打开弹窗时查询当前模型是否有 HitAreas
+    function updateHitAreaToggleVisibility() {
+      browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (!tabs[0]) return;
+        browserAPI.tabs.sendMessage(tabs[0].id, { type: 'QUERY_HITAREA_STATUS' }).then((resp) => {
+          if (resp && resp.hasHitAreas) {
+            if (hitAreaToggle) hitAreaToggle.style.display = 'inline';
+            hitAreaCheckbox.checked = !!resp.enabled;
+          } else {
+            if (hitAreaToggle) hitAreaToggle.style.display = 'none';
+          }
+        }).catch(() => {});
+      });
+    }
+    updateHitAreaToggleVisibility();
+    // 每次弹窗激活时重新检查
+    window.addEventListener('focus', updateHitAreaToggleVisibility);
+
+    // 切换时发送消息
+    hitAreaCheckbox.addEventListener('change', function() {
+      browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (!tabs[0]) return;
+        browserAPI.tabs.sendMessage(tabs[0].id, {
+          type: 'TOGGLE_HITAREA_OVERLAY',
+          enabled: hitAreaCheckbox.checked
+        }).catch(() => {});
+      });
+    });
+  }
+
   // 窗口关闭时清除定时器
   window.addEventListener('beforeunload', () => {
     clearInterval(memoryUpdateInterval);

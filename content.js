@@ -425,6 +425,15 @@
                     model = s.cubism3Model || s.localModel || '';
                 } catch(e) {}
                 sendResponse({ model: model });
+            } else if (message.type === 'QUERY_HITAREA_STATUS') {
+                sendResponse({
+                    hasHitAreas: localStorage.getItem('live2d_hasHitAreas') === 'true',
+                    enabled: localStorage.getItem('live2d_hitAreaOverlay') === 'true'
+                });
+            } else if (message.type === 'TOGGLE_HITAREA_OVERLAY') {
+                localStorage.setItem('live2d_hitAreaOverlay', message.enabled ? 'true' : 'false');
+                window.dispatchEvent(new CustomEvent('live2d-hitarea-toggle', { detail: { enabled: message.enabled } }));
+                sendResponse({ success: true });
             } else if (message.type === 'updateModelKeyBindings') {
                 if (message.bindings) {
                     try { localStorage.setItem('live2dModelKeyBindings', JSON.stringify(message.bindings)); } catch(e) {}

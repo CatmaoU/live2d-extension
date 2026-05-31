@@ -639,7 +639,12 @@
           <small>切换格式后会自动刷新模型列表</small>
         </div>
         
-        <div style="font-size: 13px; font-weight: 600; color: #667eea; margin-bottom: 8px;">选择模型</div>
+        <div style="font-size: 13px; font-weight: 600; color: #667eea; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+          <span>选择模型</span>
+          <label id="hitAreaToggle" style="display:none; font-size:11px; font-weight:400; color:#666; cursor:pointer; user-select:none;">
+            <input type="checkbox" id="hitAreaCheckbox" style="vertical-align:middle; margin-right:3px;"> 点击区域
+          </label>
+        </div>
         <select id="localModel">
           <option value="">加载中...</option>
         </select>

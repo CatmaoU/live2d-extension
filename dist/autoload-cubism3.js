@@ -3370,6 +3370,12 @@
                             var haCfg2 = await haResp2.json();
                             console.log('[HitArea] json keys:', Object.keys(haCfg2), 'has HitAreas:', !!haCfg2.HitAreas);
                             if (haCfg2 && haCfg2.HitAreas && haCfg2.HitAreas.length > 0) {
+                                try { localStorage.setItem('live2d_hasHitAreas', 'true'); } catch(exx) {}
+                                if (localStorage.getItem('live2d_hitAreaOverlay') === 'true') {
+                                    if (typeof startHitAreaOverlay === 'function') {
+                                        try { startHitAreaOverlay(haCfg2, mI2); } catch(exx2) {}
+                                    }
+                                }
                                 var mI2 = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
                                 if (mI2 && mI2.getModelMatrix && mI2._model) {
                                     var htc = typeof window.live2d.hitTestCoord === 'function' ? window.live2d.hitTestCoord(e.clientX, e.clientY) : null;
@@ -3784,6 +3790,121 @@
     window.addEventListener('live2dFreezeModel', freezeCubism3Model);
     window.addEventListener('live2dUnfreezeModel', unfreezeCubism3Model);
     window.addEventListener('live2dCleanupModel', cleanupCubism3Model);
+    
+    // ========== HitArea 包围盒线框显示 ==========
+    var _hitAreaOverlayData = null;
+    var _hitAreaAnimId = null;
+    var _hitAreaOverlayEl = null;
+    var _hitAreaCfg = null;
+    var _hitAreaModel = null;
+    
+    function getHitAreaCanvasPx(coords2d, mm) {
+        var px = mm.transformX ? mm.transformX(coords2d[0]) : coords2d[0];
+        var py = mm.transformY ? mm.transformY(coords2d[1]) : coords2d[1];
+        return { x: px, y: py };
+    }
+    
+    window.startHitAreaOverlay = function(haCfg, mI) {
+        _hitAreaCfg = haCfg;
+        _hitAreaModel = mI;
+        if (_hitAreaOverlayEl) { return; } // 已显示
+        var canvas = document.getElementById('live2d');
+        if (!canvas) return;
+        var rect = canvas.getBoundingClientRect();
+        var ov = document.createElement('canvas');
+        ov.width = rect.width;
+        ov.height = rect.height;
+        ov.style.cssText = 'position:absolute;top:0;left:0;width:'+rect.width+'px;height:'+rect.height+'px;pointer-events:none;z-index:9999;';
+        var parent = canvas.parentElement;
+        if (parent && parent.style.position === '') { parent.style.position = 'relative'; }
+        if (parent) { parent.appendChild(ov); }
+        _hitAreaOverlayEl = ov;
+        
+        function drawLoop() {
+            if (!_hitAreaOverlayEl) { _hitAreaAnimId = null; return; }
+            var cv = _hitAreaOverlayEl;
+            var ctx = cv.getContext('2d');
+            ctx.clearRect(0, 0, cv.width, cv.height);
+            
+            if (_hitAreaCfg && _hitAreaCfg.HitAreas && _hitAreaModel && _hitAreaModel._model) {
+                var mm = _hitAreaModel.getModelMatrix();
+                var view = null;
+                try { view = window.w && window.w.getInstance && window.w.getInstance().getView && window.w.getInstance().getView(); } catch(e) {}
+                var dts = view ? view._deviceToScreen : null;
+                
+                for (var hi = 0; hi < _hitAreaCfg.HitAreas.length; hi++) {
+                    var ha = _hitAreaCfg.HitAreas[hi];
+                    var did = ha.Id;
+                    if (!did || !_hitAreaModel._model) continue;
+                    var mi = -1;
+                    var dc = _hitAreaModel._model.getDrawableCount();
+                    for (var di = 0; di < dc; di++) {
+                        var dd = _hitAreaModel._model.getDrawableId(di);
+                        var dv = dd && dd._id ? dd._id : dd;
+                        var dn = dv && dv.s ? dv.s : String(dv);
+                        if (dn === did) { mi = di; break; }
+                    }
+                    if (mi < 0) continue;
+                    var vc = _hitAreaModel._model.getDrawableVertexCount(mi);
+                    var verts = _hitAreaModel._model.getDrawableVertices(mi);
+                    if (!verts || vc < 1) continue;
+                    var nx = verts[0], ux = verts[0], ny = verts[1], uy = verts[1];
+                    for (var ci = 1; ci < vc; ci++) {
+                        var hx = verts[ci*2], hy = verts[ci*2+1];
+                        if (hx < nx) nx = hx; if (hx > ux) ux = hx;
+                        if (hy < ny) ny = hy; if (hy > uy) uy = hy;
+                    }
+                    // 模型坐标 → canvas 像素
+                    var ndx1 = mm.transformX ? mm.transformX(nx) : nx;
+                    var ndy1 = mm.transformY ? mm.transformY(ny) : ny;
+                    var ndx2 = mm.transformX ? mm.transformX(ux) : ux;
+                    var ndy2 = mm.transformY ? mm.transformY(uy) : uy;
+                    var cx1 = dts && dts.invertTransformX ? dts.invertTransformX(ndx1) : ndx1;
+                    var cy1 = dts && dts.invertTransformY ? dts.invertTransformY(ndy1) : ndy1;
+                    var cx2 = dts && dts.invertTransformX ? dts.invertTransformX(ndx2) : ndx2;
+                    var cy2 = dts && dts.invertTransformY ? dts.invertTransformY(ndy2) : ndy2;
+                    
+                    ctx.strokeStyle = 'rgba(255,100,100,0.8)';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(
+                        Math.min(cx1, cx2),
+                        Math.min(cy1, cy2),
+                        Math.abs(cx2 - cx1),
+                        Math.abs(cy2 - cy1)
+                    );
+                    ctx.fillStyle = 'rgba(255,100,100,0.5)';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText(ha.Name || did, Math.min(cx1, cx2) + 2, Math.min(cy1, cy2) - 2);
+                }
+            }
+            _hitAreaAnimId = requestAnimationFrame(drawLoop);
+        }
+        
+        _hitAreaAnimId = requestAnimationFrame(drawLoop);
+    };
+    
+    window.stopHitAreaOverlay = function() {
+        if (_hitAreaAnimId) { cancelAnimationFrame(_hitAreaAnimId); _hitAreaAnimId = null; }
+        if (_hitAreaOverlayEl && _hitAreaOverlayEl.parentNode) { _hitAreaOverlayEl.parentNode.removeChild(_hitAreaOverlayEl); }
+        _hitAreaOverlayEl = null;
+        _hitAreaCfg = null;
+        _hitAreaModel = null;
+    };
+    
+    // 监听 toggle 事件
+    window.addEventListener('live2d-hitarea-toggle', function(e) {
+        if (e.detail && e.detail.enabled) {
+            // 重新从页面触发点击来获取 HitArea 数据
+            // 或者等下次点击自动初始化
+        } else {
+            if (typeof window.stopHitAreaOverlay === 'function') { window.stopHitAreaOverlay(); }
+        }
+    });
+    
+    // 页面加载后检查是否需要显示
+    if (localStorage.getItem('live2d_hitAreaOverlay') === 'true') {
+        // 等模型加载完成后检查
+    }
     
     console.log('[Live2D Cubism3] Page visibility memory optimization enabled');
     
