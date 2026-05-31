@@ -576,6 +576,39 @@
     body.dark-theme .reset-btn:hover {
       background: #5a6fd6;
     }
+    /* 模型参数蒙层 */
+    .param-overlay {
+      display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+      background:rgba(0,0,0,0.6); z-index:999;
+      align-items:center; justify-content:center;
+    }
+    .param-box {
+      background:#fff; border-radius:12px; padding:20px;
+      width:280px; max-width:90%;
+    }
+    body.dark-theme .param-box {
+      background:#252542;
+    }
+    .param-title {
+      font-weight:bold; color:#333; font-size:14px; margin-bottom:16px;
+    }
+    body.dark-theme .param-title {
+      color:#ffffff;
+    }
+    .param-row {
+      display:flex; align-items:center; gap:8px;
+      font-size:13px; color:#555; cursor:pointer;
+    }
+    body.dark-theme .param-row {
+      color:#ddd;
+    }
+    .param-close-btn {
+      background:#667eea; color:white; border:none;
+      padding:6px 24px; border-radius:6px; cursor:pointer; font-size:13px;
+    }
+    .param-close-btn:hover {
+      background:#5a6fd6;
+    }
   </style>
 </head>
 <body>
@@ -644,12 +677,15 @@
           <button id="modelParamBtn" style="display:none; font-size:11px; font-weight:400; color:#666; background:none; border:1px solid #ccc; border-radius:4px; padding:2px 8px; cursor:pointer;">参数</button>
         </div>
         <!-- 模型参数蒙层 -->
-        <div id="modelParamOverlay" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
-          <div style="background:#fff; border-radius:12px; padding:20px; width:280px; max-width:90%;">
-            <div style="font-weight:bold; color:#333; font-size:14px; margin-bottom:16px;">模型参数</div>
-            <label style="display:flex; align-items:center; gap:8px; font-size:13px; color:#555; cursor:pointer;">
-              <input type="checkbox" id="hitAreaCheckbox" style="margin:0;"> 点击区域
+        <div id="modelParamOverlay" class="param-overlay" style="display:none;">
+          <div class="param-box">
+            <div class="param-title">模型参数</div>
+            <label class="param-row">
+              <input type="checkbox" id="hitAreaCheckbox"> 点击区域
             </label>
+            <div style="text-align:center; margin-top:14px;">
+              <button id="paramCloseBtn" type="button" class="param-close-btn">关闭</button>
+            </div>
           </div>
         </div>
         <select id="localModel">

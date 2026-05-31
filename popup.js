@@ -2654,6 +2654,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (e.target === modelParamOverlay) modelParamOverlay.style.display = 'none';
     });
   }
+  // 关闭按钮
+  var paramCloseBtn = document.getElementById('paramCloseBtn');
+  if (paramCloseBtn) {
+    paramCloseBtn.addEventListener('click', function() {
+      if (modelParamOverlay) modelParamOverlay.style.display = 'none';
+    });
+  }
   // 切换点击区域
   if (hitAreaCheckbox) {
     hitAreaCheckbox.addEventListener('change', function() {
