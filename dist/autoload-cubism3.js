@@ -3393,6 +3393,7 @@
                                                     var dd2 = mI2._model.getDrawableId(di2);
                                                     var dnVal = dd2 && dd2._id ? dd2._id : dd2;
                                                     var dn2 = dnVal && dnVal.s ? dnVal.s : String(dnVal);
+                                                    if (di2 < 3 || dn2 === drawId2) console.log('[HitArea] di2:', di2, 'dn2:', dn2, 'drawId2:', drawId2, 'match:', dn2 === drawId2);
                                                     if (dn2 === drawId2) { mi2 = di2; break; }
                                                 }
                                                 if (mi2 >= 0) {
