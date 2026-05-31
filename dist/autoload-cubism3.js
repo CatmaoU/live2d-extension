@@ -3382,6 +3382,7 @@
                                         var cy2 = e.clientY - rect2.top;
                                         var tx2 = mm2.invertTransformX(cx2);
                                         var ty2 = mm2.invertTransformY(cy2);
+                                        console.log('[HitArea] rect:', rect2, 'cx:', cx2.toFixed(0), 'cy:', cy2.toFixed(0), 'tx:', tx2.toFixed(2), 'ty:', ty2.toFixed(2), 'scale:', mm2.getScaleX ? mm2.getScaleX().toFixed(2) : '?', 'trans:', mm2.getTranslateX ? mm2.getTranslateX().toFixed(0) : '?');
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
@@ -3393,7 +3394,6 @@
                                                     var dd2 = mI2._model.getDrawableId(di2);
                                                     var dnVal = dd2 && dd2._id ? dd2._id : dd2;
                                                     var dn2 = dnVal && dnVal.s ? dnVal.s : String(dnVal);
-                                                    if (di2 < 3 || dn2 === drawId2) console.log('[HitArea] di2:', di2, 'dn2:', dn2, 'drawId2:', drawId2, 'match:', dn2 === drawId2);
                                                     if (dn2 === drawId2) { mi2 = di2; break; }
                                                 }
                                                 if (mi2 >= 0) {
@@ -3409,6 +3409,7 @@
                                                             if (hy2 < ny2) ny2 = hy2;
                                                             if (hy2 > uy2) uy2 = hy2;
                                                         }
+                                                        console.log('[HitArea] bbox:', drawId2, [nx2.toFixed(2), ux2.toFixed(2), ny2.toFixed(2), uy2.toFixed(2)], 'pt:', [tx2.toFixed(2), ty2.toFixed(2)]);
                                                         if (nx2 <= tx2 && tx2 <= ux2 && ny2 <= ty2 && ty2 <= uy2) {
                                                             console.log('[HitArea] HIT!', drawId2, mg2);
                                                             window.live2d.startMotion(mg2, 0, 9);
