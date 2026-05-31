@@ -3391,8 +3391,11 @@
                                         var _hBestDist = Infinity, _hBestArea = null;
                                         var cvs = document.getElementById('live2d');
                                         var cRect = cvs ? cvs.getBoundingClientRect() : null;
-                                        var px = cRect ? e.clientX - cRect.left : 0;
-                                        var py = cRect ? e.clientY - cRect.top : 0;
+                                        // 点击坐标换算为 canvas 内部分辨率（线框使用 canvas.width 而非 CSS 宽）
+                                        var pxCSS = cRect ? e.clientX - cRect.left : 0;
+                                        var pyCSS = cRect ? e.clientY - cRect.top : 0;
+                                        var px = cvs ? pxCSS * (cvs.width / cRect.width) : pxCSS;
+                                        var py = cvs ? pyCSS * (cvs.height / cRect.height) : pyCSS;
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
