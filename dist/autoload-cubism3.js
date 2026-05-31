@@ -3965,13 +3965,6 @@
     });
     
 
-    // 页面加载后检查是否需要镜像
-    if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
-        setTimeout(function() {
-            window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: true } }));
-        }, 2000);
-    }
-    
     console.log('[Live2D Cubism3] Page visibility memory optimization enabled');
     
     if (document.readyState === 'loading') {
