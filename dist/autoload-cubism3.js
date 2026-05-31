@@ -3360,6 +3360,27 @@
                         e.stopPropagation();
                         return;
                     }
+                    // ===== HitArea 点击检测 =====
+                    try {
+                        var haResp = await fetch(modelPath + 'model.json', { cache: 'force-cache' }).catch(function(){});
+                        if (haResp && haResp.ok) {
+                            var haCfg = await haResp.json();
+                            if (haCfg && haCfg.HitAreas && haCfg.HitAreas.length > 0 && typeof window.live2d.hitTest === 'function') {
+                                for (var hi = 0; hi < haCfg.HitAreas.length; hi++) {
+                                    var ha = haCfg.HitAreas[hi];
+                                    if (window.live2d.hitTest(ha.Name || ha.Id, e.clientX, e.clientY)) {
+                                        var mg = ha.Motion || ha.Name || ha.Id;
+                                        window.live2d.startMotion(mg, 0, 9);
+                                        if (haCfg.FileReferences && haCfg.FileReferences.Motions && haCfg.FileReferences.Motions[mg] && haCfg.FileReferences.Motions[mg][0] && haCfg.FileReferences.Motions[mg][0].Sound) {
+                                            try { new Audio(modelPath + haCfg.FileReferences.Motions[mg][0].Sound).play(); } catch(ex){}
+                                        }
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    } catch(ex){}
+                    // ===== =====
                     // 先检查是否开启 AI，如果开启则处理抚摸交互并返回
                     const latestSettings = await waitForSettings(2000);
                     try {

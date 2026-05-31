@@ -1,0 +1,71 @@
+{
+	"modelIntroduce": "Moc",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Azur Lane/IJN Nagato/Moc.moc3",
+	"textures": [
+		"../../../models_Cubism3/Azur Lane/IJN Nagato/Textures_.png"
+	],
+	"physics": "../../../models_Cubism3/Azur Lane/IJN Nagato/Physics.json",
+	"motions": {
+		"Idle": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Idle_0.json"
+			}
+		],
+		"TapBody": [
+			{}
+		],
+		"TapZmuji": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_TapZmuji_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_TapZmuji_0.wav"
+			}
+		],
+		"TapArtMesh19": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_TapArtMesh19_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_TapArtMesh19_0.wav"
+			}
+		],
+		"Tap头": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap头_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap头_0.wav"
+			}
+		],
+		"Tap下摆": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap下摆_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap下摆_0.wav"
+			}
+		],
+		"Tap月": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap月_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap月_0.wav"
+			}
+		],
+		"Tap扇子": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap扇子_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap扇子_0.wav"
+			},
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap扇子_1.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap扇子_0.wav"
+			}
+		],
+		"Tap欢迎回来": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap欢迎回来_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Tap欢迎回来_0.wav"
+			}
+		],
+		"Start": [
+			{
+				"file": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Start_0.json",
+				"sound": "../../../models_Cubism3/Azur Lane/IJN Nagato/Motions_Start_0.wav"
+			}
+		]
+	}
+}
