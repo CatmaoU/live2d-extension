@@ -275,37 +275,31 @@ def download_and_extract(zip_url, tag_name):
 def replace_extension(extracted_dir):
     print("[替换中] 正在更新本地文件...")
     exclude = {".git", "node_modules", "__pycache__", "live2d-static-api/assets"}
-    running_exe = None
     for item in BASE_DIR.iterdir():
         if item.name in exclude or item.name.startswith("."):
             continue
+        if item.name == "Live2D Update.exe":
+            continue  # 不删除/改名运行中的 EXE
         if item.is_dir():
             shutil.rmtree(item, ignore_errors=True)
         else:
-            # 正在运行的 exe 不能直接删除，先改名再删除
-            if item.name == "Live2D Update.exe":
-                try:
-                    item.rename(item.with_suffix(".exe.old"))
-                    running_exe = item.with_suffix(".exe.old")
-                except:
-                    running_exe = item
-                continue
             try:
                 item.unlink()
             except PermissionError:
                 print(f"  [跳过] 无法删除 {item.name}（可能正在使用）")
+    
+    # 复制更新包文件（跳过 EXE，稍后处理）
+    has_new_exe = False
     for item in extracted_dir.iterdir():
         if item.name.startswith("."):
             continue
-        # 跳过 Live2D Update.exe（正在运行，无法覆盖）
         if item.name == "Live2D Update.exe":
-            print("  [跳过] Live2D Update.exe（运行中，跳过覆盖）")
-            continue
+            has_new_exe = True
+            continue  # 稍后处理
         dst = BASE_DIR / item.name
         if item.is_dir():
             shutil.copytree(item, dst, dirs_exist_ok=True)
         else:
-            # 重试 3 次，防止文件被其他进程临时锁定
             for attempt in range(3):
                 try:
                     shutil.copy2(item, dst)
@@ -316,17 +310,36 @@ def replace_extension(extracted_dir):
                         time.sleep(1)
                     else:
                         print(f"  [跳过] 无法复制 {item.name}（文件被锁定）")
-    # 尝试用更新包中的新 EXE 替换（旧 EXE 已改名 .old，文件名已释放）
-    new_exe_src = extracted_dir / "Live2D Update.exe"
-    if new_exe_src.exists():
+    
+    # 处理 EXE 替换
+    if has_new_exe:
+        new_exe_src = extracted_dir / "Live2D Update.exe"
+        tmp_exe = BASE_DIR / "Live2D Update.exe.new"
+        # 1. 复制新 EXE 到临时文件名
         import time as _time
+        copied = False
         for _attempt in range(3):
             try:
-                shutil.copy2(new_exe_src, BASE_DIR / "Live2D Update.exe")
+                shutil.copy2(new_exe_src, tmp_exe)
+                copied = True
                 break
             except PermissionError:
                 if _attempt < 2:
                     _time.sleep(1)
+        if copied:
+            # 2. 旧 EXE 改名 .old
+            old_exe_path = BASE_DIR / "Live2D Update.exe"
+            old_exe_backup = BASE_DIR / "Live2D Update.exe.old"
+            try:
+                if old_exe_path.exists():
+                    old_exe_path.rename(old_exe_backup)
+            except:
+                pass
+            # 3. 临时文件改名正式名
+            try:
+                tmp_exe.rename(old_exe_path)
+            except:
+                pass
     
     # 清理旧版 EXE 残留
     old_exe = BASE_DIR / "Live2D Update.exe.old"
@@ -378,14 +391,6 @@ def apply_update():
 
 def main():
     # 启动时清理上次更新残留的旧 exe
-    old_exe = BASE_DIR / "Live2D Update.exe.old"
-    if old_exe.exists():
-        try:
-            old_exe.unlink()
-        except:
-            pass
-
-    # 启动时清理之前更新残留的旧 exe
     old_exe = BASE_DIR / "Live2D Update.exe.old"
     if old_exe.exists():
         try:
