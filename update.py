@@ -237,6 +237,10 @@ def replace_extension(extracted_dir):
     for item in extracted_dir.iterdir():
         if item.name.startswith("."):
             continue
+        # 跳过 Live2D Update.exe（正在运行，无法覆盖）
+        if item.name == "Live2D Update.exe":
+            print("  [跳过] Live2D Update.exe（运行中，跳过覆盖）")
+            continue
         dst = BASE_DIR / item.name
         if item.is_dir():
             shutil.copytree(item, dst, dirs_exist_ok=True)
