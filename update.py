@@ -91,8 +91,6 @@ def get_latest_release():
             zip_url = asset.get("browser_download_url")
             break
     if not zip_url:
-        zip_url = data.get("zipball_url")
-    if not zip_url:
         raise Exception("项目不存在或未发布版本，请检查发布页")
     
     return {
