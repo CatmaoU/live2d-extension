@@ -3270,7 +3270,7 @@
             }
             
             // 当模型类型/模型切换时刷新页面
-            if (changes.useCubism3 || changes.cubism3Model || changes.localModel) {
+            if (changes.useCubism3 || changes.cubism3Model || changes.localModel || changes.modelSource) {
                 console.log('[Live2D] Model type changed, reloading page...');
                 setTimeout(function() { location.reload(); }, 100);
                 return;
