@@ -2767,7 +2767,7 @@
     }
 
     // Check if enabled first and load all settings
-    storage.get(['enabled', 'modelSource', 'cdnPath', 'drag', 'position', 'size', 'localModel', 'cubism3Model', 'useCubism3', 'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled', 'selectedCursor', 'mouseCursorSize']).then(async function(userConfig) {
+    storage.get(['enabled', 'modelSource', 'cdnPath', 'drag', 'dragLimit', 'position', 'size', 'localModel', 'cubism3Model', 'useCubism3', 'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled', 'selectedCursor', 'mouseCursorSize']).then(async function(userConfig) {
         if (userConfig.enabled === false) {
             console.log('[Live2D] Disabled by user');
             window.__live2dInitialized = false;
@@ -2860,6 +2860,7 @@
                 cubism3Model: cubism3ModelPath,
                 useCubism3: useCubism3,
                 drag: userConfig.drag || false,
+                dragLimit: userConfig.dragLimit !== false,
                 position: userConfig.position || 'left-bottom',
                 size: userConfig.size || 100,
                 baseUrl: baseUrl,
@@ -2934,7 +2935,8 @@
             localModel: localModelPath,
             cubism3Model: cubism3ModelPath,
             useCubism3: useCubism3,
-            drag: userConfig.drag || false, // Cubism2 的拖拽不需要实验性功能
+            drag: userConfig.drag || false,
+            dragLimit: userConfig.dragLimit !== false,
             position: userConfig.position || 'left-bottom',
             size: userConfig.size || 100,
             baseUrl: baseUrl,
