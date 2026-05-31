@@ -2693,11 +2693,17 @@ document.addEventListener('DOMContentLoaded', async () => {
       browserAPI.tabs.sendMessage(tabs[0].id, { type: type, enabled: checked }).catch(() => {});
     });
   }
+  var touchSubItems = document.getElementById('touchSubItems');
+  function updateTouchSubItems() {
+    if (touchSubItems) touchSubItems.style.display = touchCheckbox && touchCheckbox.checked ? 'block' : 'none';
+  }
   if (touchCheckbox) {
     touchCheckbox.addEventListener('change', function() {
       sendToggle('TOGGLE_TOUCH', touchCheckbox.checked);
+      updateTouchSubItems();
     });
   }
+  updateTouchSubItems();
   if (hitAreaCheckbox) {
     hitAreaCheckbox.addEventListener('change', function() {
       sendToggle('TOGGLE_HITAREA_OVERLAY', hitAreaCheckbox.checked);
