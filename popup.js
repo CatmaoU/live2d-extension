@@ -2633,13 +2633,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (!tabs[0]) return;
         browserAPI.tabs.sendMessage(tabs[0].id, { type: 'QUERY_HITAREA_STATUS' }).then((resp) => {
+          console.log('[HitArea Popup] QUERY_HITAREA_STATUS response:', resp);
           if (resp && resp.hasHitAreas) {
             if (hitAreaToggle) hitAreaToggle.style.display = 'inline';
             hitAreaCheckbox.checked = !!resp.enabled;
           } else {
             if (hitAreaToggle) hitAreaToggle.style.display = 'none';
           }
-        }).catch(() => {});
+        }).catch((err) => { console.log('[HitArea Popup] QUERY_HITAREA_STATUS error:', err); });
       });
     }
     updateHitAreaToggleVisibility();

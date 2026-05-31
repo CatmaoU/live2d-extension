@@ -426,9 +426,12 @@
                 } catch(e) {}
                 sendResponse({ model: model });
             } else if (message.type === 'QUERY_HITAREA_STATUS') {
+                var ha = localStorage.getItem('live2d_hasHitAreas') === 'true';
+                var en = localStorage.getItem('live2d_hitAreaOverlay') === 'true';
+                console.log('[Live2D] QUERY_HITAREA_STATUS: hasHitAreas=' + ha + ' enabled=' + en + ' raw=' + localStorage.getItem('live2d_hasHitAreas'));
                 sendResponse({
-                    hasHitAreas: localStorage.getItem('live2d_hasHitAreas') === 'true',
-                    enabled: localStorage.getItem('live2d_hitAreaOverlay') === 'true'
+                    hasHitAreas: ha,
+                    enabled: en
                 });
             } else if (message.type === 'TOGGLE_HITAREA_OVERLAY') {
                 localStorage.setItem('live2d_hitAreaOverlay', message.enabled ? 'true' : 'false');
