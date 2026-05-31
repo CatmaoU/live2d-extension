@@ -3449,8 +3449,10 @@
                                         }
                                         if (_hBestArea) {
                                             console.log('[HitArea] HIT!', _hBestArea.id, _hBestArea.mg);
-                                            window.live2d.startMotion(_hBestArea.mg, 0, 3);
-                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[_hBestArea.mg] && haCfg2.FileReferences.Motions[_hBestArea.mg][0] && haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound) {
+                                            var _hMotionOn = localStorage.getItem('live2d_hitAreaMotion') !== 'false';
+                                            var _hSoundOn = localStorage.getItem('live2d_hitAreaSound') !== 'false';
+                                            if (_hMotionOn) { window.live2d.startMotion(_hBestArea.mg, 0, 3); }
+                                            if (_hSoundOn && haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[_hBestArea.mg] && haCfg2.FileReferences.Motions[_hBestArea.mg][0] && haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound) {
                                                 var delayMs = haCfg2.FileReferences.Motions[_hBestArea.mg][0].SoundDelay || 0;
                                                 var soundFn = function() {
                                                     if (window.__live2d_lastAudio) { try { window.__live2d_lastAudio.pause(); window.__live2d_lastAudio = null; } catch(ex){} }

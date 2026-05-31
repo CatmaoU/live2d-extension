@@ -2629,6 +2629,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   var modelParamOverlay = document.getElementById('modelParamOverlay');
   var hitAreaCheckbox = document.getElementById('hitAreaCheckbox');
   
+  var hitAreaSoundCheckbox = document.getElementById('hitAreaSoundCheckbox');
+  var hitAreaMotionCheckbox = document.getElementById('hitAreaMotionCheckbox');
+  
   function updateParamBtnVisibility() {
     browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
@@ -2636,6 +2639,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         var hasHitAreas = resp && resp.hasHitAreas;
         if (modelParamBtn) modelParamBtn.style.display = hasHitAreas ? 'inline' : 'none';
         if (hitAreaCheckbox) hitAreaCheckbox.checked = !!(resp && resp.enabled);
+        if (hitAreaSoundCheckbox) hitAreaSoundCheckbox.checked = !!(resp && resp.soundEnabled);
+        if (hitAreaMotionCheckbox) hitAreaMotionCheckbox.checked = !!(resp && resp.motionEnabled);
       }).catch(() => {});
     });
   }
@@ -2661,16 +2666,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (modelParamOverlay) modelParamOverlay.style.display = 'none';
     });
   }
-  // 切换点击区域
+  function sendToggle(type, checked) {
+    browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]) return;
+      browserAPI.tabs.sendMessage(tabs[0].id, { type: type, enabled: checked }).catch(() => {});
+    });
+  }
   if (hitAreaCheckbox) {
     hitAreaCheckbox.addEventListener('change', function() {
-      browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (!tabs[0]) return;
-        browserAPI.tabs.sendMessage(tabs[0].id, {
-          type: 'TOGGLE_HITAREA_OVERLAY',
-          enabled: hitAreaCheckbox.checked
-        }).catch(() => {});
-      });
+      sendToggle('TOGGLE_HITAREA_OVERLAY', hitAreaCheckbox.checked);
+    });
+  }
+  if (hitAreaSoundCheckbox) {
+    hitAreaSoundCheckbox.addEventListener('change', function() {
+      sendToggle('TOGGLE_HITAREA_SOUND', hitAreaSoundCheckbox.checked);
+    });
+  }
+  if (hitAreaMotionCheckbox) {
+    hitAreaMotionCheckbox.addEventListener('change', function() {
+      sendToggle('TOGGLE_HITAREA_MOTION', hitAreaMotionCheckbox.checked);
     });
   }
 
