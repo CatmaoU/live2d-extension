@@ -731,13 +731,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 先更新模型来源可见性，确保 formatContainer 正确显示/隐藏
   updateModelSourceVisibility(true);
 
-  // 如果是本地模型且第一次使用，自动设置默认的Cubism3模型（按排序后的第一个）
-  if (modelSourceSelect.value === 'local' && !config.cubism3Model && cubism3ModelsList.length > 0) {
-    var firstModel = getFirstSortedModel(cubism3ModelsList);
-    console.log('[Live2D] First time use, auto-selecting default Cubism3 model:', firstModel);
-    await storage.set({ cubism3Model: firstModel });
-    if (localModelSelect) {
-      localModelSelect.value = firstModel;
+  // 如果是本地模型，确保下拉菜单选择排序后的第一个模型（首次安装/版本升级时）
+  if (modelSourceSelect.value === 'local' && cubism3ModelsList.length > 0) {
+    var firstC3 = getFirstSortedModel(cubism3ModelsList);
+    if (!config.cubism3Model || config.cubism3Model !== firstC3) {
+      console.log('[Live2D] Auto-selecting first sorted Cubism3 model:', firstC3, '(was:', config.cubism3Model || 'none', ')');
+      await storage.set({ cubism3Model: firstC3 });
+      if (localModelSelect) localModelSelect.value = firstC3;
     }
   }
 
