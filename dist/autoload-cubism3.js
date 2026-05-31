@@ -3509,7 +3509,9 @@
                                                 var delayMs = haCfg2.FileReferences.Motions[_hBestArea.mg][0].SoundDelay || 0;
                                                 var soundFn = function() {
                                                     if (window.__live2d_lastAudio) { try { window.__live2d_lastAudio.pause(); window.__live2d_lastAudio = null; } catch(ex){} }
+                                                    var vol = parseInt(localStorage.getItem('live2d_hitAreaVolume')) || 50;
                                                     var au = new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound);
+                                                    au.volume = Math.min(1, Math.max(0, vol / 100));
                                                     window.__live2d_lastAudio = au;
                                                     try { au.play(); } catch(ex){}
                                                 };

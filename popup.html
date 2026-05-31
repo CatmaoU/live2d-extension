@@ -602,6 +602,14 @@
     body.dark-theme .param-row {
       color:#ddd;
     }
+    body.dark-theme #volumeInput {
+      background:#1a1a2e;
+      border-color:#4a4a6c;
+      color:#fff;
+    }
+    body.dark-theme #volumeSlider {
+      accent-color:#667eea;
+    }
     .param-close-btn {
       background:#667eea; color:white; border:none;
       padding:6px 24px; border-radius:6px; cursor:pointer; font-size:13px;
@@ -686,6 +694,11 @@
             <label class="param-row" style="margin-top:8px;">
               <input type="checkbox" id="hitAreaSoundCheckbox" checked> 声音
             </label>
+            <div id="volumeRow" style="display:flex; align-items:center; gap:6px; margin-top:6px; margin-left:20px; font-size:12px; color:#888;">
+              <input type="range" id="volumeSlider" min="0" max="100" value="50" style="flex:1; height:4px;">
+              <input type="number" id="volumeInput" min="0" max="100" value="50" style="width:44px; padding:1px 4px; border:1px solid #ccc; border-radius:3px; font-size:12px; text-align:center;">
+              <span style="width:14px;">%</span>
+            </div>
             <label class="param-row" style="margin-top:8px;">
               <input type="checkbox" id="hitAreaMotionCheckbox" checked> 动作
             </label>

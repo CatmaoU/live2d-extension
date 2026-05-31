@@ -430,11 +430,13 @@
                 var en = localStorage.getItem('live2d_hitAreaOverlay') === 'true';
                 var sd = localStorage.getItem('live2d_hitAreaSound') !== 'false';
                 var mo = localStorage.getItem('live2d_hitAreaMotion') !== 'false';
+                var vol = parseInt(localStorage.getItem('live2d_hitAreaVolume')) || 50;
                 sendResponse({
                     hasHitAreas: ha,
                     enabled: en,
                     soundEnabled: sd,
-                    motionEnabled: mo
+                    motionEnabled: mo,
+                    volume: vol
                 });
             } else if (message.type === 'TOGGLE_HITAREA_OVERLAY') {
                 localStorage.setItem('live2d_hitAreaOverlay', message.enabled ? 'true' : 'false');
@@ -442,6 +444,9 @@
                 sendResponse({ success: true });
             } else if (message.type === 'TOGGLE_HITAREA_SOUND') {
                 localStorage.setItem('live2d_hitAreaSound', message.enabled ? 'true' : 'false');
+                sendResponse({ success: true });
+            } else if (message.type === 'SET_HITAREA_VOLUME') {
+                localStorage.setItem('live2d_hitAreaVolume', String(message.volume));
                 sendResponse({ success: true });
             } else if (message.type === 'TOGGLE_HITAREA_MOTION') {
                 localStorage.setItem('live2d_hitAreaMotion', message.enabled ? 'true' : 'false');

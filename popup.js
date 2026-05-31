@@ -2641,6 +2641,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (hitAreaCheckbox) hitAreaCheckbox.checked = !!(resp && resp.enabled);
         if (hitAreaSoundCheckbox) hitAreaSoundCheckbox.checked = !!(resp && resp.soundEnabled);
         if (hitAreaMotionCheckbox) hitAreaMotionCheckbox.checked = !!(resp && resp.motionEnabled);
+        if (resp && resp.volume !== undefined) {
+          if (volumeSlider) volumeSlider.value = resp.volume;
+          if (volumeInput) volumeInput.value = resp.volume;
+        }
       }).catch(() => {});
     });
   }
@@ -2677,11 +2681,49 @@ document.addEventListener('DOMContentLoaded', async () => {
       sendToggle('TOGGLE_HITAREA_OVERLAY', hitAreaCheckbox.checked);
     });
   }
+  var volumeRow = document.getElementById('volumeRow');
+  var volumeSlider = document.getElementById('volumeSlider');
+  var volumeInput = document.getElementById('volumeInput');
+  
+  function updateVolumeRow() {
+    if (volumeRow) volumeRow.style.display = hitAreaSoundCheckbox && hitAreaSoundCheckbox.checked ? 'flex' : 'none';
+  }
+  
   if (hitAreaSoundCheckbox) {
     hitAreaSoundCheckbox.addEventListener('change', function() {
       sendToggle('TOGGLE_HITAREA_SOUND', hitAreaSoundCheckbox.checked);
+      updateVolumeRow();
     });
   }
+  
+  function sendVolume(val) {
+    browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]) return;
+      browserAPI.tabs.sendMessage(tabs[0].id, { type: 'SET_HITAREA_VOLUME', volume: val }).catch(() => {});
+    });
+  }
+  
+  if (volumeSlider && volumeInput) {
+    // 从 localStorage 读取音量值
+    var savedVol = localStorage.getItem('live2d_hitAreaVolume');
+    if (savedVol !== null) {
+      volumeSlider.value = savedVol;
+      volumeInput.value = savedVol;
+    }
+    volumeSlider.addEventListener('input', function() {
+      volumeInput.value = volumeSlider.value;
+      localStorage.setItem('live2d_hitAreaVolume', volumeSlider.value);
+      sendVolume(parseInt(volumeSlider.value));
+    });
+    volumeInput.addEventListener('change', function() {
+      var v = Math.min(100, Math.max(0, parseInt(volumeInput.value) || 0));
+      volumeInput.value = v;
+      volumeSlider.value = v;
+      localStorage.setItem('live2d_hitAreaVolume', v);
+      sendVolume(v);
+    });
+  }
+  updateVolumeRow();
   if (hitAreaMotionCheckbox) {
     hitAreaMotionCheckbox.addEventListener('change', function() {
       sendToggle('TOGGLE_HITAREA_MOTION', hitAreaMotionCheckbox.checked);
