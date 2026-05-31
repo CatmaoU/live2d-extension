@@ -3433,9 +3433,14 @@
                                                         var minPy = Math.min(cpy1, cpy2), maxPy = Math.max(cpy1, cpy2);
                                                         console.log('[HitArea] px:', drawId2, 'rect:', minPx.toFixed(0), maxPx.toFixed(0), minPy.toFixed(0), maxPy.toFixed(0), 'click:', px.toFixed(0), py.toFixed(0));
                                                         if (minPx <= px && px <= maxPx && minPy <= py && py <= maxPy) {
+                                                            var area2 = (maxPx - minPx) * (maxPy - minPy);
+                                                            // 小框优先：面积越小优先级越高，同面积选最近中心
                                                             var cX2 = (nx2 + ux2) / 2, cY2 = (ny2 + uy2) / 2;
                                                             var d2 = (tx2 - cX2) * (tx2 - cX2) + (ty2 - cY2) * (ty2 - cY2);
-                                                            if (d2 < _hBestDist) { _hBestDist = d2; _hBestArea = { id:drawId2, mg:mg2 }; }
+                                                            if (!_hBestArea || area2 < _hBestArea.area || (area2 === _hBestArea.area && d2 < _hBestDist)) {
+                                                                _hBestDist = d2;
+                                                                _hBestArea = { id:drawId2, mg:mg2, area: area2 };
+                                                            }
                                                             continue;
                                                         }
                                                     }
@@ -3895,21 +3900,17 @@
                     var cx2 = dts && dts.invertTransformX ? dts.invertTransformX(ndx2) : ndx2;
                     var cy2 = dts && dts.invertTransformY ? dts.invertTransformY(ndy2) : ndy2;
                     
-                    // 跳过被大框覆盖的小框（如 Zmuji/Zmuji2 袖子）
-                    var isSmall = (Math.abs(cx2 - cx1) < 15 && Math.abs(cy2 - cy1) < 15);
-                    if (!isSmall) {
-                        ctx.strokeStyle = 'rgba(255,100,100,0.8)';
-                        ctx.lineWidth = 1.5;
-                        ctx.strokeRect(
-                            Math.min(cx1, cx2),
-                            Math.min(cy1, cy2),
-                            Math.abs(cx2 - cx1),
-                            Math.abs(cy2 - cy1)
-                        );
-                        ctx.fillStyle = 'rgba(255,100,100,0.5)';
-                        ctx.font = '10px sans-serif';
-                        ctx.fillText(ha.Name || did, Math.min(cx1, cx2) + 2, Math.min(cy1, cy2) - 2);
-                    }
+                    ctx.strokeStyle = 'rgba(255,100,100,0.8)';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(
+                        Math.min(cx1, cx2),
+                        Math.min(cy1, cy2),
+                        Math.abs(cx2 - cx1),
+                        Math.abs(cy2 - cy1)
+                    );
+                    ctx.fillStyle = 'rgba(255,100,100,0.5)';
+                    ctx.font = '10px sans-serif';
+                    ctx.fillText(ha.Name || did, Math.min(cx1, cx2) + 2, Math.min(cy1, cy2) - 2);
                 }
             }
             _hitAreaAnimId = requestAnimationFrame(drawLoop);
