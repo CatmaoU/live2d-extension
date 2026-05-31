@@ -3374,8 +3374,8 @@
                                 if (mI2 && mI2.getModelMatrix && mI2._model) {
                                     var htc = typeof window.live2d.hitTestCoord === 'function' ? window.live2d.hitTestCoord(e.clientX, e.clientY) : null;
                                     if (htc) {
-                                        var tx2 = htc.mx;
-                                        var ty2 = htc.my;
+                                        var tx2 = htc.x;
+                                        var ty2 = htc.y;
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
