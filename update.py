@@ -284,6 +284,14 @@ def apply_update():
 
 
 def main():
+    # 启动时清理上次更新残留的旧 exe
+    old_exe = BASE_DIR / "Live2D Update.exe.old"
+    if old_exe.exists():
+        try:
+            old_exe.unlink()
+        except:
+            pass
+
     print("=" * 50)
     print("  Live2D 看板娘 - 自动更新")
     print("=" * 50)
