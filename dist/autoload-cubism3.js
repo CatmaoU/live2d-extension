@@ -3977,20 +3977,30 @@
             mm._mirror = false;
         }
     });
-    // 每帧强制应用镜像（SDK 每帧会重置矩阵）
+    // 镜像每帧应用（SDK 每帧会重置矩阵，需等模型加载后启动）
+    var _mirrorRafId = null;
     function applyMirrorLoop() {
-        var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
-        if (mInst) {
-            var mm = mInst.getModelMatrix();
-            if (mm && mm._mirror) {
-                var w = mm._width || 1;
-                mm._scaleX = -Math.abs(mm._scaleX);
-                mm._trX = Math.abs(mm._scaleX) * w;
+        try {
+            var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
+            if (mInst) {
+                var mm = mInst.getModelMatrix();
+                if (mm && mm._mirror) {
+                    var w = mm._width || 1;
+                    mm._scaleX = -Math.abs(mm._scaleX);
+                    mm._trX = Math.abs(mm._scaleX) * w;
+                }
             }
-        }
-        requestAnimationFrame(applyMirrorLoop);
+        } catch(e) {}
+        _mirrorRafId = requestAnimationFrame(applyMirrorLoop);
     }
-    applyMirrorLoop();
+    // 等模型初始化完成后启动
+    var _mirrorReadyCheck = setInterval(function() {
+        var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
+        if (mInst && mInst.getModelMatrix()) {
+            clearInterval(_mirrorReadyCheck);
+            applyMirrorLoop();
+        }
+    }, 500);
     // 页面加载后检查是否需要镜像
     if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
         setTimeout(function() {
