@@ -3810,9 +3810,10 @@
     }
     
     window.startHitAreaOverlay = function(haCfg, mI) {
+        console.log('[HitArea Overlay] start called, haCfg.HitAreas:', haCfg ? haCfg.HitAreas : 'null', 'mI:', !!mI);
         _hitAreaCfg = haCfg;
         _hitAreaModel = mI;
-        if (_hitAreaOverlayEl) { return; } // 已显示
+        if (_hitAreaOverlayEl) { console.log('[HitArea Overlay] already shown'); return; } // 已显示
         var canvas = document.getElementById('live2d');
         if (!canvas) return;
         var rect = canvas.getBoundingClientRect();
@@ -3898,19 +3899,25 @@
     
     // 监听 toggle 事件
     window.addEventListener('live2d-hitarea-toggle', function(e) {
+        console.log('[HitArea Overlay] toggle event:', e.detail);
         if (e.detail && e.detail.enabled) {
-            if (typeof window.startHitAreaOverlay === 'function' && !_hitAreaOverlayEl) {
+            console.log('[HitArea Overlay] enabling, overlayEl:', _hitAreaOverlayEl, 'startFn:', typeof window.startHitAreaOverlay);
+            if (typeof window.startHitAreaOverlay === 'function') {
+                if (_hitAreaOverlayEl) { console.log('[HitArea Overlay] already shown, skip'); return; }
                 var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
                 var mp = window.__live2d_modelPath || '';
+                console.log('[HitArea Overlay] mInst:', !!mInst, 'mp:', mp);
                 if (mInst && mp) {
                     fetch(mp + 'model.json', { cache: 'force-cache' }).then(function(r) {
+                        console.log('[HitArea Overlay] fetch result:', r ? r.status : 'null');
                         if (!r.ok) return null;
                         return r.json();
                     }).then(function(cfg) {
+                        console.log('[HitArea Overlay] cfg:', cfg ? (cfg.HitAreas ? cfg.HitAreas.length + 'areas' : 'no areas') : 'null');
                         if (cfg && cfg.HitAreas && cfg.HitAreas.length > 0) {
                             window.startHitAreaOverlay(cfg, mInst);
                         }
-                    }).catch(function(){});
+                    }).catch(function(ex) { console.log('[HitArea Overlay] fetch error:', ex); });
                 }
             }
         } else {
