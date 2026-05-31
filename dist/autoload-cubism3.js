@@ -3388,6 +3388,7 @@
                                     if (htc) {
                                         var tx2 = htc.x;
                                         var ty2 = htc.y;
+                                        var _hBestDist = Infinity, _hBestArea = null;
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
@@ -3415,20 +3416,27 @@
                                                             if (hy2 > uy2) uy2 = hy2;
                                                         }
                                                         console.log('[HitArea] bbox:', drawId2, 'box:', nx2, ux2, ny2, uy2, 'pt:', tx2, ty2);
-                                                        if (nx2 <= tx2 && tx2 <= ux2 && ny2 <= ty2 && ty2 <= uy2) {
-                                                            console.log('[HitArea] HIT!', drawId2, mg2);
-                                                            window.live2d.startMotion(mg2, 0, 9);
-                                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
-                                                                console.log('[HitArea] 音效延迟3秒播放');
-                                                                setTimeout(function() {
-                                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
-                                                                }, 3000);
-                                                            }
-                                                            return;
+                                                        var mx2 = (ux2 - nx2) * 0.5, my2 = (uy2 - ny2) * 0.5;
+                                                        if ((nx2 - mx2) <= tx2 && tx2 <= (ux2 + mx2) && (ny2 - my2) <= ty2 && ty2 <= (uy2 + my2)) {
+                                                            var cX2 = (nx2 + ux2) / 2, cY2 = (ny2 + uy2) / 2;
+                                                            var d2 = (tx2 - cX2) * (tx2 - cX2) + (ty2 - cY2) * (ty2 - cY2);
+                                                            if (d2 < _hBestDist) { _hBestDist = d2; _hBestArea = { id:drawId2, mg:mg2 }; }
+                                                            continue;
                                                         }
                                                     }
                                                 }
                                             }
+                                        }
+                                        if (_hBestArea) {
+                                            console.log('[HitArea] HIT!', _hBestArea.id, _hBestArea.mg);
+                                            window.live2d.startMotion(_hBestArea.mg, 0, 9);
+                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[_hBestArea.mg] && haCfg2.FileReferences.Motions[_hBestArea.mg][0] && haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound) {
+                                                console.log('[HitArea] 音效延迟3秒播放');
+                                                setTimeout(function() {
+                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound).play(); } catch(ex){}
+                                                }, 3000);
+                                            }
+                                            return;
                                         }
                                     }
                                 }
@@ -3857,6 +3865,9 @@
                         if (hx < nx) nx = hx; if (hx > ux) ux = hx;
                         if (hy < ny) ny = hy; if (hy > uy) uy = hy;
                     }
+                    // 50% 扩展（匹配点击区域）
+                    var mx = (ux - nx) * 0.5, my = (uy - ny) * 0.5;
+                    nx -= mx; ux += mx; ny -= my; uy += my;
                     // 模型坐标 → canvas 像素
                     var ndx1 = mm.transformX ? mm.transformX(nx) : nx;
                     var ndy1 = mm.transformY ? mm.transformY(ny) : ny;
