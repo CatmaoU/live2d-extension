@@ -3416,8 +3416,7 @@
                                                             if (hy2 > uy2) uy2 = hy2;
                                                         }
                                                         console.log('[HitArea] bbox:', drawId2, 'box:', nx2, ux2, ny2, uy2, 'pt:', tx2, ty2);
-                                                        var mx2 = (ux2 - nx2) * 0.5, my2 = (uy2 - ny2) * 0.5;
-                                                        if ((nx2 - mx2) <= tx2 && tx2 <= (ux2 + mx2) && (ny2 - my2) <= ty2 && ty2 <= (uy2 + my2)) {
+                                                        if (nx2 <= tx2 && tx2 <= ux2 && ny2 <= ty2 && ty2 <= uy2) {
                                                             var cX2 = (nx2 + ux2) / 2, cY2 = (ny2 + uy2) / 2;
                                                             var d2 = (tx2 - cX2) * (tx2 - cX2) + (ty2 - cY2) * (ty2 - cY2);
                                                             if (d2 < _hBestDist) { _hBestDist = d2; _hBestArea = { id:drawId2, mg:mg2 }; }
