@@ -316,6 +316,18 @@ def replace_extension(extracted_dir):
                         time.sleep(1)
                     else:
                         print(f"  [跳过] 无法复制 {item.name}（文件被锁定）")
+    # 尝试用更新包中的新 EXE 替换（旧 EXE 已改名 .old，文件名已释放）
+    new_exe_src = extracted_dir / "Live2D Update.exe"
+    if new_exe_src.exists():
+        import time as _time
+        for _attempt in range(3):
+            try:
+                shutil.copy2(new_exe_src, BASE_DIR / "Live2D Update.exe")
+                break
+            except PermissionError:
+                if _attempt < 2:
+                    _time.sleep(1)
+    
     # 清理旧版 EXE 残留
     old_exe = BASE_DIR / "Live2D Update.exe.old"
     if old_exe.exists():
