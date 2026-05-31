@@ -3374,18 +3374,11 @@
                                 console.log('[HitArea] getModelInstance:', typeof window.live2d.getModelInstance, 'mI2:', !!mI2, 'matrix:', mI2 ? typeof mI2.getModelMatrix : 'N/A', 'model:', mI2 ? !!mI2._model : 'N/A');
                                 if (mI2 && mI2.getModelMatrix && mI2._model) {
 
-                                        var c2 = document.getElementById('live2d');
-                                    var rect2 = c2 ? c2.getBoundingClientRect() : null;
-                                    if (rect2) {
-                                        var cx2 = e.clientX - rect2.left;
-                                        var cy2 = e.clientY - rect2.top;
-                                        var cw = mI2._model.getCanvasWidth ? mI2._model.getCanvasWidth() : 1;
-                                        var ch = mI2._model.getCanvasHeight ? mI2._model.getCanvasHeight() : 1;
-                                        console.log('[HitArea] canvasSize:', cw, ch, 'rectWH:', rect2.width, rect2.height);
-                                        // 手动计算：模型坐标 = (canvas像素 / canvas显示宽) * 模型画布宽
-                                        var tx2 = (cx2 / rect2.width) * cw;
-                                        var ty2 = (cy2 / rect2.height) * ch;
-                                        console.log('[HitArea] cx:', cx2.toFixed(0), 'cy:', cy2.toFixed(0), 'tx:', tx2.toFixed(2), 'ty:', ty2.toFixed(2));
+                                        var htc = typeof window.live2d.hitTestCoord === 'function' ? window.live2d.hitTestCoord(e.clientX, e.clientY) : null;
+                                    console.log('[HitArea] htc:', htc);
+                                    if (htc) {
+                                        var tx2 = htc.mx;
+                                        var ty2 = htc.my;
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
