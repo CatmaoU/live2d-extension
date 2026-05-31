@@ -3388,7 +3388,6 @@
                                     if (htc) {
                                         var tx2 = htc.x;
                                         var ty2 = htc.y;
-                                        var _hitBestDist = Infinity, _hitBestArea = null;
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
@@ -3416,35 +3415,20 @@
                                                             if (hy2 > uy2) uy2 = hy2;
                                                         }
                                                         console.log('[HitArea] bbox:', drawId2, 'box:', nx2, ux2, ny2, uy2, 'pt:', tx2, ty2);
-                                                        // 50% 扩展 + 重叠时选最近中心
-                                                        var marginX2 = (ux2 - nx2) * 0.5;
-                                                        var marginY2 = (uy2 - ny2) * 0.5;
-                                                        if ((nx2 - marginX2) <= tx2 && tx2 <= (ux2 + marginX2) && (ny2 - marginY2) <= ty2 && ty2 <= (uy2 + marginY2)) {
-                                                            // 计算点击到中心的距离（用于重叠时选最近的）
-                                                            var cx2 = (nx2 + ux2) / 2;
-                                                            var cy2 = (ny2 + uy2) / 2;
-                                                            var dist2 = (tx2 - cx2) * (tx2 - cx2) + (ty2 - cy2) * (ty2 - cy2);
-                                                            if (dist2 < _hitBestDist) {
-                                                                _hitBestDist = dist2;
-                                                                _hitBestArea = { drawId2: drawId2, mg2: mg2, ha2: ha2 };
+                                                        if (nx2 <= tx2 && tx2 <= ux2 && ny2 <= ty2 && ty2 <= uy2) {
+                                                            console.log('[HitArea] HIT!', drawId2, mg2);
+                                                            window.live2d.startMotion(mg2, 0, 9);
+                                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
+                                                                console.log('[HitArea] 音效延迟3秒播放');
+                                                                setTimeout(function() {
+                                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                                                }, 3000);
                                                             }
-                                                            continue;
+                                                            return;
                                                         }
                                                     }
                                                 }
                                             }
-                                        }
-                                        if (_hitBestArea) {
-                                            var ba = _hitBestArea;
-                                            console.log('[HitArea] HIT!', ba.drawId2, ba.mg2);
-                                            window.live2d.startMotion(ba.mg2, 0, 9);
-                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[ba.mg2] && haCfg2.FileReferences.Motions[ba.mg2][0] && haCfg2.FileReferences.Motions[ba.mg2][0].Sound) {
-                                                console.log('[HitArea] 音效延迟3秒播放');
-                                                setTimeout(function() {
-                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[ba.mg2][0].Sound).play(); } catch(ex){}
-                                                }, 3000);
-                                            }
-                                            return;
                                         }
                                     }
                                 }
@@ -3873,9 +3857,6 @@
                         if (hx < nx) nx = hx; if (hx > ux) ux = hx;
                         if (hy < ny) ny = hy; if (hy > uy) uy = hy;
                     }
-                    // 50% 扩展（匹配点击区域）
-                    var mx = (ux - nx) * 0.5, my = (uy - ny) * 0.5;
-                    nx -= mx; ux += mx; ny -= my; uy += my;
                     // 模型坐标 → canvas 像素
                     var ndx1 = mm.transformX ? mm.transformX(nx) : nx;
                     var ndy1 = mm.transformY ? mm.transformY(ny) : ny;
