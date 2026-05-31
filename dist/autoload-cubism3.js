@@ -3410,7 +3410,14 @@
                                                             console.log('[HitArea] HIT!', drawId2, mg2);
                                                             window.live2d.startMotion(mg2, 0, 9);
                                                             if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
-                                                                try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                                                if (ha2.Name === '月' || drawId2 === 'moon') {
+                                                                    console.log('[HitArea] 月亮音效延迟3秒播放');
+                                                                    setTimeout(function() {
+                                                                        try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                                                    }, 3000);
+                                                                } else {
+                                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                                                }
                                                             }
                                                             return;
                                                         }
