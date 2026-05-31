@@ -256,13 +256,29 @@ def replace_extension(extracted_dir):
                         time.sleep(1)
                     else:
                         print(f"  [跳过] 无法复制 {item.name}（文件被锁定）")
-    # 清理旧的 exe 文件
-    old_exe = BASE_DIR / "Live2D Update.exe.old"
-    if old_exe.exists():
-        try:
-            old_exe.unlink()
-        except:
-            pass
+    # 延迟替换正在运行的 EXE（创建批处理，进程退出后执行）
+    new_exe_src = extracted_dir / "Live2D Update.exe"
+    if new_exe_src.exists():
+        bat_path = BASE_DIR / "_update_exe.bat"
+        with open(bat_path, "w", newline="\r\n") as bat:
+            bat.write('@echo off\r\n')
+            bat.write('timeout /t 2 /nobreak >nul\r\n')
+            bat.write(f'del "{BASE_DIR / "Live2D Update.exe.old"}" 2>nul\r\n')
+            bat.write(f'copy "{new_exe_src}" "{BASE_DIR / "Live2D Update.exe"}" >nul\r\n')
+            bat.write('del "%~f0"\r\n')
+        import subprocess
+        startupinfo = subprocess.STARTUPINFO()
+        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        subprocess.Popen(["cmd", "/c", str(bat_path)], close_fds=True, startupinfo=startupinfo)
+        print("  [EXE] 将在退出后自动替换为最新版")
+    else:
+        # 没有新版 EXE，单纯清理旧文件
+        old_exe = BASE_DIR / "Live2D Update.exe.old"
+        if old_exe.exists():
+            try:
+                old_exe.unlink()
+            except:
+                pass
     print("[完成] 更新文件已替换！")
 
 
