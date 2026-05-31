@@ -11,11 +11,11 @@
 ## 功能
 
 - 支持 Cubism 2 和 Cubism 3 模型
-- 兼容 VTS 模型（动作和音效等方面还没做，只是说做到了兼容，可以显示了）
+- 兼容 VTS 模型（兼容了部分动作和音效）
 
 ## 安装
 
-详细请看目录下的 BROWSER_SUPPORT.md
+详细请看 [BROWSER_SUPPORT.md](BROWSER_SUPPORT.md)
 
 ## 项目结构
 
@@ -36,6 +36,15 @@ live2d-widget-extension/
 ```
 
 ## 更新日志
+### v1.0.7
+- 目前兼容了 HitArea 点击区域检测
+- 支持 VTS 自定义 model.json 的点击交互
+- 添加 Alt 键悬停隐藏模型下方按钮和输入框
+- build.js 合并自定义 model.json 的 Motions/Expressions/HitAreas
+- 修复 model3.json 中 null File 条目导致的 NullValue 加载错误
+- 修改模型排序|模型下拉列表按名字长度 + 拼音排序
+- 修复了一些小BUG（如模型渲染问题、内存统计不准确、冻结模型功能失效等..）
+
 ### v1.0.6
 - 按键映射系统：支持 Cubism3 模型表情/动作快捷键
 - 默认 30 键映射（小键盘 0-9/*/-/+ + 主键盘 0-9/-=[]\\;\',./）
