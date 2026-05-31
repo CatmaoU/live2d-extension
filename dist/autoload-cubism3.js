@@ -3371,11 +3371,8 @@
                             console.log('[HitArea] json keys:', Object.keys(haCfg2), 'has HitAreas:', !!haCfg2.HitAreas);
                             if (haCfg2 && haCfg2.HitAreas && haCfg2.HitAreas.length > 0) {
                                 var mI2 = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
-                                console.log('[HitArea] getModelInstance:', typeof window.live2d.getModelInstance, 'mI2:', !!mI2, 'matrix:', mI2 ? typeof mI2.getModelMatrix : 'N/A', 'model:', mI2 ? !!mI2._model : 'N/A');
                                 if (mI2 && mI2.getModelMatrix && mI2._model) {
-
-                                        var htc = typeof window.live2d.hitTestCoord === 'function' ? window.live2d.hitTestCoord(e.clientX, e.clientY) : null;
-                                    console.log('[HitArea] htc:', htc);
+                                    var htc = typeof window.live2d.hitTestCoord === 'function' ? window.live2d.hitTestCoord(e.clientX, e.clientY) : null;
                                     if (htc) {
                                         var tx2 = htc.mx;
                                         var ty2 = htc.my;
