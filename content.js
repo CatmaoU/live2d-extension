@@ -430,13 +430,11 @@
                 var en = localStorage.getItem('live2d_hitAreaOverlay') === 'true';
                 var sd = localStorage.getItem('live2d_hitAreaSound') !== 'false';
                 var mo = localStorage.getItem('live2d_hitAreaMotion') !== 'false';
-                var mi = localStorage.getItem('live2d_mirrorEnabled') === 'true';
                 sendResponse({
                     hasHitAreas: ha,
                     enabled: en,
                     soundEnabled: sd,
-                    motionEnabled: mo,
-                    mirrorEnabled: mi
+                    motionEnabled: mo
                 });
             } else if (message.type === 'TOGGLE_HITAREA_OVERLAY') {
                 localStorage.setItem('live2d_hitAreaOverlay', message.enabled ? 'true' : 'false');
@@ -447,10 +445,6 @@
                 sendResponse({ success: true });
             } else if (message.type === 'TOGGLE_HITAREA_MOTION') {
                 localStorage.setItem('live2d_hitAreaMotion', message.enabled ? 'true' : 'false');
-                sendResponse({ success: true });
-            } else if (message.type === 'TOGGLE_MIRROR') {
-                localStorage.setItem('live2d_mirrorEnabled', message.enabled ? 'true' : 'false');
-                window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: message.enabled } }));
                 sendResponse({ success: true });
             } else if (message.type === 'updateModelKeyBindings') {
                 if (message.bindings) {

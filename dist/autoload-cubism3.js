@@ -3280,12 +3280,7 @@
                     window.live2d.init();
                     window.live2d.loadModel(modelPath);
                     console.log('[Live2D Cubism3] Model loaded successfully');
-                    // 恢复镜像状态
-                    if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
-                        setTimeout(function() {
-                            window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: true } }));
-                        }, 100);
-                    }
+
                     
                     // 启用拖拽功能
                     const waifu = document.getElementById('waifu');
@@ -3969,37 +3964,7 @@
         }
     });
     
-    // 监听镜像开关
-    var _mirrorOn = false;
-    window.addEventListener('live2d-mirror-toggle', function(e) {
-        _mirrorOn = !!(e.detail && e.detail.enabled);
-        var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
-        if (!mInst) return;
-        var mm = mInst.getModelMatrix();
-        if (!mm) return;
-        mm._mirror = _mirrorOn;
-        if (_mirrorOn) {
-            // 拦截 setWidth 方法，在 SDK 每帧重置后自动重新应用镜像
-            if (!mm._mirrorPatched) {
-                mm._mirrorPatched = true;
-                var origSW = mm.setWidth;
-                var _this = mm;
-                mm.setWidth = function(e) {
-                    origSW.call(_this, e);
-                    if (_this._mirror) {
-                        var w = _this._width || 1;
-                        _this._scaleX = -Math.abs(_this._scaleX);
-                        _this._trX = Math.abs(_this._scaleX) * w;
-                    }
-                };
-            }
-            // 立即应用一次
-            var w = mm._width || 1;
-            mm._scaleX = -Math.abs(mm._scaleX);
-            mm._trX = Math.abs(mm._scaleX) * w;
-        }
-    });
-    // 由 initCubism3 在模型加载完成后启动镜像
+
     // 页面加载后检查是否需要镜像
     if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
         setTimeout(function() {
