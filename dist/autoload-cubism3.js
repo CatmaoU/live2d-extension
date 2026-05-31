@@ -982,7 +982,14 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Alt' && !_altPressed) {
                 _altPressed = true;
-                _altHover = false;
+                var w = document.getElementById('waifu');
+                var isOver = w && w.matches(':hover');
+                if (isOver) {
+                    _altHover = true;
+                    if (w) w.classList.add('waifu-alt-hide');
+                } else {
+                    _altHover = false;
+                }
             }
         });
         document.addEventListener('keyup', function(e) {
