@@ -461,7 +461,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     'experimentalEnabled', 'mouseFeaturesEnabled', 'mouseCursorEnabled', 'clickEffectEnabled',
     'selectedCursor', 'mouseCursorSize', 'theme', 'dragLimit', 'followSystemTheme',
     'pageSummaryEnabled', 'freezeModelEnabled', 'freezeMode', 'freezeKeepTabs', 'newTabEnabled', 'sakanaWidgetEnabled', 'sakanaWidgetDraggable', 'sakanaWidgetSize', 'sakanaWidgetPositionSaved',
-    'positionAutoRefresh', 'atriApiKey',
+    'extVersion', 'positionAutoRefresh', 'atriApiKey',
     'dailyImageEnabled', 'dailyImageCustomApi', 'dailyImageApiList',
   ]);
 
