@@ -3818,8 +3818,9 @@
         if (!canvas) return;
         var rect = canvas.getBoundingClientRect();
         var ov = document.createElement('canvas');
-        ov.width = rect.width;
-        ov.height = rect.height;
+        // 匹配 canvas 内部分辨率（CSS 像素 × devicePixelRatio）
+        ov.width = canvas.width;
+        ov.height = canvas.height;
         ov.style.cssText = 'position:absolute;top:0;left:0;width:'+rect.width+'px;height:'+rect.height+'px;pointer-events:none;z-index:9999;';
         var parent = canvas.parentElement;
         if (parent && parent.style.position === '') { parent.style.position = 'relative'; }
