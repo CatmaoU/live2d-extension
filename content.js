@@ -3269,6 +3269,13 @@
                 console.log('[Live2D] Settings synced to localStorage');
             }
             
+            // 当模型类型/模型切换时刷新页面
+            if (changes.useCubism3 || changes.cubism3Model || changes.localModel) {
+                console.log('[Live2D] Model type changed, reloading page...');
+                setTimeout(function() { location.reload(); }, 100);
+                return;
+            }
+            
             // 当位置改变时，重置原始位置
             if (changes.position) {
                 resetOriginalPosition();
