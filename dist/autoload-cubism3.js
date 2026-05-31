@@ -3218,6 +3218,10 @@
                             return fetch(modelDir + 'model.json')
                                 .then(function(r) { if (!r.ok) throw 'no'; return r.json(); })
                                 .then(function(config) {
+                                    // 设置 HitArea 标志（供 popup "点击区域"开关使用）
+                                    if (config.HitAreas && config.HitAreas.length > 0) {
+                                        try { localStorage.setItem('live2d_hasHitAreas', 'true'); } catch(exx) {}
+                                    }
                                     var acts = [];
                                     if (config.FileReferences && config.FileReferences.Motions) {
                                         var addedSwitches = {};
