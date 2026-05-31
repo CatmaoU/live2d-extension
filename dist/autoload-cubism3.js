@@ -3380,7 +3380,7 @@
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
-                                            var mg2 = ha2.Motion || ha2.Name || drawId2;
+                                            var mg2 = ha2.Motion || "Tap" + ha2.Name || drawId2;
                                             if (drawId2 && mI2._model) {
                                                 var mi2 = -1;
                                                 var dc2 = mI2._model.getDrawableCount();
