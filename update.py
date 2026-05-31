@@ -197,7 +197,8 @@ def download_and_extract(zip_url, tag_name):
     
     # 按速度顺序尝试所有代理，直到下载到有效的 ZIP
     proxy_prefix, fast_url = pick_fastest_proxy(zip_url, tag_name)
-    all_urls = [(proxy_prefix, fast_url)]
+    all_urls = [(proxy_prefix or "直连", fast_url)]
+    seen_urls = {fast_url}
     for p in PROXIES:
         if not p:
             u = zip_url
@@ -206,9 +207,9 @@ def download_and_extract(zip_url, tag_name):
             u = p + "https://github.com/CatmaoU/live2d-extension/releases/download/" + rel_path
         else:
             u = p + zip_url
-        label = p or "直连"
-        if (label, u) not in all_urls:
-            all_urls.append((label, u))
+        if u not in seen_urls:
+            seen_urls.add(u)
+            all_urls.append((p or "直连", u))
     
     downloaded_ok = False
     for label, url in all_urls:
