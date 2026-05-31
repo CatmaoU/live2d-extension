@@ -2631,6 +2631,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   var hitAreaSoundCheckbox = document.getElementById('hitAreaSoundCheckbox');
   var hitAreaMotionCheckbox = document.getElementById('hitAreaMotionCheckbox');
+  var mirrorCheckbox = document.getElementById('mirrorCheckbox');
   
   function updateParamBtnVisibility() {
     browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -2641,6 +2642,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (hitAreaCheckbox) hitAreaCheckbox.checked = !!(resp && resp.enabled);
         if (hitAreaSoundCheckbox) hitAreaSoundCheckbox.checked = !!(resp && resp.soundEnabled);
         if (hitAreaMotionCheckbox) hitAreaMotionCheckbox.checked = !!(resp && resp.motionEnabled);
+        if (mirrorCheckbox) mirrorCheckbox.checked = !!(resp && resp.mirrorEnabled);
       }).catch(() => {});
     });
   }
@@ -2685,6 +2687,11 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (hitAreaMotionCheckbox) {
     hitAreaMotionCheckbox.addEventListener('change', function() {
       sendToggle('TOGGLE_HITAREA_MOTION', hitAreaMotionCheckbox.checked);
+    });
+  }
+  if (mirrorCheckbox) {
+    mirrorCheckbox.addEventListener('change', function() {
+      sendToggle('TOGGLE_MIRROR', mirrorCheckbox.checked);
     });
   }
 

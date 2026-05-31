@@ -428,13 +428,15 @@
             } else if (message.type === 'QUERY_HITAREA_STATUS') {
                 var ha = localStorage.getItem('live2d_hasHitAreas') === 'true';
                 var en = localStorage.getItem('live2d_hitAreaOverlay') === 'true';
-                var sd = localStorage.getItem('live2d_hitAreaSound') !== 'false'; // default true
-                var mo = localStorage.getItem('live2d_hitAreaMotion') !== 'false'; // default true
+                var sd = localStorage.getItem('live2d_hitAreaSound') !== 'false';
+                var mo = localStorage.getItem('live2d_hitAreaMotion') !== 'false';
+                var mi = localStorage.getItem('live2d_mirrorEnabled') === 'true';
                 sendResponse({
                     hasHitAreas: ha,
                     enabled: en,
                     soundEnabled: sd,
-                    motionEnabled: mo
+                    motionEnabled: mo,
+                    mirrorEnabled: mi
                 });
             } else if (message.type === 'TOGGLE_HITAREA_OVERLAY') {
                 localStorage.setItem('live2d_hitAreaOverlay', message.enabled ? 'true' : 'false');
@@ -445,6 +447,10 @@
                 sendResponse({ success: true });
             } else if (message.type === 'TOGGLE_HITAREA_MOTION') {
                 localStorage.setItem('live2d_hitAreaMotion', message.enabled ? 'true' : 'false');
+                sendResponse({ success: true });
+            } else if (message.type === 'TOGGLE_MIRROR') {
+                localStorage.setItem('live2d_mirrorEnabled', message.enabled ? 'true' : 'false');
+                window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: message.enabled } }));
                 sendResponse({ success: true });
             } else if (message.type === 'updateModelKeyBindings') {
                 if (message.bindings) {

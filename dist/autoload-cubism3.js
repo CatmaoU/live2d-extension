@@ -3963,9 +3963,30 @@
         }
     });
     
-    // 页面加载后检查是否需要显示
-    if (localStorage.getItem('live2d_hitAreaOverlay') === 'true') {
-        // 等模型加载完成后检查
+    // 监听镜像开关
+    var _mirrorOrigScaleX = null, _mirrorOrigTrX = null;
+    window.addEventListener('live2d-mirror-toggle', function(e) {
+        var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
+        if (!mInst) return;
+        var mm = mInst.getModelMatrix();
+        if (!mm) return;
+        if (e.detail && e.detail.enabled) {
+            // 保存原始值
+            if (_mirrorOrigScaleX === null) { _mirrorOrigScaleX = mm._scaleX; _mirrorOrigTrX = mm._trX; }
+            // 镜像：反转 X 缩放，平移使模型保持居中
+            var w = mm._width || 1;
+            mm._scaleX = -Math.abs(mm._scaleX);
+            mm._trX = Math.abs(mm._scaleX) * w;
+        } else {
+            // 还原
+            if (_mirrorOrigScaleX !== null) { mm._scaleX = _mirrorOrigScaleX; mm._trX = _mirrorOrigTrX; }
+        }
+    });
+    // 页面加载后检查是否需要镜像
+    if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
+        setTimeout(function() {
+            window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: true } }));
+        }, 2000);
     }
     
     console.log('[Live2D Cubism3] Page visibility memory optimization enabled');
