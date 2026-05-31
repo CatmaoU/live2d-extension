@@ -658,6 +658,88 @@
       border-color:#667eea;
       color:white;
     }
+    /* 按键映射/绑定界面 */
+    .action-overlay-box {
+      background:#fff; border:1px solid #ddd; border-radius:12px; padding:20px;
+      width:320px; max-width:90%;
+    }
+    body.dark-theme .action-overlay-box {
+      background:#1e1e1e; border-color:#444;
+    }
+    .action-overlay-title {
+      font-weight:bold; color:#333; font-size:14px; margin-bottom:16px;
+    }
+    body.dark-theme .action-overlay-title {
+      color:#ddd;
+    }
+    .action-btn {
+      background:#f0f0f0; border:1px solid #ccc; color:#555;
+      padding:3px 10px; border-radius:4px; cursor:pointer; font-size:11px;
+    }
+    .action-btn:hover {
+      background:#e0e0e0;
+    }
+    body.dark-theme .action-btn {
+      background:#2a2a2a; border-color:#555; color:#aaa;
+    }
+    body.dark-theme .action-btn:hover {
+      background:#3a3a3a;
+    }
+    .action-reset-btn {
+      flex:1; background:#fff0f0; border:1px solid #e0b0b0; color:#c06060;
+      padding:8px; border-radius:6px; cursor:pointer; font-size:13px;
+    }
+    .action-reset-btn:hover {
+      background:#ffe0e0;
+    }
+    body.dark-theme .action-reset-btn {
+      background:#2a1a1a; border-color:#553333; color:#cc8888;
+    }
+    .action-close-btn {
+      flex:1; background:#f0f0f0; border:1px solid #ccc; color:#666;
+      padding:8px; border-radius:6px; cursor:pointer; font-size:13px;
+    }
+    .action-close-btn:hover {
+      background:#e0e0e0;
+    }
+    body.dark-theme .action-close-btn {
+      background:#333; border-color:#555; color:#ccc;
+    }
+    .action-hint {
+      font-size:12px; color:#999;
+    }
+    body.dark-theme .action-hint {
+      color:#888 !important;
+    }
+    .action-section-title {
+      font-weight:600; color:#667eea; font-size:13px;
+    }
+    .action-divider {
+      margin-top:12px; padding-top:12px; border-top:1px solid #e0e0e0;
+    }
+    body.dark-theme .action-divider {
+      border-top-color:#333;
+    }
+    .action-scroll {
+      max-height:370px; overflow-y:auto; scrollbar-width:thin;
+    }
+    body.dark-theme .action-scroll {
+      scrollbar-color:#555 #1e1e1e;
+    }
+    .kbd-row {
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    body.dark-theme .kbd-row span:first-child {
+      color:#bbb;
+    }
+    .kbd-recorder {
+      background:#f0f0f0; border:1px solid #ccc; border-radius:4px;
+      padding:4px 10px; min-width:80px; text-align:center;
+      color:#4fa3ff; font-size:12px; cursor:pointer;
+    }
+    body.dark-theme .kbd-recorder {
+      background:#2a2a2a; border-color:#555; color:#4fa3ff;
+    }
   </style>
 </head>
 <body>
@@ -762,29 +844,29 @@
         <small>目前支持Cubism2、Cubism3模型，兼容VTS模型（动作和语音等没做，只做到了兼容）</small>
 
         <!-- 模型按键映射 -->
-        <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e0e0e0;">
+        <div class="action-divider">
           <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: 600; color: #667eea; font-size: 13px;">模型按键映射</span>
+            <span class="action-section-title">模型按键映射</span>
             <div style="display: flex; gap: 4px;">
-              <button id="modelActionRefreshBtn" style="background: #2a2a2a; border: 1px solid #555; color: #aaa; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">刷新</button>
-              <button id="modelActionBindBtn" style="background: #2a2a2a; border: 1px solid #555; color: #aaa; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">按键绑定</button>
+              <button id="modelActionRefreshBtn" class="action-btn">刷新</button>
+              <button id="modelActionBindBtn" class="action-btn">按键绑定</button>
             </div>
           </div>
-          <div style="font-size: 12px; color: #999;" id="modelActionHint">加载模型后可设置动作快捷键（0表情）</div>
+          <div class="action-hint" id="modelActionHint">加载模型后可设置动作快捷键（0表情）</div>
         </div>
         <!-- 模型按键映射蒙层 -->
         <div id="modelActionOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center;">
-          <div style="background: #1e1e1e; border: 1px solid #444; border-radius: 12px; padding: 20px; width: 320px; max-width: 90%;">
-            <div style="font-weight: bold; color: #ddd; font-size: 14px; margin-bottom: 16px;">模型按键映射</div>
-            <div style="max-height: 370px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #555 #1e1e1e;">
+          <div class="action-overlay-box">
+            <div class="action-overlay-title">模型按键映射</div>
+            <div class="action-scroll">
               <div style="display: flex; flex-direction: column; gap: 10px;" id="modelActionDialogList">
                 <!-- 由 JS 动态渲染 -->
               </div>
             </div>
             <div style="font-size: 11px; color: #666; margin-top: 12px;">按数字键 1-9,0,-,= 触发对应的动作/表情</div>
             <div style="display: flex; gap: 8px; margin-top: 12px;">
-              <button id="modelActionResetBtn" style="flex: 1; background: #2a1a1a; border: 1px solid #553333; color: #cc8888; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px;">重置</button>
-              <button id="modelActionCloseBtn" style="flex: 1; background: #333; border: 1px solid #555; color: #ccc; padding: 8px; border-radius: 6px; cursor: pointer; font-size: 13px;">关闭</button>
+              <button id="modelActionResetBtn" class="action-reset-btn">重置</button>
+              <button id="modelActionCloseBtn" class="action-close-btn">关闭</button>
             </div>
           </div>
         </div>
@@ -861,10 +943,10 @@
       <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #333;">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-weight: bold; color: #bbb; font-size: 13px;">快捷键</span>
+            <span style="font-weight: bold; font-size: 13px;">快捷键</span>
             <span class="theme-hint" style="font-size: 10px;">蓝色点击取消，黄色点击更改</span>
           </div>
-          <button id="keyBindBtn" style="background: #2a2a2a; border: 1px solid #555; color: #aaa; padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 11px;">按键绑定</button>
+          <button id="keyBindBtn" class="action-btn">按键绑定</button>
         </div>
         <div style="display: flex; flex-direction: column; gap: 6px;" id="keybindList">
           <div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #999;">
@@ -889,8 +971,8 @@
     
     <!-- 按键绑定蒙层 -->
     <div id="keybindOverlay" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 999; align-items: center; justify-content: center;">
-      <div style="background: #1e1e1e; border: 1px solid #444; border-radius: 12px; padding: 20px; width: 320px; max-width: 90%;">
-        <div style="font-weight: bold; color: #ddd; font-size: 14px; margin-bottom: 16px;">按键绑定</div>
+      <div class="action-overlay-box">
+        <div class="action-overlay-title">按键绑定</div>
         <div style="display: flex; flex-direction: column; gap: 10px;" id="keybindDialogList">
           <div class="kbd-row" data-action="pageSummary" style="display: flex; align-items: center; justify-content: space-between;">
             <span style="color: #bbb; font-size: 12px;">快速总结当前页面</span>
