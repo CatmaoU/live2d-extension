@@ -3835,9 +3835,7 @@
             
             if (_hitAreaCfg && _hitAreaCfg.HitAreas && _hitAreaModel && _hitAreaModel._model) {
                 var mm = _hitAreaModel.getModelMatrix();
-                var view = null;
-                try { view = window.w && window.w.getInstance && window.w.getInstance().getView && window.w.getInstance().getView(); } catch(e) {}
-                var dts = view ? view._deviceToScreen : null;
+                var dts = typeof window.live2d.getDeviceToScreen === 'function' ? window.live2d.getDeviceToScreen() : null;
                 
                 for (var hi = 0; hi < _hitAreaCfg.HitAreas.length; hi++) {
                     var ha = _hitAreaCfg.HitAreas[hi];
