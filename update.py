@@ -125,15 +125,14 @@ def test_proxy_url(full_url, timeout=5):
 
 
 def pick_fastest_proxy(zip_url, tag_name):
-    """测试所有代理，返回最快的代理前缀"""
+    """测试所有代理的实际下载速度，返回最快的前缀"""
     results = []
     total = len(PROXIES)
-    print(f"[测速] 正在测试 {total} 个镜像节点...")
+    print(f"[测速] 正在测试 {total} 个镜像节点下载速度...")
     
     for i, proxy in enumerate(PROXIES):
         prefix = proxy or "直连"
         
-        # 构造完整下载 URL
         if not proxy:
             url = zip_url
         elif "/releases/download/" in zip_url:
@@ -143,20 +142,26 @@ def pick_fastest_proxy(zip_url, tag_name):
             url = proxy + zip_url
         
         print(f"  [{i+1}/{total}] {prefix}...", end=" ", flush=True)
-        latency = test_proxy_url(url)
-        if latency is not None:
-            results.append((latency, proxy, url))
-            print(f"{latency*1000:.0f}ms")
-        else:
-            print("超时")
+        # 下载前 256KB 测速
+        start = time.time()
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Live2D-Updater", "Range": "bytes=0-262144"})
+            with urllib.request.urlopen(req, timeout=10) as r:
+                data = r.read()
+            elapsed = time.time() - start
+            speed = len(data) / elapsed / 1024  # KB/s
+            results.append((speed, proxy, url))
+            print(f"{speed:.0f} KB/s")
+        except Exception as e:
+            print(f"失败")
     
     if not results:
-        print("[测速] 所有节点均超时，使用直连")
+        print("[测速] 所有节点均失败，使用直连")
         return "", zip_url
     
-    results.sort(key=lambda x: x[0])
+    results.sort(key=lambda x: -x[0])  # 按速度降序
     best = results[0]
-    print(f"[测速] 选中最快节点: {'直连' if not best[1] else best[1]} ({best[0]*1000:.0f}ms)")
+    print(f"[测速] 选中最快节点: {'直连' if not best[1] else best[1]} ({best[0]:.0f} KB/s)")
     return best[1], best[2]
 
 
