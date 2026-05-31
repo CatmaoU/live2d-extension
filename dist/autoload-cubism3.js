@@ -3446,10 +3446,14 @@
                                             console.log('[HitArea] HIT!', _hBestArea.id, _hBestArea.mg);
                                             window.live2d.startMotion(_hBestArea.mg, 0, 9);
                                             if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[_hBestArea.mg] && haCfg2.FileReferences.Motions[_hBestArea.mg][0] && haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound) {
-                                                console.log('[HitArea] 音效延迟3秒播放');
-                                                setTimeout(function() {
+                                                if (_hBestArea.mg === 'Tap扇子') {
+                                                    console.log('[HitArea] 扇子音效延迟3秒播放');
+                                                    setTimeout(function() {
+                                                        try { new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound).play(); } catch(ex){}
+                                                    }, 3000);
+                                                } else {
                                                     try { new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound).play(); } catch(ex){}
-                                                }, 3000);
+                                                }
                                             }
                                             return;
                                         }
