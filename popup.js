@@ -2624,30 +2624,38 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 每 3 秒更新一次
   const memoryUpdateInterval = setInterval(updateMemoryUsage, 3000);
 
-  // ========== HitArea 包围盒显示开关 ==========
-  var hitAreaToggle = document.getElementById('hitAreaToggle');
+  // ========== 模型参数按钮 + 蒙层 ==========
+  var modelParamBtn = document.getElementById('modelParamBtn');
+  var modelParamOverlay = document.getElementById('modelParamOverlay');
   var hitAreaCheckbox = document.getElementById('hitAreaCheckbox');
+  
+  function updateParamBtnVisibility() {
+    browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (!tabs[0]) return;
+      browserAPI.tabs.sendMessage(tabs[0].id, { type: 'QUERY_HITAREA_STATUS' }).then((resp) => {
+        var hasHitAreas = resp && resp.hasHitAreas;
+        if (modelParamBtn) modelParamBtn.style.display = hasHitAreas ? 'inline' : 'none';
+        if (hitAreaCheckbox) hitAreaCheckbox.checked = !!(resp && resp.enabled);
+      }).catch(() => {});
+    });
+  }
+  updateParamBtnVisibility();
+  window.addEventListener('focus', updateParamBtnVisibility);
+  
+  // 打开蒙层
+  if (modelParamBtn) {
+    modelParamBtn.addEventListener('click', function() {
+      if (modelParamOverlay) modelParamOverlay.style.display = 'flex';
+    });
+  }
+  // 点击蒙层背景关闭
+  if (modelParamOverlay) {
+    modelParamOverlay.addEventListener('click', function(e) {
+      if (e.target === modelParamOverlay) modelParamOverlay.style.display = 'none';
+    });
+  }
+  // 切换点击区域
   if (hitAreaCheckbox) {
-    // 打开弹窗时查询当前模型是否有 HitAreas
-    function updateHitAreaToggleVisibility() {
-      browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (!tabs[0]) return;
-        browserAPI.tabs.sendMessage(tabs[0].id, { type: 'QUERY_HITAREA_STATUS' }).then((resp) => {
-          console.log('[HitArea Popup] QUERY_HITAREA_STATUS response:', resp);
-          if (resp && resp.hasHitAreas) {
-            if (hitAreaToggle) hitAreaToggle.style.display = 'inline';
-            hitAreaCheckbox.checked = !!resp.enabled;
-          } else {
-            if (hitAreaToggle) hitAreaToggle.style.display = 'none';
-          }
-        }).catch((err) => { console.log('[HitArea Popup] QUERY_HITAREA_STATUS error:', err); });
-      });
-    }
-    updateHitAreaToggleVisibility();
-    // 每次弹窗激活时重新检查
-    window.addEventListener('focus', updateHitAreaToggleVisibility);
-
-    // 切换时发送消息
     hitAreaCheckbox.addEventListener('change', function() {
       browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (!tabs[0]) return;
