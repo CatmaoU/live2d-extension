@@ -3360,6 +3360,79 @@
                         e.stopPropagation();
                         return;
                     }
+// ===== HitArea 检测逻辑 =====
+                    var hitHitArea = false;
+                    try {
+                        var modelFileName = cubism3Model.split('/').pop();
+                        var modelDirPath = actualModelBase + cubism3Model + '/';
+                        var modelJsonUrl1 = modelDirPath + 'model.json';
+                        var modelJsonUrl2 = modelDirPath + modelFileName + '.model3.json';
+                        
+                        var modelConfig = null;
+                        var resp = await fetch(modelJsonUrl1, { cache: 'force-cache' }).catch(function(){});
+                        if (resp && resp.ok) {
+                            modelConfig = await resp.json();
+                        } else {
+                            resp = await fetch(modelJsonUrl2, { cache: 'force-cache' }).catch(function(){});
+                            if (resp && resp.ok) {
+                                modelConfig = await resp.json();
+                            }
+                        }
+                        
+                        if (modelConfig && modelConfig.HitAreas && modelConfig.HitAreas.length > 0) {
+                            var hitAreas = modelConfig.HitAreas;
+                            var rect = e.target.getBoundingClientRect ? e.target.getBoundingClientRect() : null;
+                            var canvasX = rect ? e.clientX - rect.left : e.offsetX;
+                            var canvasY = rect ? e.clientY - rect.top : e.offsetY;
+                            
+                            for (var i = 0; i < hitAreas.length; i++) {
+                                var area = hitAreas[i];
+                                var areaName = area.Name || area.Id;
+                                var isHit = false;
+                                try {
+                                    if (typeof window.live2d.hitTest === 'function') {
+                                        isHit = window.live2d.hitTest(areaName, canvasX, canvasY);
+                                    }
+                                } catch (hitErr) {}
+                                
+                                if (isHit) {
+                                    hitHitArea = true;
+                                    var motionGroup = area.Motion || areaName;
+                                    try {
+                                        window.live2d.startMotion(motionGroup, 0, 9);
+                                    } catch (mErr) {
+                                        console.warn('[Live2D HitArea] startMotion fail:', motionGroup, mErr);
+                                    }
+                                    
+                                    if (modelConfig.FileReferences && modelConfig.FileReferences.Motions) {
+                                        var motionArr = modelConfig.FileReferences.Motions[motionGroup];
+                                        if (motionArr && motionArr.length > 0) {
+                                            var firstMotion = motionArr[0];
+                                            if (firstMotion && firstMotion.Sound) {
+                                                try {
+                                                    var audioUrl = modelDirPath + firstMotion.Sound;
+                                                    var audio = new Audio(audioUrl);
+                                                    audio.play().catch(function(aErr) {
+                                                        console.warn('[Live2D HitArea] Audio play fail:', aErr);
+                                                    });
+                                                } catch (aErr) {
+                                                    console.warn('[Live2D HitArea] Audio error:', aErr);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (hitAreaErr) {
+                        console.warn('[Live2D HitArea] Error:', hitAreaErr);
+                    }
+                    
+                    if (hitHitArea) {
+                        return;
+                    }
+                    
                     // 先检查是否开启 AI，如果开启则处理抚摸交互并返回
                     const latestSettings = await waitForSettings(2000);
                     try {
@@ -3371,7 +3444,6 @@
                         await handlePetInteraction();
                         return;
                     }
-                    
                     // AI 未开启时，执行原有的一言逻辑
                     let displayText = cachedHitokoto;
                     let isMeowQuote = false;
