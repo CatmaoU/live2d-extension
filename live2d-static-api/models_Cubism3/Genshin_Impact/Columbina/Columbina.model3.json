@@ -5,7 +5,30 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"Tap脸": [
+				{
+					"Name": "歌唱",
+					"File": "Motions_Tap脸_0.json",
+					"WrapMode": 2,
+					"Sound": "Motions_Tap脸_0.wav",
+					"Priority": 2,
+					"Interruptable": true,
+					"OverrideFaceParams": true
+				}
+			],
+			"Tap月亮": [
+				{
+					"Name": "停止",
+					"File": "Motions_Tap月亮_0.json",
+					"WrapMode": 2,
+					"Sound": "Motions_Tap月亮_0.wav",
+					"Priority": 8,
+					"OverrideFaceParams": true
+				}
+			]
+		}
 	},
 	"Groups": [
 		{
@@ -17,6 +40,16 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "脸",
+			"Id": "ArtMesh11"
+		},
+		{
+			"Name": "月亮",
+			"Id": "ArtMesh19"
 		}
 	]
 }

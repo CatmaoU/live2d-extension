@@ -5,7 +5,19 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"Tap眼镜": [
+				{
+					"Sound": "Motions_Tap眼镜_0.mp3"
+				}
+			],
+			"Tap脸": [
+				{
+					"Sound": "Motions_Tap脸_0.mp3"
+				}
+			]
+		}
 	},
 	"Groups": [
 		{
@@ -17,6 +29,16 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "眼镜",
+			"Id": "ArtMesh7"
+		},
+		{
+			"Name": "脸",
+			"Id": "ArtMesh15"
 		}
 	]
 }

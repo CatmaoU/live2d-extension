@@ -5,7 +5,29 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"Tap脸": [
+				{
+					"Expression": "动作"
+				}
+			],
+			"Tap光环": [
+				{
+					"Expression": "还原"
+				}
+			]
+		},
+		"Expressions": [
+			{
+				"Name": "动作",
+				"File": "Expressions_0.json"
+			},
+			{
+				"Name": "还原",
+				"File": "Expressions_1.json"
+			}
+		]
 	},
 	"Groups": [
 		{
@@ -17,6 +39,16 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "脸",
+			"Id": "ArtMesh37"
+		},
+		{
+			"Name": "光环",
+			"Id": "ArtMesh62"
 		}
 	]
 }

@@ -724,14 +724,22 @@ async function ensureCubism3ConfigFiles(modelPath, modelJson) {
       await fs.access(model3JsonPath)
       foundModel3Json = true
     } catch (e) {
-      // 没找到，创建默认的
+      // 没找到，创建默认的（合并自定义 model.json 中的动作/表情/点击区域）
+      var customMotions = modelJson.FileReferences && modelJson.FileReferences.Motions ? JSON.parse(JSON.stringify(modelJson.FileReferences.Motions)) : undefined;
+      var customExpressions = modelJson.FileReferences && modelJson.FileReferences.Expressions ? JSON.parse(JSON.stringify(modelJson.FileReferences.Expressions)) : undefined;
+      var customHitAreas = modelJson.HitAreas ? JSON.parse(JSON.stringify(modelJson.HitAreas)) : undefined;
+      var fileRefs = {
+        Moc: mocFile,
+        Textures: textures,
+        Physics: physicsFile || undefined
+      };
+      if (customMotions) fileRefs.Motions = customMotions;
+      if (customExpressions) fileRefs.Expressions = customExpressions;
+      if (customHitAreas) fileRefs.HitAreas = customHitAreas;
+      
       const model3Json = {
         Version: 3,
-        FileReferences: {
-          Moc: mocFile,
-          Textures: textures,
-          Physics: physicsFile || undefined
-        },
+        FileReferences: fileRefs,
         Groups: [
           {
             Target: 'Parameter',
@@ -750,6 +758,37 @@ async function ensureCubism3ConfigFiles(modelPath, modelJson) {
       await fs.writeFile(model3JsonPath, Helper.stringify(cleanJson))
       console.log(`已创建: ${model3JsonPath}`)
       foundModel3Json = true
+    }
+  }
+  
+  // 如果已存在 model3.json 但缺少 Motions/Expressions，尝试从自定义 model.json 更新
+  if (foundModel3Json) {
+    try {
+      var existingContent = await fs.readFile(model3JsonPath, 'utf-8');
+      var existingJson = JSON.parse(existingContent);
+      var needsUpdate = false;
+      if (!existingJson.FileReferences) { existingJson.FileReferences = {}; needsUpdate = true; }
+      if (!existingJson.FileReferences.Motions && modelJson.FileReferences && modelJson.FileReferences.Motions) {
+        existingJson.FileReferences.Motions = JSON.parse(JSON.stringify(modelJson.FileReferences.Motions));
+        needsUpdate = true;
+        console.log(`  添加 Motions 到已存在的 model3.json`);
+      }
+      if (!existingJson.FileReferences.Expressions && modelJson.FileReferences && modelJson.FileReferences.Expressions) {
+        existingJson.FileReferences.Expressions = JSON.parse(JSON.stringify(modelJson.FileReferences.Expressions));
+        needsUpdate = true;
+        console.log(`  添加 Expressions 到已存在的 model3.json`);
+      }
+      if (!existingJson.HitAreas && modelJson.HitAreas) {
+        existingJson.HitAreas = JSON.parse(JSON.stringify(modelJson.HitAreas));
+        needsUpdate = true;
+        console.log(`  添加 HitAreas 到已存在的 model3.json`);
+      }
+      if (needsUpdate) {
+        await fs.writeFile(model3JsonPath, Helper.stringify(existingJson));
+        console.log(`  已更新: ${model3JsonPath}`);
+      }
+    } catch(e) {
+      // 如果读取失败，忽略（可能是被其他进程占用等）
     }
   }
   

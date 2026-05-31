@@ -5,7 +5,29 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"TapArtMesh35": [
+				{
+					"Sound": "Motions_TapArtMesh35_0.mp3"
+				}
+			],
+			"TapArtMesh70": [
+				{
+					"Sound": "Motions_TapArtMesh70_0.mp3"
+				}
+			],
+			"TapArtMesh61": [
+				{
+					"Sound": "Motions_TapArtMesh61_0.mp3"
+				}
+			],
+			"TapArtMesh62": [
+				{
+					"Sound": "Motions_TapArtMesh61_0.mp3"
+				}
+			]
+		}
 	},
 	"Groups": [
 		{
@@ -17,6 +39,24 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "ArtMesh35",
+			"Id": "ArtMesh35"
+		},
+		{
+			"Name": "ArtMesh70",
+			"Id": "ArtMesh70"
+		},
+		{
+			"Name": "ArtMesh61",
+			"Id": "ArtMesh61"
+		},
+		{
+			"Name": "ArtMesh62",
+			"Id": "ArtMesh62"
 		}
 	]
 }

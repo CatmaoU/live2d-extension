@@ -7,7 +7,65 @@
 			"Textures_.png",
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"Idle": [
+				{
+					"File": "Motions_Idle_0.json",
+					"WrapMode": 1
+				}
+			],
+			"TapTO夜晚": [
+				{
+					"Expression": "TO夜晚"
+				}
+			],
+			"TapTO白天": [
+				{
+					"Expression": "TO白天"
+				}
+			],
+			"Tap爱芮1": [
+				{
+					"Sound": "Motions_Tap爱芮1_0.mp3"
+				}
+			],
+			"Tap爱芮2": [
+				{
+					"Sound": "Motions_Tap爱芮1_0.mp3"
+				}
+			],
+			"Tap南宫1": [
+				{
+					"Sound": "Motions_Tap南宫1_0.mp3"
+				}
+			],
+			"Tap南宫2": [
+				{
+					"Sound": "Motions_Tap南宫1_0.mp3"
+				}
+			],
+			"Tap千夏1": [
+				{
+					"Sound": "Motions_Tap千夏1_0.mp3"
+				}
+			],
+			"Tap千夏2": [
+				{
+					"Sound": "Motions_Tap千夏1_0.mp3"
+				}
+			]
+		},
+		"Expressions": [
+			{
+				"Name": "TO白天",
+				"File": "Expressions_0.json"
+			},
+			{
+				"Name": "TO夜晚",
+				"File": "Expressions_1.json"
+			}
+		]
 	},
 	"Groups": [
 		{
@@ -19,6 +77,40 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "TO夜晚",
+			"Id": "DAYON"
+		},
+		{
+			"Name": "TO白天",
+			"Id": "DAYOFF"
+		},
+		{
+			"Name": "爱芮1",
+			"Id": "ArtMesh366"
+		},
+		{
+			"Name": "爱芮2",
+			"Id": "ArtMesh422"
+		},
+		{
+			"Name": "南宫1",
+			"Id": "ArtMesh188"
+		},
+		{
+			"Name": "南宫2",
+			"Id": "ArtMesh65"
+		},
+		{
+			"Name": "千夏1",
+			"Id": "ArtMesh256"
+		},
+		{
+			"Name": "千夏2",
+			"Id": "ArtMesh311"
 		}
 	]
 }

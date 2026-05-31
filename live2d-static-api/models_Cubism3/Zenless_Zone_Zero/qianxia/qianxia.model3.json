@@ -5,7 +5,71 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"Idle": [
+				{
+					"File": "Motions_Idle_0.json",
+					"WrapMode": 1
+				}
+			],
+			"Tap脸1": [
+				{
+					"Name": "脸红",
+					"Expression": "1红脸"
+				}
+			],
+			"Tap脸2": [
+				{
+					"Name": "脸红",
+					"Expression": "1红脸"
+				}
+			],
+			"Tap辫子1": [
+				{
+					"Expression": "2燃烬"
+				}
+			],
+			"Tap辫子2": [
+				{
+					"Expression": "2燃烬"
+				}
+			],
+			"Tap腿1": [
+				{
+					"Expression": "3复原"
+				}
+			],
+			"Tap腿2": [
+				{
+					"Expression": "3复原"
+				}
+			],
+			"Tap腿3": [
+				{
+					"Expression": "3复原"
+				}
+			],
+			"Tap腿4": [
+				{
+					"Expression": "3复原"
+				}
+			]
+		},
+		"Expressions": [
+			{
+				"Name": "1红脸",
+				"File": "Expressions_0.json"
+			},
+			{
+				"Name": "2燃烬",
+				"File": "Expressions_1.json"
+			},
+			{
+				"Name": "3复原",
+				"File": "Expressions_2.json"
+			}
+		]
 	},
 	"Groups": [
 		{
@@ -17,6 +81,40 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "脸1",
+			"Id": "ArtMesh27"
+		},
+		{
+			"Name": "脸2",
+			"Id": "ArtMesh87"
+		},
+		{
+			"Name": "辫子1",
+			"Id": "ArtMesh56"
+		},
+		{
+			"Name": "辫子2",
+			"Id": "ArtMesh116"
+		},
+		{
+			"Name": "腿1",
+			"Id": "ArtMesh44"
+		},
+		{
+			"Name": "腿2",
+			"Id": "ArtMesh45"
+		},
+		{
+			"Name": "腿3",
+			"Id": "ArtMesh105"
+		},
+		{
+			"Name": "腿4",
+			"Id": "ArtMesh106"
 		}
 	]
 }

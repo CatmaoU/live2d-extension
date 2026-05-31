@@ -5,7 +5,20 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"Tapface": [
+				{
+					"Sound": "Motions_Tapface_0.mp3"
+				}
+			],
+			"Tapyuanbao": [
+				{
+					"File": "Motions_Tapyuanbao_0.json",
+					"WrapMode": 2
+				}
+			]
+		}
 	},
 	"Groups": [
 		{
@@ -17,6 +30,16 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "yuanbao",
+			"Id": "ArtMesh3"
+		},
+		{
+			"Name": "face",
+			"Id": "ArtMesh21"
 		}
 	]
 }

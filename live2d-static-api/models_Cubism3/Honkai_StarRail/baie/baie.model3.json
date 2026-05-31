@@ -5,7 +5,15 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json"
+		"Physics": "Physics.json",
+		"Motions": {
+			"TapArtMesh42": [
+				{
+					"File": "Motions_TapArtMesh42_0.json",
+					"Sound": "Motions_TapArtMesh42_0.mp3"
+				}
+			]
+		}
 	},
 	"Groups": [
 		{
@@ -17,6 +25,12 @@
 			"Target": "Parameter",
 			"Name": "LipSync",
 			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "ArtMesh42",
+			"Id": "ArtMesh42"
 		}
 	]
 }
