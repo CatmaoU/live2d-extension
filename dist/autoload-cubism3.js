@@ -3368,22 +3368,53 @@
                         console.log('[HitArea] fetch ok:', !!haResp2, haResp2 ? haResp2.status : 0);
                         if (haResp2 && haResp2.ok) {
                             var haCfg2 = await haResp2.json();
-                            console.log('[HitArea] json keys:', Object.keys(haCfg2), 'has HitAreas:', !!haCfg2.HitAreas, 'isHitDrawable:', typeof window.live2d.isHitDrawable);
+                            console.log('[HitArea] json keys:', Object.keys(haCfg2), 'has HitAreas:', !!haCfg2.HitAreas);
                             if (haCfg2 && haCfg2.HitAreas && haCfg2.HitAreas.length > 0) {
-                                if (typeof window.live2d.isHitDrawable === 'function') {
-                                    for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
-                                        var ha2 = haCfg2.HitAreas[hi2];
-                                        var drawId2 = ha2.Id;
-                                        var mg2 = ha2.Motion || ha2.Name || drawId2;
-                                        if (drawId2) {
-                                            var hiRes = window.live2d.isHitDrawable(drawId2, e.clientX, e.clientY);
-                                            console.log('[HitArea] test', drawId2, '->', hiRes, 'click:', e.clientX, e.clientY);
-                                            if (hiRes) {
-                                                window.live2d.startMotion(mg2, 0, 9);
-                                                if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
-                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                var mI2 = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
+                                if (mI2 && mI2.getModelMatrix && mI2._model) {
+                                    var mm2 = mI2.getModelMatrix();
+                                    var c2 = document.getElementById('live2d');
+                                    var rect2 = c2 ? c2.getBoundingClientRect() : null;
+                                    if (rect2) {
+                                        var cx2 = e.clientX - rect2.left;
+                                        var cy2 = e.clientY - rect2.top;
+                                        var tx2 = mm2.invertTransformX(cx2);
+                                        var ty2 = mm2.invertTransformY(cy2);
+                                        for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
+                                            var ha2 = haCfg2.HitAreas[hi2];
+                                            var drawId2 = ha2.Id;
+                                            var mg2 = ha2.Motion || ha2.Name || drawId2;
+                                            if (drawId2 && mI2._model) {
+                                                var mi2 = -1;
+                                                var dc2 = mI2._model.getDrawableCount();
+                                                for (var di2 = 0; di2 < dc2; di2++) {
+                                                    var dd2 = mI2._model.getDrawableId(di2);
+                                                    var dn2 = dd2 && dd2.s ? dd2.s : String(dd2);
+                                                    if (dn2 === drawId2) { mi2 = di2; break; }
                                                 }
-                                                return;
+                                                if (mi2 >= 0) {
+                                                    var vc2 = mI2._model.getDrawableVertexCount(mi2);
+                                                    var verts2 = mI2._model.getDrawableVertices(mi2);
+                                                    if (verts2 && vc2 > 0 && verts2.length >= 2) {
+                                                        var nx2 = verts2[0], ux2 = verts2[0], ny2 = verts2[1], uy2 = verts2[1];
+                                                        for (var ci2 = 1; ci2 < vc2; ci2++) {
+                                                            var hx2 = verts2[ci2 * 2];
+                                                            var hy2 = verts2[ci2 * 2 + 1];
+                                                            if (hx2 < nx2) nx2 = hx2;
+                                                            if (hx2 > ux2) ux2 = hx2;
+                                                            if (hy2 < ny2) ny2 = hy2;
+                                                            if (hy2 > uy2) uy2 = hy2;
+                                                        }
+                                                        if (nx2 <= tx2 && tx2 <= ux2 && ny2 <= ty2 && ty2 <= uy2) {
+                                                            console.log('[HitArea] HIT!', drawId2, mg2);
+                                                            window.live2d.startMotion(mg2, 0, 9);
+                                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
+                                                                try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                                            }
+                                                            return;
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
