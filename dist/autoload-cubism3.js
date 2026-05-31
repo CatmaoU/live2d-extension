@@ -3452,13 +3452,19 @@
                                             window.live2d.startMotion(_hBestArea.mg, 0, 9);
                                             if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[_hBestArea.mg] && haCfg2.FileReferences.Motions[_hBestArea.mg][0] && haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound) {
                                                 var delayMs = haCfg2.FileReferences.Motions[_hBestArea.mg][0].SoundDelay || 0;
+                                                var soundFn = function() {
+                                                    if (window.__live2d_lastAudio) { try { window.__live2d_lastAudio.pause(); window.__live2d_lastAudio = null; } catch(ex){} }
+                                                    var au = new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound);
+                                                    window.__live2d_lastAudio = au;
+                                                    try { au.play(); } catch(ex){}
+                                                };
                                                 if (delayMs > 0) {
                                                     console.log('[HitArea] 音效延迟' + delayMs + 'ms播放');
-                                                    setTimeout(function() {
-                                                        try { new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound).play(); } catch(ex){}
-                                                    }, delayMs);
+                                                    if (window.__live2d_delayTimer) { clearTimeout(window.__live2d_delayTimer); }
+                                                    window.__live2d_delayTimer = setTimeout(soundFn, delayMs);
                                                 } else {
-                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound).play(); } catch(ex){}
+                                                    if (window.__live2d_delayTimer) { clearTimeout(window.__live2d_delayTimer); }
+                                                    soundFn();
                                                 }
                                             }
                                             return;
