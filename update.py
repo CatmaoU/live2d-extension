@@ -41,11 +41,11 @@ if not (BASE_DIR / "manifest.json").exists():
 # ─── 配置 ───
 GITHUB_API = "https://api.github.com/repos/CatmaoU/live2d-extension/releases/latest"
 PROXIES = [
-    "",
+    "https://v6.gh-proxy.org/",
     "https://gh-proxy.org/",
     "https://v4.gh-proxy.org/",
-    "https://v6.gh-proxy.org/",
     "https://cdn.gh-proxy.org/",
+    "",
 ]
 
 
