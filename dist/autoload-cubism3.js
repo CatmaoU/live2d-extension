@@ -3368,6 +3368,7 @@
                         console.log('[HitArea] fetch ok:', !!haResp2, haResp2 ? haResp2.status : 0);
                         if (haResp2 && haResp2.ok) {
                             var haCfg2 = await haResp2.json();
+                            console.log('[HitArea] json keys:', Object.keys(haCfg2), 'has HitAreas:', !!haCfg2.HitAreas, 'isHitDrawable:', typeof window.live2d.isHitDrawable);
                             if (haCfg2 && haCfg2.HitAreas && haCfg2.HitAreas.length > 0) {
                                 if (typeof window.live2d.isHitDrawable === 'function') {
                                     for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
