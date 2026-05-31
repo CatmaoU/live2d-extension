@@ -399,10 +399,15 @@ def main():
     
     if with_zip and compare_versions(with_zip["version"], current) > 0:
         release = with_zip
-        # 如果有更新的版本但未上传 ZIP
         if no_zip and compare_versions(no_zip["version"], with_zip["version"]) > 0:
             print(f"\n⚠ 存在新版本 v{no_zip['version']} 但项目不存在或未发布，请检查发布页")
-            print(f"  将降级更新到 v{release['version']}")
+            print(f"  尝试更新到 v{release['version']}")
+            latest_show = no_zip["version"]
+        else:
+            latest_show = release["version"]
+        print(f"最新版本：v{latest_show}")
+        print()
+        print(f"发现新版本 v{release['version']}！")
     elif no_zip and compare_versions(no_zip["version"], current) > 0:
         print(f"\n⚠ 存在新版本 v{no_zip['version']} 但未上传更新包")
         input("\n按 Enter 退出...")
@@ -411,10 +416,6 @@ def main():
         print("\n当前已是最新版本，无需更新。")
         input("\n按 Enter 退出...")
         return
-    
-    latest = release["version"]
-    print(f"最新版本：v{latest}")
-    print(f"\n发现新版本 v{latest}！")
     if release.get("body"):
         print(f"更新内容：\n{release['body']}\n")
     ans = input("是否下载并更新？(Y/n): ").strip().lower()
