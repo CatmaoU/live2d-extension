@@ -3375,12 +3375,16 @@
                                         var ha2 = haCfg2.HitAreas[hi2];
                                         var drawId2 = ha2.Id;
                                         var mg2 = ha2.Motion || ha2.Name || drawId2;
-                                        if (drawId2 && window.live2d.isHitDrawable(drawId2, e.clientX, e.clientY)) {
-                                            window.live2d.startMotion(mg2, 0, 9);
-                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
-                                                try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                        if (drawId2) {
+                                            var hiRes = window.live2d.isHitDrawable(drawId2, e.clientX, e.clientY);
+                                            console.log('[HitArea] test', drawId2, '->', hiRes, 'click:', e.clientX, e.clientY);
+                                            if (hiRes) {
+                                                window.live2d.startMotion(mg2, 0, 9);
+                                                if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
+                                                    try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                                }
+                                                return;
                                             }
-                                            return;
                                         }
                                     }
                                 }
