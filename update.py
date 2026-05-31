@@ -125,14 +125,13 @@ def test_proxy_url(full_url, timeout=5):
 
 
 def pick_fastest_proxy(zip_url, tag_name):
-    """测试所有代理的实际下载速度，返回最快的前缀"""
-    results = []
-    total = len(PROXIES)
-    print(f"[测速] 正在测试 {total} 个镜像节点下载速度...")
+    """并发测试所有代理的实际下载速度，返回最快的前缀"""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
     
-    for i, proxy in enumerate(PROXIES):
-        prefix = proxy or "直连"
-        
+    total = len(PROXIES)
+    print(f"[测速] 正在并发测试 {total} 个镜像节点下载速度...")
+    
+    def test_one(proxy):
         if not proxy:
             url = zip_url
         elif "/releases/download/" in zip_url:
@@ -140,26 +139,38 @@ def pick_fastest_proxy(zip_url, tag_name):
             url = proxy + "https://github.com/CatmaoU/live2d-extension/releases/download/" + rel_path
         else:
             url = proxy + zip_url
-        
-        print(f"  [{i+1}/{total}] {prefix}...", end=" ", flush=True)
-        # 下载前 256KB 测速
         start = time.time()
         try:
             req = urllib.request.Request(url, headers={"User-Agent": "Live2D-Updater", "Range": "bytes=0-262144"})
             with urllib.request.urlopen(req, timeout=10) as r:
                 data = r.read()
             elapsed = time.time() - start
-            speed = len(data) / elapsed / 1024  # KB/s
-            results.append((speed, proxy, url))
-            print(f"{speed:.0f} KB/s")
-        except Exception as e:
-            print(f"失败")
+            speed = len(data) / elapsed / 1024
+            return (speed, proxy, url)
+        except:
+            return None
+    
+    results = []
+    with ThreadPoolExecutor(max_workers=total) as executor:
+        futures = {executor.submit(test_one, p): p for p in PROXIES}
+        for future in as_completed(futures):
+            proxy = futures[future]
+            prefix = proxy or "直连"
+            try:
+                res = future.result()
+                if res:
+                    results.append(res)
+                    print(f"  {prefix}: {res[0]:.0f} KB/s")
+                else:
+                    print(f"  {prefix}: 失败")
+            except:
+                print(f"  {prefix}: 失败")
     
     if not results:
         print("[测速] 所有节点均失败，使用直连")
         return "", zip_url
     
-    results.sort(key=lambda x: -x[0])  # 按速度降序
+    results.sort(key=lambda x: -x[0])
     best = results[0]
     print(f"[测速] 选中最快节点: {'直连' if not best[1] else best[1]} ({best[0]:.0f} KB/s)")
     return best[1], best[2]
