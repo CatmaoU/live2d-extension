@@ -400,14 +400,13 @@ def main():
     if with_zip and compare_versions(with_zip["version"], current) > 0:
         release = with_zip
         if no_zip and compare_versions(no_zip["version"], with_zip["version"]) > 0:
-            print(f"\n⚠ 存在新版本 v{no_zip['version']} 但项目不存在或未发布，请检查发布页")
+            print(f"\n发现最新版本：v{no_zip['version']}")
+            print()
+            print(f"存在新版本 v{no_zip['version']} 但项目不存在或未发布，请检查发布页")
             print(f"  尝试更新到 v{release['version']}")
-            latest_show = no_zip["version"]
         else:
-            latest_show = release["version"]
-        print(f"最新版本：v{latest_show}")
+            print(f"\n发现最新版本：v{release['version']}")
         print()
-        print(f"发现新版本 v{release['version']}！")
     elif no_zip and compare_versions(no_zip["version"], current) > 0:
         print(f"\n⚠ 存在新版本 v{no_zip['version']} 但未上传更新包")
         input("\n按 Enter 退出...")
