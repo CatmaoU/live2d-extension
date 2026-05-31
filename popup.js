@@ -356,7 +356,7 @@ function updateAiChatVisibility() {
 }
 
 async function refreshDisplay() {
-  const config = await storage.get(['useCubism3', 'localModel', 'cubism3Model']);
+  const config = await storage.get(['useCubism3', 'localModel', 'cubism3Model', 'extVersion']);
 
   currentFormatIsCubism3 = config.useCubism3 !== undefined ? config.useCubism3 : true;
 
@@ -731,14 +731,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 先更新模型来源可见性，确保 formatContainer 正确显示/隐藏
   updateModelSourceVisibility(true);
 
-  // 如果是本地模型，确保下拉菜单选择排序后的第一个模型（首次安装/版本升级时）
-  if (modelSourceSelect.value === 'local' && cubism3ModelsList.length > 0) {
+  // 第一次使用（无版本标记）时自动选择排序后的第一个Cubism3模型
+  var storedVer = config.extVersion || '';
+  if (modelSourceSelect.value === 'local' && cubism3ModelsList.length > 0 && storedVer !== '1.0.7') {
     var firstC3 = getFirstSortedModel(cubism3ModelsList);
-    if (!config.cubism3Model || config.cubism3Model !== firstC3) {
-      console.log('[Live2D] Auto-selecting first sorted Cubism3 model:', firstC3, '(was:', config.cubism3Model || 'none', ')');
-      await storage.set({ cubism3Model: firstC3 });
-      if (localModelSelect) localModelSelect.value = firstC3;
-    }
+    console.log('[Live2D] First v1.0.7 load, auto-selecting first sorted model:', firstC3);
+    await storage.set({ cubism3Model: firstC3, extVersion: '1.0.7' });
+    if (localModelSelect) localModelSelect.value = firstC3;
   }
 
   // 如果是本地模型，需要刷新显示
