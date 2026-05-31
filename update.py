@@ -215,13 +215,25 @@ def download_and_extract(zip_url, tag_name):
 def replace_extension(extracted_dir):
     print("[替换中] 正在更新本地文件...")
     exclude = {".git", "node_modules", "__pycache__", "live2d-static-api/assets"}
+    running_exe = None
     for item in BASE_DIR.iterdir():
         if item.name in exclude or item.name.startswith("."):
             continue
         if item.is_dir():
             shutil.rmtree(item, ignore_errors=True)
         else:
-            item.unlink()
+            # 正在运行的 exe 不能直接删除，先改名再删除
+            if item.name == "Live2D Update.exe":
+                try:
+                    item.rename(item.with_suffix(".exe.old"))
+                    running_exe = item.with_suffix(".exe.old")
+                except:
+                    running_exe = item
+                continue
+            try:
+                item.unlink()
+            except PermissionError:
+                print(f"  [跳过] 无法删除 {item.name}（可能正在使用）")
     for item in extracted_dir.iterdir():
         if item.name.startswith("."):
             continue
@@ -230,6 +242,13 @@ def replace_extension(extracted_dir):
             shutil.copytree(item, dst, dirs_exist_ok=True)
         else:
             shutil.copy2(item, dst)
+    # 清理旧的 exe 文件
+    old_exe = BASE_DIR / "Live2D Update.exe.old"
+    if old_exe.exists():
+        try:
+            old_exe.unlink()
+        except:
+            pass
     print("[完成] 更新文件已替换！")
 
 
