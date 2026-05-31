@@ -3389,6 +3389,10 @@
                                         var tx2 = htc.x;
                                         var ty2 = htc.y;
                                         var _hBestDist = Infinity, _hBestArea = null;
+                                        var cvs = document.getElementById('live2d');
+                                        var cRect = cvs ? cvs.getBoundingClientRect() : null;
+                                        var px = cRect ? e.clientX - cRect.left : 0;
+                                        var py = cRect ? e.clientY - cRect.top : 0;
                                         for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
                                             var ha2 = haCfg2.HitAreas[hi2];
                                             var drawId2 = ha2.Id;
@@ -3415,10 +3419,17 @@
                                                             if (hy2 < ny2) ny2 = hy2;
                                                             if (hy2 > uy2) uy2 = hy2;
                                                         }
-                                                        console.log('[HitArea] bbox:', drawId2, 'box:', nx2, ux2, ny2, uy2, 'pt:', tx2, ty2);
-                                                        // 极小容差（约3像素在模型空间的等效值）
-                                                        var eps = 0.01;
-                                                        if ((nx2 - eps) <= tx2 && tx2 <= (ux2 + eps) && (ny2 - eps) <= ty2 && ty2 <= (uy2 + eps)) {
+                                                        // 用和线框相同的变换计算画布像素坐标
+                                                        var mm2 = mI2.getModelMatrix();
+                                                        var dts2 = typeof window.live2d.getDeviceToScreen === 'function' ? window.live2d.getDeviceToScreen() : null;
+                                                        var cpx1 = dts2 ? dts2.invertTransformX(mm2.transformX(nx2)) : nx2;
+                                                        var cpy1 = dts2 ? dts2.invertTransformY(mm2.transformY(ny2)) : ny2;
+                                                        var cpx2 = dts2 ? dts2.invertTransformX(mm2.transformX(ux2)) : ux2;
+                                                        var cpy2 = dts2 ? dts2.invertTransformY(mm2.transformY(uy2)) : uy2;
+                                                        var minPx = Math.min(cpx1, cpx2), maxPx = Math.max(cpx1, cpx2);
+                                                        var minPy = Math.min(cpy1, cpy2), maxPy = Math.max(cpy1, cpy2);
+                                                        console.log('[HitArea] px:', drawId2, 'rect:', minPx.toFixed(0), maxPx.toFixed(0), minPy.toFixed(0), maxPy.toFixed(0), 'click:', px.toFixed(0), py.toFixed(0));
+                                                        if (minPx <= px && px <= maxPx && minPy <= py && py <= maxPy) {
                                                             var cX2 = (nx2 + ux2) / 2, cY2 = (ny2 + uy2) / 2;
                                                             var d2 = (tx2 - cX2) * (tx2 - cX2) + (ty2 - cY2) * (ty2 - cY2);
                                                             if (d2 < _hBestDist) { _hBestDist = d2; _hBestArea = { id:drawId2, mg:mg2 }; }
