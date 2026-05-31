@@ -3449,8 +3449,7 @@
                                         }
                                         if (_hBestArea) {
                                             console.log('[HitArea] HIT!', _hBestArea.id, _hBestArea.mg);
-                                            if (window.live2d.stopAllMotions) { window.live2d.stopAllMotions(); }
-                                            window.live2d.startMotion(_hBestArea.mg, 0, 9);
+                                            window.live2d.startMotion(_hBestArea.mg, 0, 3);
                                             if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[_hBestArea.mg] && haCfg2.FileReferences.Motions[_hBestArea.mg][0] && haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound) {
                                                 var delayMs = haCfg2.FileReferences.Motions[_hBestArea.mg][0].SoundDelay || 0;
                                                 var soundFn = function() {
