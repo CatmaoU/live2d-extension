@@ -969,8 +969,49 @@
                 height:14px;
                 fill:#fff;
             }
+            /* Alt 按住时隐藏按钮和输入框 */
+            .waifu-alt-hide #waifu-buttons,
+            .waifu-alt-hide #waifu-chat {
+                display:none !important;
+            }
         `;
         document.head.appendChild(style);
+        
+        // Alt 键 + 鼠标移到模型上 → 隐藏按钮和输入框
+        var _altPressed = false, _altHover = false;
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Alt' && !_altPressed) {
+                _altPressed = true;
+                _altHover = false;
+            }
+        });
+        document.addEventListener('keyup', function(e) {
+            if (e.key === 'Alt') {
+                _altPressed = false;
+                _altHover = false;
+                var w = document.getElementById('waifu');
+                if (w) w.classList.remove('waifu-alt-hide');
+            }
+        });
+        window.addEventListener('blur', function() {
+            if (_altPressed || _altHover) {
+                _altPressed = false; _altHover = false;
+                var w = document.getElementById('waifu');
+                if (w) w.classList.remove('waifu-alt-hide');
+            }
+        });
+        // 鼠标进入/离开模型区域
+        document.addEventListener('mouseover', function(e) {
+            var w = document.getElementById('waifu');
+            var isOver = w && (w === e.target || w.contains(e.target));
+            if (_altPressed && isOver && !_altHover) {
+                _altHover = true;
+                if (w) w.classList.add('waifu-alt-hide');
+            } else if (_altHover && !isOver) {
+                _altHover = false;
+                if (w) w.classList.remove('waifu-alt-hide');
+            }
+        });
     }
 
     async function fetchHitokoto() {
