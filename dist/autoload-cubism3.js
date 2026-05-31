@@ -3402,7 +3402,7 @@
                                                             if (hy2 < ny2) ny2 = hy2;
                                                             if (hy2 > uy2) uy2 = hy2;
                                                         }
-                                                        console.log('[HitArea] bbox:', drawId2, [nx2.toFixed(2), ux2.toFixed(2), ny2.toFixed(2), uy2.toFixed(2)], 'pt:', [tx2.toFixed(2), ty2.toFixed(2)]);
+                                                        console.log('[HitArea] bbox:', drawId2, 'box:', nx2, ux2, ny2, uy2, 'pt:', tx2, ty2);
                                                         if (nx2 <= tx2 && tx2 <= ux2 && ny2 <= ty2 && ty2 <= uy2) {
                                                             console.log('[HitArea] HIT!', drawId2, mg2);
                                                             window.live2d.startMotion(mg2, 0, 9);
