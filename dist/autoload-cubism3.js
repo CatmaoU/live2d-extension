@@ -1476,6 +1476,7 @@
 
             var modelPath = actualModelBase + cubism3Model + '/';
             console.log('[Live2D Cubism3] Model path:', modelPath);
+            try { window.__live2d_modelPath = modelPath; } catch(exx) {} // 供 HitArea 线框使用
             
             // 保存当前位置
             currentPosition = settings.position || 'left-bottom';
@@ -3894,8 +3895,20 @@
     // 监听 toggle 事件
     window.addEventListener('live2d-hitarea-toggle', function(e) {
         if (e.detail && e.detail.enabled) {
-            // 重新从页面触发点击来获取 HitArea 数据
-            // 或者等下次点击自动初始化
+            if (typeof window.startHitAreaOverlay === 'function' && !_hitAreaOverlayEl) {
+                var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
+                var mp = window.__live2d_modelPath || '';
+                if (mInst && mp) {
+                    fetch(mp + 'model.json', { cache: 'force-cache' }).then(function(r) {
+                        if (!r.ok) return null;
+                        return r.json();
+                    }).then(function(cfg) {
+                        if (cfg && cfg.HitAreas && cfg.HitAreas.length > 0) {
+                            window.startHitAreaOverlay(cfg, mInst);
+                        }
+                    }).catch(function(){});
+                }
+            }
         } else {
             if (typeof window.stopHitAreaOverlay === 'function') { window.stopHitAreaOverlay(); }
         }
