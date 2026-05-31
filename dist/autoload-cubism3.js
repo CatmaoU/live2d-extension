@@ -3360,37 +3360,30 @@
                         e.stopPropagation();
                         return;
                     }
-                    // ===== HitArea 点击检测 =====
-                    console.log('[Live2D HitArea] Click at', e.clientX, e.clientY, 'modelPath:', modelPath);
+                    // ===== HitArea 点击检测（用 drawable ID 直接检测） =====
                     try {
-                        var haUrl = modelPath + 'model.json';
-                        var haResp = await fetch(haUrl, { cache: 'force-cache' }).catch(function(e){ console.log('[Live2D HitArea] Fetch error:', e); });
-                        console.log('[Live2D HitArea] Fetch result:', haResp ? haResp.status : 'null');
-                        if (haResp && haResp.ok) {
-                            var haCfg = await haResp.json();
-                            var haCount = haCfg && haCfg.HitAreas ? haCfg.HitAreas.length : 0;
-                            console.log('[Live2D HitArea] Config loaded, HitAreas:', haCount);
-                            if (haCount > 0 && typeof window.live2d.hitTest === 'function') {
-                                for (var hi = 0; hi < haCount; hi++) {
-                                    var ha = haCfg.HitAreas[hi];
-                                    var haName = ha.Name || ha.Id;
-                                    var hit = window.live2d.hitTest(haName, e.clientX, e.clientY);
-                                    console.log('[Live2D HitArea] Test', haName, ':', hit);
-                                    if (hit) {
-                                        var mg = ha.Motion || ha.Name || ha.Id;
-                                        console.log('[Live2D HitArea] HIT! Motion:', mg);
-                                        window.live2d.startMotion(mg, 0, 9);
-                                        if (haCfg.FileReferences && haCfg.FileReferences.Motions && haCfg.FileReferences.Motions[mg] && haCfg.FileReferences.Motions[mg][0] && haCfg.FileReferences.Motions[mg][0].Sound) {
-                                            try { new Audio(modelPath + haCfg.FileReferences.Motions[mg][0].Sound).play(); } catch(ex){ console.log('[Live2D HitArea] Audio fail'); }
+                        var haUrl2 = modelPath + 'model.json';
+                        var haResp2 = await fetch(haUrl2, { cache: 'force-cache' }).catch(function(){});
+                        if (haResp2 && haResp2.ok) {
+                            var haCfg2 = await haResp2.json();
+                            if (haCfg2 && haCfg2.HitAreas && haCfg2.HitAreas.length > 0) {
+                                if (typeof window.live2d.isHitDrawable === 'function') {
+                                    for (var hi2 = 0; hi2 < haCfg2.HitAreas.length; hi2++) {
+                                        var ha2 = haCfg2.HitAreas[hi2];
+                                        var drawId2 = ha2.Id;
+                                        var mg2 = ha2.Motion || ha2.Name || drawId2;
+                                        if (drawId2 && window.live2d.isHitDrawable(drawId2, e.clientX, e.clientY)) {
+                                            window.live2d.startMotion(mg2, 0, 9);
+                                            if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
+                                                try { new Audio(modelPath + haCfg2.FileReferences.Motions[mg2][0].Sound).play(); } catch(ex){}
+                                            }
+                                            return;
                                         }
-                                        return;
                                     }
                                 }
-                            } else {
-                                console.log('[Live2D HitArea] No HitAreas or hitTest not available');
                             }
                         }
-                    } catch(ex){ console.log('[Live2D HitArea] Error:', ex); }
+                    } catch(ex){}
                     // ===== =====
                     // 先检查是否开启 AI，如果开启则处理抚摸交互并返回
                     const latestSettings = await waitForSettings(2000);
