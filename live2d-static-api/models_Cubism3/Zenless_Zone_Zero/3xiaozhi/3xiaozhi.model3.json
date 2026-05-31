@@ -14,46 +14,6 @@
 					"File": "Motions_Idle_0.json",
 					"WrapMode": 1
 				}
-			],
-			"TapTO夜晚": [
-				{
-					"Expression": "TO夜晚"
-				}
-			],
-			"TapTO白天": [
-				{
-					"Expression": "TO白天"
-				}
-			],
-			"Tap爱芮1": [
-				{
-					"Sound": "Motions_Tap爱芮1_0.mp3"
-				}
-			],
-			"Tap爱芮2": [
-				{
-					"Sound": "Motions_Tap爱芮1_0.mp3"
-				}
-			],
-			"Tap南宫1": [
-				{
-					"Sound": "Motions_Tap南宫1_0.mp3"
-				}
-			],
-			"Tap南宫2": [
-				{
-					"Sound": "Motions_Tap南宫1_0.mp3"
-				}
-			],
-			"Tap千夏1": [
-				{
-					"Sound": "Motions_Tap千夏1_0.mp3"
-				}
-			],
-			"Tap千夏2": [
-				{
-					"Sound": "Motions_Tap千夏1_0.mp3"
-				}
 			]
 		},
 		"Expressions": [

@@ -776,6 +776,15 @@ async function ensureCubism3ConfigFiles(modelPath, modelJson) {
       var existingJson = JSON.parse(existingContent);
       var needsUpdate = false;
       if (!existingJson.FileReferences) { existingJson.FileReferences = {}; needsUpdate = true; }
+      // 清理已存在的 Motions 中的 null File 条目
+      if (existingJson.FileReferences && existingJson.FileReferences.Motions) {
+        Object.keys(existingJson.FileReferences.Motions).forEach(function(g) {
+          existingJson.FileReferences.Motions[g] = existingJson.FileReferences.Motions[g].filter(function(m) { return m && m.File != null; });
+          if (existingJson.FileReferences.Motions[g].length === 0) delete existingJson.FileReferences.Motions[g];
+        });
+        if (Object.keys(existingJson.FileReferences.Motions).length === 0) delete existingJson.FileReferences.Motions;
+        needsUpdate = true;
+      }
       if (!existingJson.FileReferences.Motions && modelJson.FileReferences && modelJson.FileReferences.Motions) {
         var newMotions = JSON.parse(JSON.stringify(modelJson.FileReferences.Motions));
         Object.keys(newMotions).forEach(function(g) {

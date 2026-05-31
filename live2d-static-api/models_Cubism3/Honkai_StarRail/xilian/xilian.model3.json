@@ -5,29 +5,7 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json",
-		"Motions": {
-			"TapArtMesh35": [
-				{
-					"Sound": "Motions_TapArtMesh35_0.mp3"
-				}
-			],
-			"TapArtMesh70": [
-				{
-					"Sound": "Motions_TapArtMesh70_0.mp3"
-				}
-			],
-			"TapArtMesh61": [
-				{
-					"Sound": "Motions_TapArtMesh61_0.mp3"
-				}
-			],
-			"TapArtMesh62": [
-				{
-					"Sound": "Motions_TapArtMesh61_0.mp3"
-				}
-			]
-		}
+		"Physics": "Physics.json"
 	},
 	"Groups": [
 		{

@@ -6,18 +6,6 @@
 			"Textures_.png"
 		],
 		"Physics": "Physics.json",
-		"Motions": {
-			"Tap脸": [
-				{
-					"Expression": "动作"
-				}
-			],
-			"Tap光环": [
-				{
-					"Expression": "还原"
-				}
-			]
-		},
 		"Expressions": [
 			{
 				"Name": "动作",

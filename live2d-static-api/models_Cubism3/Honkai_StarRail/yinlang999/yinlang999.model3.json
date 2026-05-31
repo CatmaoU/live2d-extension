@@ -5,19 +5,7 @@
 		"Textures": [
 			"Textures_.png"
 		],
-		"Physics": "Physics.json",
-		"Motions": {
-			"Tap眼镜": [
-				{
-					"Sound": "Motions_Tap眼镜_0.mp3"
-				}
-			],
-			"Tap脸": [
-				{
-					"Sound": "Motions_Tap脸_0.mp3"
-				}
-			]
-		}
+		"Physics": "Physics.json"
 	},
 	"Groups": [
 		{

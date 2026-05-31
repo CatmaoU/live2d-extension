@@ -12,56 +12,6 @@
 					"File": "Motions_Idle_0.json",
 					"WrapMode": 1
 				}
-			],
-			"Tap脸1": [
-				{
-					"Expression": "流泪"
-				}
-			],
-			"Tap脸2": [
-				{
-					"Expression": "流泪"
-				}
-			],
-			"Tap脚A1": [
-				{
-					"Expression": "复位"
-				}
-			],
-			"Tap脚A2": [
-				{
-					"Expression": "复位"
-				}
-			],
-			"Tap脚A3": [
-				{
-					"Expression": "复位"
-				}
-			],
-			"Tap脚A4": [
-				{
-					"Expression": "复位"
-				}
-			],
-			"Tap脚B1": [
-				{
-					"Expression": "复位"
-				}
-			],
-			"Tap脚B2": [
-				{
-					"Expression": "复位"
-				}
-			],
-			"Tap脚B3": [
-				{
-					"Expression": "复位"
-				}
-			],
-			"Tap脚B4": [
-				{
-					"Expression": "复位"
-				}
 			]
 		},
 		"Expressions": [

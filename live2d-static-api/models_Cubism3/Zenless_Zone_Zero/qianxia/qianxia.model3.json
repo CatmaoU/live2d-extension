@@ -12,48 +12,6 @@
 					"File": "Motions_Idle_0.json",
 					"WrapMode": 1
 				}
-			],
-			"Tap脸1": [
-				{
-					"Name": "脸红",
-					"Expression": "1红脸"
-				}
-			],
-			"Tap脸2": [
-				{
-					"Name": "脸红",
-					"Expression": "1红脸"
-				}
-			],
-			"Tap辫子1": [
-				{
-					"Expression": "2燃烬"
-				}
-			],
-			"Tap辫子2": [
-				{
-					"Expression": "2燃烬"
-				}
-			],
-			"Tap腿1": [
-				{
-					"Expression": "3复原"
-				}
-			],
-			"Tap腿2": [
-				{
-					"Expression": "3复原"
-				}
-			],
-			"Tap腿3": [
-				{
-					"Expression": "3复原"
-				}
-			],
-			"Tap腿4": [
-				{
-					"Expression": "3复原"
-				}
 			]
 		},
 		"Expressions": [
