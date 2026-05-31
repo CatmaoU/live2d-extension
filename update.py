@@ -241,7 +241,17 @@ def replace_extension(extracted_dir):
         if item.is_dir():
             shutil.copytree(item, dst, dirs_exist_ok=True)
         else:
-            shutil.copy2(item, dst)
+            # 重试 3 次，防止文件被其他进程临时锁定
+            for attempt in range(3):
+                try:
+                    shutil.copy2(item, dst)
+                    break
+                except PermissionError:
+                    if attempt < 2:
+                        import time
+                        time.sleep(1)
+                    else:
+                        print(f"  [跳过] 无法复制 {item.name}（文件被锁定）")
     # 清理旧的 exe 文件
     old_exe = BASE_DIR / "Live2D Update.exe.old"
     if old_exe.exists():
