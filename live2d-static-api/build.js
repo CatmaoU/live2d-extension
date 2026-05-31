@@ -726,6 +726,14 @@ async function ensureCubism3ConfigFiles(modelPath, modelJson) {
     } catch (e) {
       // 没找到，创建默认的（合并自定义 model.json 中的动作/表情/点击区域）
       var customMotions = modelJson.FileReferences && modelJson.FileReferences.Motions ? JSON.parse(JSON.stringify(modelJson.FileReferences.Motions)) : undefined;
+      // 过滤掉 File 为 null 的空动作（如 NullValue）
+      if (customMotions) {
+        Object.keys(customMotions).forEach(function(g) {
+          customMotions[g] = customMotions[g].filter(function(m) { return m && m.File != null; });
+          if (customMotions[g].length === 0) delete customMotions[g];
+        });
+        if (Object.keys(customMotions).length === 0) customMotions = undefined;
+      }
       var customExpressions = modelJson.FileReferences && modelJson.FileReferences.Expressions ? JSON.parse(JSON.stringify(modelJson.FileReferences.Expressions)) : undefined;
       var customHitAreas = modelJson.HitAreas ? JSON.parse(JSON.stringify(modelJson.HitAreas)) : undefined;
       var fileRefs = {
@@ -769,9 +777,16 @@ async function ensureCubism3ConfigFiles(modelPath, modelJson) {
       var needsUpdate = false;
       if (!existingJson.FileReferences) { existingJson.FileReferences = {}; needsUpdate = true; }
       if (!existingJson.FileReferences.Motions && modelJson.FileReferences && modelJson.FileReferences.Motions) {
-        existingJson.FileReferences.Motions = JSON.parse(JSON.stringify(modelJson.FileReferences.Motions));
-        needsUpdate = true;
-        console.log(`  添加 Motions 到已存在的 model3.json`);
+        var newMotions = JSON.parse(JSON.stringify(modelJson.FileReferences.Motions));
+        Object.keys(newMotions).forEach(function(g) {
+          newMotions[g] = newMotions[g].filter(function(m) { return m && m.File != null; });
+          if (newMotions[g].length === 0) delete newMotions[g];
+        });
+        if (Object.keys(newMotions).length > 0) {
+          existingJson.FileReferences.Motions = newMotions;
+          needsUpdate = true;
+          console.log(`  添加 Motions 到已存在的 model3.json`);
+        }
       }
       if (!existingJson.FileReferences.Expressions && modelJson.FileReferences && modelJson.FileReferences.Expressions) {
         existingJson.FileReferences.Expressions = JSON.parse(JSON.stringify(modelJson.FileReferences.Expressions));
