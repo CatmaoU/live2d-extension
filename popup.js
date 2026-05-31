@@ -282,6 +282,16 @@ function getModelDisplayName(modelPath) {
   return modelPath;
 }
 
+function getFirstSortedModel(list) {
+  if (!list || list.length === 0) return '';
+  var sorted = list.slice().sort(function(a, b) {
+    var nameA = getModelDisplayName(a.modelPath) || a.modelPath;
+    var nameB = getModelDisplayName(b.modelPath) || b.modelPath;
+    return (nameA.length - nameB.length) || nameA.localeCompare(nameB, 'zh-CN');
+  });
+  return sorted[0].modelPath;
+}
+
 function populateModelSelect() {
   const select = document.getElementById('localModel');
   if (!select) return;
@@ -721,12 +731,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 先更新模型来源可见性，确保 formatContainer 正确显示/隐藏
   updateModelSourceVisibility(true);
 
-  // 如果是本地模型且第一次使用，自动设置默认的Cubism3模型
+  // 如果是本地模型且第一次使用，自动设置默认的Cubism3模型（按排序后的第一个）
   if (modelSourceSelect.value === 'local' && !config.cubism3Model && cubism3ModelsList.length > 0) {
-    console.log('[Live2D] First time use, auto-selecting default Cubism3 model:', cubism3ModelsList[0].modelPath);
-    await storage.set({ cubism3Model: cubism3ModelsList[0].modelPath });
+    var firstModel = getFirstSortedModel(cubism3ModelsList);
+    console.log('[Live2D] First time use, auto-selecting default Cubism3 model:', firstModel);
+    await storage.set({ cubism3Model: firstModel });
     if (localModelSelect) {
-      localModelSelect.value = cubism3ModelsList[0].modelPath;
+      localModelSelect.value = firstModel;
     }
   }
 
@@ -1205,9 +1216,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         localModelSelect.value = savedModel;
         console.log('[Live2D] Restored saved model:', savedModel);
       } else if (modelsList.length > 0) {
-        localModelSelect.value = modelsList[0].modelPath;
-        await storage.set({ localModel: modelsList[0].modelPath });
-        console.log('[Live2D] Auto-selected first model:', modelsList[0].modelPath);
+        var firstC2 = getFirstSortedModel(modelsList);
+        localModelSelect.value = firstC2;
+        await storage.set({ localModel: firstC2 });
+        console.log('[Live2D] Auto-selected first model:', firstC2);
       }
     }
   });
@@ -1232,8 +1244,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         localModelSelect.value = savedModel;
         console.log('[Live2D] Restored saved model:', savedModel);
       } else if (cubism3ModelsList.length > 0) {
-        localModelSelect.value = cubism3ModelsList[0].modelPath;
-        await storage.set({ cubism3Model: cubism3ModelsList[0].modelPath });
+        var firstC3 = getFirstSortedModel(cubism3ModelsList);
+        localModelSelect.value = firstC3;
+        await storage.set({ cubism3Model: firstC3 });
         console.log('[Live2D] Auto-selected first model:', cubism3ModelsList[0].modelPath);
       }
     }
