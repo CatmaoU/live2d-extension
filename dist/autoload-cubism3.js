@@ -3280,15 +3280,11 @@
                     window.live2d.init();
                     window.live2d.loadModel(modelPath);
                     console.log('[Live2D Cubism3] Model loaded successfully');
-                    // 启动镜像循环
-                    if (typeof _mirrorLoop === 'function' && !_mirrorRafId) {
-                        _mirrorLoop();
-                        // 如果之前开启了镜像，立即应用
-                        if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
-                            setTimeout(function() {
-                                window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: true } }));
-                            }, 100);
-                        }
+                    // 恢复镜像状态
+                    if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
+                        setTimeout(function() {
+                            window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: true } }));
+                        }, 100);
                     }
                     
                     // 启用拖拽功能
@@ -3981,31 +3977,35 @@
         if (!mInst) return;
         var mm = mInst.getModelMatrix();
         if (!mm) return;
+        mm._mirror = _mirrorOn;
         if (_mirrorOn) {
-            mm._mirror = true;
-        } else {
-            mm._mirror = false;
-        }
-    });
-    // 镜像每帧应用（SDK 每帧渲染会重置矩阵）
-    var _mirrorRafId = null;
-    function _applyMirrorNow() {
-        try {
-            var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
-            if (!mInst) return;
-            var mm = mInst.getModelMatrix();
-            if (!mm || !mm._mirror) return;
+            // 拦截 setWidth 方法，在 SDK 每帧重置后自动重新应用镜像
+            if (!mm._mirrorPatched) {
+                mm._mirrorPatched = true;
+                var origSW = mm.setWidth;
+                var _this = mm;
+                mm.setWidth = function(e) {
+                    origSW.call(_this, e);
+                    if (_this._mirror) {
+                        var w = _this._width || 1;
+                        _this._scaleX = -Math.abs(_this._scaleX);
+                        _this._trX = Math.abs(_this._scaleX) * w;
+                    }
+                };
+            }
+            // 立即应用一次
             var w = mm._width || 1;
             mm._scaleX = -Math.abs(mm._scaleX);
             mm._trX = Math.abs(mm._scaleX) * w;
-        } catch(e) {}
-    }
-    // 用 setTimeout(0) 在 SDK 渲染后执行，不干扰渲染流程
-    function _mirrorLoop() {
-        _applyMirrorNow();
-        _mirrorRafId = setTimeout(_mirrorLoop, 16);
-    }
-    // 由 initCubism3 在模型加载完成后启动
+        } else {
+            // 移除拦截（还原）
+            if (mm._mirrorPatched && mm.setWidth._orig) {
+                mm.setWidth = mm.setWidth._orig;
+            }
+            mm._mirrorPatched = false;
+        }
+    });
+    // 由 initCubism3 在模型加载完成后启动镜像
     // 页面加载后检查是否需要镜像
     if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
         setTimeout(function() {
