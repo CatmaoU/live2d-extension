@@ -617,6 +617,16 @@
     .param-close-btn:hover {
       background:#5a6fd6;
     }
+    #paramResetBtn:hover {
+      background:#999;
+    }
+    body.dark-theme #paramResetBtn {
+      background:#555;
+      color:#ddd;
+    }
+    body.dark-theme #paramResetBtn:hover {
+      background:#777;
+    }
   </style>
 </head>
 <body>
@@ -702,7 +712,8 @@
             <label class="param-row" style="margin-top:8px;">
               <input type="checkbox" id="hitAreaMotionCheckbox" checked> 动作
             </label>
-            <div style="text-align:center; margin-top:14px;">
+            <div style="text-align:center; margin-top:14px; display:flex; gap:8px; justify-content:center;">
+              <button id="paramResetBtn" type="button" style="background:#888; color:white; border:none; padding:6px 16px; border-radius:6px; cursor:pointer; font-size:13px;">重置</button>
               <button id="paramCloseBtn" type="button" class="param-close-btn">关闭</button>
             </div>
           </div>

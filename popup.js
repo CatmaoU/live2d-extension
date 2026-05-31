@@ -2670,6 +2670,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (modelParamOverlay) modelParamOverlay.style.display = 'none';
     });
   }
+  // 重置按钮
+  var paramResetBtn = document.getElementById('paramResetBtn');
+  if (paramResetBtn) {
+    paramResetBtn.addEventListener('click', function() {
+      // 恢复默认值
+      if (hitAreaCheckbox) { hitAreaCheckbox.checked = false; sendToggle('TOGGLE_HITAREA_OVERLAY', false); }
+      if (hitAreaSoundCheckbox) { hitAreaSoundCheckbox.checked = true; sendToggle('TOGGLE_HITAREA_SOUND', true); }
+      if (hitAreaMotionCheckbox) { hitAreaMotionCheckbox.checked = true; sendToggle('TOGGLE_HITAREA_MOTION', true); }
+      if (volumeSlider) { volumeSlider.value = 50; volumeSlider.dispatchEvent(new Event('input')); }
+      if (volumeInput) volumeInput.value = 50;
+      // 恢复镜像相关的 localStorage
+      try { localStorage.removeItem('live2d_mirrorEnabled'); } catch(e) {}
+    });
+  }
   function sendToggle(type, checked) {
     browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
