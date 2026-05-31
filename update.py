@@ -191,22 +191,38 @@ def download_with_progress(url, target_path, desc="下载中"):
 
 def download_and_extract(zip_url, tag_name):
     """智能选择最快代理下载并解压"""
-    # 选择最快代理
-    proxy_prefix, fast_url = pick_fastest_proxy(zip_url, tag_name)
-    
     # 下载到临时文件
     tmp_zip = Path(tempfile.mkdtemp(prefix="live2d_update_")) / "update.zip"
     print()
-    download_with_progress(fast_url, tmp_zip, "下载更新包")
     
-    # 验证是否为有效的 ZIP 文件
-    if not zipfile.is_zipfile(tmp_zip):
-        print("[警告] 下载的文件不是有效的 ZIP，尝试直连下载...")
-        # 用直连重试
-        download_with_progress(zip_url, tmp_zip, "下载更新包(直连)")
-        if not zipfile.is_zipfile(tmp_zip):
-            tmp_zip.unlink()
-            raise Exception("下载的文件不是有效的 ZIP 文件，请检查网络或代理")
+    # 按速度顺序尝试所有代理，直到下载到有效的 ZIP
+    proxy_prefix, fast_url = pick_fastest_proxy(zip_url, tag_name)
+    all_urls = [(proxy_prefix, fast_url)]
+    for p in PROXIES:
+        if not p:
+            u = zip_url
+        elif "/releases/download/" in zip_url:
+            rel_path = zip_url.split("/releases/download/")[1]
+            u = p + "https://github.com/CatmaoU/live2d-extension/releases/download/" + rel_path
+        else:
+            u = p + zip_url
+        label = p or "直连"
+        if (label, u) not in all_urls:
+            all_urls.append((label, u))
+    
+    downloaded_ok = False
+    for label, url in all_urls:
+        if downloaded_ok:
+            break
+        print(f"  尝试 {label}...")
+        download_with_progress(url, tmp_zip, "下载更新包")
+        if zipfile.is_zipfile(tmp_zip):
+            downloaded_ok = True
+            break
+    
+    if not downloaded_ok:
+        tmp_zip.unlink()
+        raise Exception("所有节点均下载失败，请检查网络")
     
     # 解压
     print("[解压中] 正在解压更新包...")
