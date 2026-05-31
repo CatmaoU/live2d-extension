@@ -199,6 +199,15 @@ def download_and_extract(zip_url, tag_name):
     print()
     download_with_progress(fast_url, tmp_zip, "下载更新包")
     
+    # 验证是否为有效的 ZIP 文件
+    if not zipfile.is_zipfile(tmp_zip):
+        print("[警告] 下载的文件不是有效的 ZIP，尝试直连下载...")
+        # 用直连重试
+        download_with_progress(zip_url, tmp_zip, "下载更新包(直连)")
+        if not zipfile.is_zipfile(tmp_zip):
+            tmp_zip.unlink()
+            raise Exception("下载的文件不是有效的 ZIP 文件，请检查网络或代理")
+    
     # 解压
     print("[解压中] 正在解压更新包...")
     tmp_dir = tmp_zip.parent
