@@ -304,7 +304,15 @@ function populateModelSelect() {
     return;
   }
 
-  currentList.forEach(model => {
+  // 按首字母A-Z排序，同字母名字短的在前
+  var sorted = currentList.slice().sort(function(a, b) {
+    var nameA = (getModelDisplayName(a.modelPath) || a.modelPath).toLowerCase();
+    var nameB = (getModelDisplayName(b.modelPath) || b.modelPath).toLowerCase();
+    if (nameA[0] < nameB[0]) return -1;
+    if (nameA[0] > nameB[0]) return 1;
+    return nameA.length - nameB.length;
+  });
+  sorted.forEach(model => {
     const option = document.createElement('option');
     option.value = model.modelPath;
     option.textContent = getModelDisplayName(model.modelPath) || model.modelPath;

@@ -1,0 +1,98 @@
+{
+	"Version": 3,
+	"FileReferences": {
+		"Moc": "Moc.moc3",
+		"Textures": [
+			"Textures_.png"
+		],
+		"Physics": "Physics.json",
+		"Motions": {
+			"TapHitArea": [
+				{
+					"File": "Motions_TapHitArea_0.json",
+					"Sound": "Motions_TapHitArea_0.wav",
+					"Text": "隐藏气息，仔细观察周围，小心别被那家伙发现……哎呀！为什么我的跟踪总是会暴露！？"
+				},
+				{
+					"File": "Motions_TapHitArea_1.json",
+					"Sound": "Motions_TapHitArea_1.wav",
+					"Text": "你说是你救了我？嗯，姑且 谢谢你啦"
+				}
+			],
+			"TapHitArea2": [
+				{
+					"File": "Motions_TapHitArea2_0.json",
+					"Sound": "Motions_TapHitArea2_0.wav",
+					"Text": "你丧失了记忆，应该过的很不容易吧，所以就由我来照顾你吧，你可得感谢我♪"
+				}
+			],
+			"TapHitArea3": [
+				{
+					"File": "Motions_TapHitArea3_0.json",
+					"Sound": "Motions_TapHitArea3_0.wav",
+					"Text": "其实我不能与你变得要好的……不过还挺开心的，无所谓啦！"
+				}
+			],
+			"Idle": [
+				{
+					"File": "Motions_Idle_0.json"
+				},
+				{
+					"File": "Motions_Idle_1.json"
+				},
+				{
+					"File": "Motions_Idle_2.json"
+				},
+				{
+					"File": "Motions_Idle_3.json"
+				},
+				{
+					"File": "Motions_Idle_4.json"
+				},
+				{
+					"File": "Motions_Idle_5.json"
+				}
+			]
+		},
+		"HitAreas": [
+			{
+				"Name": "HitArea",
+				"Id": "HitArea"
+			},
+			{
+				"Name": "HitArea2",
+				"Id": "HitArea2"
+			},
+			{
+				"Name": "HitArea3",
+				"Id": "HitArea3"
+			}
+		]
+	},
+	"Groups": [
+		{
+			"Target": "Parameter",
+			"Name": "EyeBlink",
+			"Ids": []
+		},
+		{
+			"Target": "Parameter",
+			"Name": "LipSync",
+			"Ids": []
+		}
+	],
+	"HitAreas": [
+		{
+			"Name": "HitArea",
+			"Id": "HitArea"
+		},
+		{
+			"Name": "HitArea2",
+			"Id": "HitArea2"
+		},
+		{
+			"Name": "HitArea3",
+			"Id": "HitArea3"
+		}
+	]
+}

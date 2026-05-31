@@ -1,0 +1,56 @@
+{
+	"modelIntroduce": "Moc",
+	"version": "3.0",
+	"model": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Moc.moc3",
+	"textures": [
+		"../../../models_Cubism3/Princess Connect! ReDive/Karyl/Textures_.png"
+	],
+	"physics": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Physics.json",
+	"motions": {
+		"Idle": [
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_Idle_0.json"
+			},
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_Idle_1.json"
+			},
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_Idle_2.json"
+			},
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_Idle_3.json"
+			},
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_Idle_4.json"
+			},
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_Idle_5.json"
+			}
+		],
+		"TapBody": [
+			{}
+		],
+		"TapHitArea": [
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea_0.json",
+				"sound": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea_0.wav"
+			},
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea_1.json",
+				"sound": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea_1.wav"
+			}
+		],
+		"TapHitArea2": [
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea2_0.json",
+				"sound": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea2_0.wav"
+			}
+		],
+		"TapHitArea3": [
+			{
+				"file": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea3_0.json",
+				"sound": "../../../models_Cubism3/Princess Connect! ReDive/Karyl/Motions_TapHitArea3_0.wav"
+			}
+		]
+	}
+}
