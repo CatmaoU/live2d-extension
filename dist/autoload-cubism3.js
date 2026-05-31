@@ -3374,7 +3374,7 @@
                                 console.log('[HitArea] getModelInstance:', typeof window.live2d.getModelInstance, 'mI2:', !!mI2, 'matrix:', mI2 ? typeof mI2.getModelMatrix : 'N/A', 'model:', mI2 ? !!mI2._model : 'N/A');
                                 if (mI2 && mI2.getModelMatrix && mI2._model) {
 
-                                    var mm2 = mI2.getModelMatrix();
+                                    var mm2 = mI2._model && mI2._model._modelMatrix ? mI2._model._modelMatrix : mI2.getModelMatrix();
                                     var c2 = document.getElementById('live2d');
                                     var rect2 = c2 ? c2.getBoundingClientRect() : null;
                                     if (rect2) {
