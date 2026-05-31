@@ -3964,24 +3964,33 @@
     });
     
     // 监听镜像开关
-    var _mirrorOrigScaleX = null, _mirrorOrigTrX = null;
+    var _mirrorOn = false;
     window.addEventListener('live2d-mirror-toggle', function(e) {
+        _mirrorOn = !!(e.detail && e.detail.enabled);
         var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
         if (!mInst) return;
         var mm = mInst.getModelMatrix();
         if (!mm) return;
-        if (e.detail && e.detail.enabled) {
-            // 保存原始值
-            if (_mirrorOrigScaleX === null) { _mirrorOrigScaleX = mm._scaleX; _mirrorOrigTrX = mm._trX; }
-            // 镜像：反转 X 缩放，平移使模型保持居中
-            var w = mm._width || 1;
-            mm._scaleX = -Math.abs(mm._scaleX);
-            mm._trX = Math.abs(mm._scaleX) * w;
+        if (_mirrorOn) {
+            mm._mirror = true;
         } else {
-            // 还原
-            if (_mirrorOrigScaleX !== null) { mm._scaleX = _mirrorOrigScaleX; mm._trX = _mirrorOrigTrX; }
+            mm._mirror = false;
         }
     });
+    // 每帧强制应用镜像（SDK 每帧会重置矩阵）
+    function applyMirrorLoop() {
+        var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
+        if (mInst) {
+            var mm = mInst.getModelMatrix();
+            if (mm && mm._mirror) {
+                var w = mm._width || 1;
+                mm._scaleX = -Math.abs(mm._scaleX);
+                mm._trX = Math.abs(mm._scaleX) * w;
+            }
+        }
+        requestAnimationFrame(applyMirrorLoop);
+    }
+    applyMirrorLoop();
     // 页面加载后检查是否需要镜像
     if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
         setTimeout(function() {
