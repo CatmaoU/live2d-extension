@@ -3373,6 +3373,7 @@
                                 var mI2 = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
                                 console.log('[HitArea] getModelInstance:', typeof window.live2d.getModelInstance, 'mI2:', !!mI2, 'matrix:', mI2 ? typeof mI2.getModelMatrix : 'N/A', 'model:', mI2 ? !!mI2._model : 'N/A');
                                 if (mI2 && mI2.getModelMatrix && mI2._model) {
+                                    try { var d0 = mI2._model.getDrawableId(0); console.log('[HitArea] drawable0:', d0, 'keys:', Object.keys(d0), 's:', d0.s, '_id:', d0._id, 'toString:', d0.toString ? d0.toString() : 'N/A'); } catch(e){}
                                     var mm2 = mI2.getModelMatrix();
                                     var c2 = document.getElementById('live2d');
                                     var rect2 = c2 ? c2.getBoundingClientRect() : null;
