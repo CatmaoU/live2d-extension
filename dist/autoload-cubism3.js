@@ -3373,6 +3373,7 @@
                                 var mI2 = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
                                 if (mI2 && mI2.getModelMatrix && mI2._model) {
                                     var htc = typeof window.live2d.hitTestCoord === 'function' ? window.live2d.hitTestCoord(e.clientX, e.clientY) : null;
+                                    console.log('[HitArea] htc:', htc);
                                     if (htc) {
                                         var tx2 = htc.x;
                                         var ty2 = htc.y;
