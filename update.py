@@ -39,7 +39,7 @@ if not (BASE_DIR / "manifest.json").exists():
     sys.exit(1)
 
 # ─── 配置 ───
-GITHUB_API = "https://api.github.com/repos/CatmaoU/live2d-extension/releases/latest"
+GITHUB_API = "https://api.github.com/repos/CatmaoU/live2d-extension/releases"
 PROXIES = [
     "https://v6.gh-proxy.org/",
     "https://gh-proxy.org/",
@@ -68,38 +68,44 @@ def _read_manifest(path):
     return data.get("version", "0.0.0")
 
 
-def get_latest_release():
+def get_versions():
+    """获取所有版本信息，返回 (latest_with_zip, latest_without_zip)"""
     try:
         req = urllib.request.Request(GITHUB_API, headers={"User-Agent": "Live2D-Updater"})
         with urllib.request.urlopen(req, timeout=15) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+            releases = json.loads(resp.read().decode("utf-8"))
     except Exception:
         raise Exception("无法连接 GitHub，请检查网络")
     
-    # 检查 API 返回是否有效
-    if data.get("message") and "Not Found" in str(data.get("message")):
+    if not isinstance(releases, list) or len(releases) == 0:
+        raise Exception("项目不存在或未发布版本，请检查发布页")
+    if isinstance(releases, dict) and releases.get("message"):
         raise Exception("项目不存在或未发布版本，请检查发布页")
     
-    tag = data.get("tag_name", "").lstrip("v")
-    if not tag:
-        raise Exception("项目不存在或未发布版本，请检查发布页")
+    latest_with_zip = None
+    latest_no_zip = None
     
-    zip_url = None
-    for asset in data.get("assets", []):
-        name = asset.get("name", "")
-        if name.endswith(".zip"):
-            zip_url = asset.get("browser_download_url")
+    for rel in releases:
+        tag = rel.get("tag_name", "").lstrip("v")
+        if not tag:
+            continue
+        assets = rel.get("assets", [])
+        has_zip = any(a.get("name", "").endswith(".zip") for a in assets)
+        info = {
+            "version": tag,
+            "zip_url": next((a.get("browser_download_url") for a in assets if a.get("name", "").endswith(".zip")), None),
+            "html_url": rel.get("html_url", ""),
+            "body": rel.get("body", ""),
+            "tag_name": rel.get("tag_name", ""),
+        }
+        if has_zip and not latest_with_zip:
+            latest_with_zip = info
+        if not has_zip and not latest_no_zip:
+            latest_no_zip = info
+        if latest_with_zip and latest_no_zip:
             break
-    if not zip_url:
-        raise Exception("项目不存在或未发布版本，请检查发布页")
     
-    return {
-        "version": tag,
-        "zip_url": zip_url,
-        "html_url": data.get("html_url", ""),
-        "body": data.get("body", ""),
-        "tag_name": data.get("tag_name", ""),
-    }
+    return latest_with_zip, latest_no_zip
 
 
 def compare_versions(a, b):
@@ -322,11 +328,13 @@ def replace_extension(extracted_dir):
 
 def check_only():
     try:
-        release = get_latest_release()
+        with_zip, no_zip = get_versions()
         current = get_current_version()
-        data = {"current": current, "latest": release["version"],
-                "has_update": compare_versions(release["version"], current) > 0,
-                "url": release["html_url"]}
+        latest_ver = with_zip["version"] if with_zip else (no_zip["version"] if no_zip else current)
+        latest_url = with_zip["html_url"] if with_zip else (no_zip["html_url"] if no_zip else "")
+        data = {"current": current, "latest": latest_ver,
+                "has_update": compare_versions(latest_ver, current) > 0,
+                "url": latest_url}
         print(json.dumps(data, ensure_ascii=False))
         return 0
     except Exception as e:
@@ -336,10 +344,15 @@ def check_only():
 
 def apply_update():
     try:
-        release = get_latest_release()
-        if compare_versions(release["version"], get_current_version()) <= 0:
+        with_zip, no_zip = get_versions()
+        current = get_current_version()
+        if not with_zip:
+            print(json.dumps({"message": "未找到可用的更新包", "done": True}, ensure_ascii=False))
+            return 0
+        if compare_versions(with_zip["version"], current) <= 0:
             print(json.dumps({"message": "已是最新版本", "done": True}, ensure_ascii=False))
             return 0
+        release = with_zip
         extracted = download_and_extract(release["zip_url"], release["tag_name"])
         replace_extension(extracted)
         shutil.rmtree(extracted.parent if extracted.parent.name.startswith("live2d_update_") else extracted,
@@ -375,17 +388,32 @@ def main():
     current = get_current_version()
     print(f"当前版本：v{current}")
     try:
-        release = get_latest_release()
+        with_zip, no_zip = get_versions()
     except Exception as e:
         print(f"[错误] 无法获取版本信息：{e}")
         input("\n按 Enter 退出...")
         return
-    latest = release["version"]
-    print(f"最新版本：v{latest}")
-    if compare_versions(latest, current) <= 0:
+    
+    # 决定使用哪个版本
+    release = None
+    
+    if with_zip and compare_versions(with_zip["version"], current) > 0:
+        release = with_zip
+        # 如果有更新的版本但未上传 ZIP
+        if no_zip and compare_versions(no_zip["version"], with_zip["version"]) > 0:
+            print(f"\n⚠ 存在新版本 v{no_zip['version']} 但项目不存在或未发布，请检查发布页")
+            print(f"  将降级更新到 v{release['version']}")
+    elif no_zip and compare_versions(no_zip["version"], current) > 0:
+        print(f"\n⚠ 存在新版本 v{no_zip['version']} 但未上传更新包")
+        input("\n按 Enter 退出...")
+        return
+    else:
         print("\n当前已是最新版本，无需更新。")
         input("\n按 Enter 退出...")
         return
+    
+    latest = release["version"]
+    print(f"最新版本：v{latest}")
     print(f"\n发现新版本 v{latest}！")
     if release.get("body"):
         print(f"更新内容：\n{release['body']}\n")
