@@ -304,11 +304,11 @@ function populateModelSelect() {
     return;
   }
 
-  // 按拼音首字母A-Z排序，同拼音名字短的在前
+  // 名字短的在前，同长度按拼音排序
   var sorted = currentList.slice().sort(function(a, b) {
     var nameA = getModelDisplayName(a.modelPath) || a.modelPath;
     var nameB = getModelDisplayName(b.modelPath) || b.modelPath;
-    return nameA.localeCompare(nameB, 'zh-CN') || nameA.length - nameB.length;
+    return (nameA.length - nameB.length) || nameA.localeCompare(nameB, 'zh-CN');
   });
   sorted.forEach(model => {
     const option = document.createElement('option');
