@@ -2627,6 +2627,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // ========== 模型参数按钮 + 蒙层 ==========
   var modelParamBtn = document.getElementById('modelParamBtn');
   var modelParamOverlay = document.getElementById('modelParamOverlay');
+  var touchCheckbox = document.getElementById('touchCheckbox');
   var hitAreaCheckbox = document.getElementById('hitAreaCheckbox');
   
   var hitAreaSoundCheckbox = document.getElementById('hitAreaSoundCheckbox');
@@ -2638,6 +2639,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       browserAPI.tabs.sendMessage(tabs[0].id, { type: 'QUERY_HITAREA_STATUS' }).then((resp) => {
         var hasHitAreas = resp && resp.hasHitAreas;
         if (modelParamBtn) modelParamBtn.style.display = hasHitAreas ? 'inline' : 'none';
+        if (touchCheckbox) touchCheckbox.checked = !!(resp && resp.touchEnabled);
         if (hitAreaCheckbox) hitAreaCheckbox.checked = !!(resp && resp.enabled);
         if (hitAreaSoundCheckbox) hitAreaSoundCheckbox.checked = !!(resp && resp.soundEnabled);
         if (hitAreaMotionCheckbox) hitAreaMotionCheckbox.checked = !!(resp && resp.motionEnabled);
@@ -2675,6 +2677,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (paramResetBtn) {
     paramResetBtn.addEventListener('click', function() {
       // 恢复默认值
+      if (touchCheckbox) { touchCheckbox.checked = true; sendToggle('TOGGLE_TOUCH', true); }
       if (hitAreaCheckbox) { hitAreaCheckbox.checked = false; sendToggle('TOGGLE_HITAREA_OVERLAY', false); }
       if (hitAreaSoundCheckbox) { hitAreaSoundCheckbox.checked = true; sendToggle('TOGGLE_HITAREA_SOUND', true); }
       if (hitAreaMotionCheckbox) { hitAreaMotionCheckbox.checked = true; sendToggle('TOGGLE_HITAREA_MOTION', true); }
@@ -2688,6 +2691,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (!tabs[0]) return;
       browserAPI.tabs.sendMessage(tabs[0].id, { type: type, enabled: checked }).catch(() => {});
+    });
+  }
+  if (touchCheckbox) {
+    touchCheckbox.addEventListener('change', function() {
+      sendToggle('TOGGLE_TOUCH', touchCheckbox.checked);
     });
   }
   if (hitAreaCheckbox) {

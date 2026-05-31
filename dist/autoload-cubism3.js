@@ -3413,6 +3413,8 @@
                 const allCanvasElements = document.querySelectorAll('[id^="live2d"]');
                 allCanvasElements.forEach(canvas => {
                     canvas.addEventListener('click', async function(e) {
+                    // 触摸关闭时不进行任何交互
+                    if (localStorage.getItem('live2d_touchEnabled') === 'false') { return; }
                     // 如果图片气泡正在显示，忽略点击（打开原图由气泡自己的 handler 处理）
                     if (tipsEl && tipsEl.classList.contains('waifu-tips-image')) {
                         e.stopPropagation();
@@ -4029,6 +4031,12 @@
         }
     });
     
+    // 监听触摸开关——关闭时移除线框释放内存
+    window.addEventListener('live2d-touch-toggle', function(e) {
+        if (e.detail && !e.detail.enabled) {
+            if (typeof window.stopHitAreaOverlay === 'function') { window.stopHitAreaOverlay(); }
+        }
+    });
 
     console.log('[Live2D Cubism3] Page visibility memory optimization enabled');
     
