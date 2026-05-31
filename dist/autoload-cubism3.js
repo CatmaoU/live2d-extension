@@ -3859,6 +3859,9 @@
                         if (hx < nx) nx = hx; if (hx > ux) ux = hx;
                         if (hy < ny) ny = hy; if (hy > uy) uy = hy;
                     }
+                    // 应用 50% 扩展（匹配点击检测范围）
+                    var mx = (ux - nx) * 0.5, my = (uy - ny) * 0.5;
+                    nx -= mx; ux += mx; ny -= my; uy += my;
                     // 模型坐标 → canvas 像素
                     var ndx1 = mm.transformX ? mm.transformX(nx) : nx;
                     var ndy1 = mm.transformY ? mm.transformY(ny) : ny;
