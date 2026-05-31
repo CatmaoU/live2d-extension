@@ -3404,7 +3404,9 @@
                                                             if (hy2 > uy2) uy2 = hy2;
                                                         }
                                                         console.log('[HitArea] bbox:', drawId2, 'box:', nx2, ux2, ny2, uy2, 'pt:', tx2, ty2);
-                                                        if (nx2 <= tx2 && tx2 <= ux2 && ny2 <= ty2 && ty2 <= uy2) {
+                                                        var marginX2 = (ux2 - nx2) * 0.5;
+                                                        var marginY2 = (uy2 - ny2) * 0.5;
+                                                        if ((nx2 - marginX2) <= tx2 && tx2 <= (ux2 + marginX2) && (ny2 - marginY2) <= ty2 && ty2 <= (uy2 + marginY2)) {
                                                             console.log('[HitArea] HIT!', drawId2, mg2);
                                                             window.live2d.startMotion(mg2, 0, 9);
                                                             if (haCfg2.FileReferences && haCfg2.FileReferences.Motions && haCfg2.FileReferences.Motions[mg2] && haCfg2.FileReferences.Motions[mg2][0] && haCfg2.FileReferences.Motions[mg2][0].Sound) {
