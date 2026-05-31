@@ -447,6 +447,7 @@
                 sendResponse({ success: true });
             } else if (message.type === 'SET_HITAREA_VOLUME') {
                 localStorage.setItem('live2d_hitAreaVolume', String(message.volume));
+                window.dispatchEvent(new CustomEvent('live2d-volume-change', { detail: { volume: message.volume } }));
                 sendResponse({ success: true });
             } else if (message.type === 'TOGGLE_HITAREA_MOTION') {
                 localStorage.setItem('live2d_hitAreaMotion', message.enabled ? 'true' : 'false');

@@ -3513,8 +3513,19 @@
                                                     var au = new Audio(modelPath + haCfg2.FileReferences.Motions[_hBestArea.mg][0].Sound);
                                                     au.volume = Math.min(1, Math.max(0, vol / 100));
                                                     window.__live2d_lastAudio = au;
+                                                    window.__live2d_lastAudio._vol = vol;
                                                     try { au.play(); } catch(ex){}
                                                 };
+                                                // 监听音量实时变化
+                                                if (!window.__live2d_volumeListener) {
+                                                    window.__live2d_volumeListener = true;
+                                                    window.addEventListener('live2d-volume-change', function(ev) {
+                                                        if (ev.detail && ev.detail.volume !== undefined && window.__live2d_lastAudio) {
+                                                            var v = Math.min(1, Math.max(0, ev.detail.volume / 100));
+                                                            window.__live2d_lastAudio.volume = v;
+                                                        }
+                                                    });
+                                                }
                                                 if (delayMs > 0) {
                                                     console.log('[HitArea] 音效延迟' + delayMs + 'ms播放');
                                                     if (window.__live2d_delayTimer) { clearTimeout(window.__live2d_delayTimer); }
