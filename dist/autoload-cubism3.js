@@ -3280,6 +3280,16 @@
                     window.live2d.init();
                     window.live2d.loadModel(modelPath);
                     console.log('[Live2D Cubism3] Model loaded successfully');
+                    // 启动镜像循环
+                    if (typeof _mirrorLoop === 'function' && !_mirrorRafId) {
+                        _mirrorLoop();
+                        // 如果之前开启了镜像，立即应用
+                        if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
+                            setTimeout(function() {
+                                window.dispatchEvent(new CustomEvent('live2d-mirror-toggle', { detail: { enabled: true } }));
+                            }, 100);
+                        }
+                    }
                     
                     // 启用拖拽功能
                     const waifu = document.getElementById('waifu');
@@ -3977,30 +3987,25 @@
             mm._mirror = false;
         }
     });
-    // 镜像每帧应用（SDK 每帧会重置矩阵，需等模型加载后启动）
+    // 镜像每帧应用（SDK 每帧渲染会重置矩阵）
     var _mirrorRafId = null;
-    function applyMirrorLoop() {
+    function _applyMirrorNow() {
         try {
             var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
-            if (mInst) {
-                var mm = mInst.getModelMatrix();
-                if (mm && mm._mirror) {
-                    var w = mm._width || 1;
-                    mm._scaleX = -Math.abs(mm._scaleX);
-                    mm._trX = Math.abs(mm._scaleX) * w;
-                }
-            }
+            if (!mInst) return;
+            var mm = mInst.getModelMatrix();
+            if (!mm || !mm._mirror) return;
+            var w = mm._width || 1;
+            mm._scaleX = -Math.abs(mm._scaleX);
+            mm._trX = Math.abs(mm._scaleX) * w;
         } catch(e) {}
-        _mirrorRafId = requestAnimationFrame(applyMirrorLoop);
     }
-    // 等模型初始化完成后启动
-    var _mirrorReadyCheck = setInterval(function() {
-        var mInst = typeof window.live2d.getModelInstance === 'function' ? window.live2d.getModelInstance() : null;
-        if (mInst && mInst.getModelMatrix()) {
-            clearInterval(_mirrorReadyCheck);
-            applyMirrorLoop();
-        }
-    }, 500);
+    // 用 setTimeout(0) 在 SDK 渲染后执行，不干扰渲染流程
+    function _mirrorLoop() {
+        _applyMirrorNow();
+        _mirrorRafId = setTimeout(_mirrorLoop, 16);
+    }
+    // 由 initCubism3 在模型加载完成后启动
     // 页面加载后检查是否需要镜像
     if (localStorage.getItem('live2d_mirrorEnabled') === 'true') {
         setTimeout(function() {
