@@ -3997,12 +3997,6 @@
             var w = mm._width || 1;
             mm._scaleX = -Math.abs(mm._scaleX);
             mm._trX = Math.abs(mm._scaleX) * w;
-        } else {
-            // 移除拦截（还原）
-            if (mm._mirrorPatched && mm.setWidth._orig) {
-                mm.setWidth = mm.setWidth._orig;
-            }
-            mm._mirrorPatched = false;
         }
     });
     // 由 initCubism3 在模型加载完成后启动镜像
