@@ -3363,7 +3363,9 @@
                     // ===== HitArea 点击检测（用 drawable ID 直接检测） =====
                     try {
                         var haUrl2 = modelPath + 'model.json';
-                        var haResp2 = await fetch(haUrl2, { cache: 'force-cache' }).catch(function(){});
+                        console.log('[HitArea] modelPath:', modelPath);
+                        var haResp2 = await fetch(haUrl2, { cache: 'force-cache' }).catch(function(){ console.log('[HitArea] fetch fail'); });
+                        console.log('[HitArea] fetch ok:', !!haResp2, haResp2 ? haResp2.status : 0);
                         if (haResp2 && haResp2.ok) {
                             var haCfg2 = await haResp2.json();
                             if (haCfg2 && haCfg2.HitAreas && haCfg2.HitAreas.length > 0) {
@@ -3383,7 +3385,7 @@
                                 }
                             }
                         }
-                    } catch(ex){}
+                    } catch(ex){ console.log('[HitArea] exception:', ex); }
                     // ===== =====
                     // 先检查是否开启 AI，如果开启则处理抚摸交互并返回
                     const latestSettings = await waitForSettings(2000);
