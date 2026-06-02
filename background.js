@@ -334,10 +334,17 @@ chrome.storage.onChanged.addListener(function(changes, area) {
     }
   }
   if (area === 'local' && (changes.githubProxyUrl !== undefined || changes._ghProxyForceSwitch !== undefined)) {
-    if (changes.githubProxyUrl) _ghProxyUrl = changes.githubProxyUrl.newValue;
-    if (_ghProxyUrl && _ghProxyEnabled) {
-      updateGhProxyRules(true, _ghProxyUrl);
+    if (changes.githubProxyUrl) {
+      _ghProxyUrl = changes.githubProxyUrl.newValue;
+    } else {
+      // _ghProxyForceSwitch 触发，从 storage 读最新值
+      chrome.storage.local.get(['githubProxyUrl'], function(st) {
+        if (st.githubProxyUrl) _ghProxyUrl = st.githubProxyUrl;
+        if (_ghProxyUrl && _ghProxyEnabled) updateGhProxyRules(true, _ghProxyUrl);
+      });
+      return;
     }
+    if (_ghProxyUrl && _ghProxyEnabled) updateGhProxyRules(true, _ghProxyUrl);
   }
 });
 
