@@ -2207,7 +2207,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (radio.checked) {
           _ghSelected = url;
           browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true, _ghProxyForceSwitch: Date.now() });
-          browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
+          // 直接更新 DNR 规则（绕过 background，确保即时生效）
+          updateDnrRules(url);
           // 更新折叠状态标签
           if (ghLabel) {
             var activeNode = url.replace('https://', '').replace(/\/$/, '');
@@ -2321,7 +2322,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     browserAPI.storage.local.set({ ghProxyExpanded: expanded });
     if (expanded) {
       if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
+      browserAPI.storage.local.set({ ghManualOverride: true });
     } else {
+      browserAPI.storage.local.set({ ghManualOverride: false });
       startGhAutoRefresh();
     }
   }
@@ -2381,18 +2384,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         var activeNode = _ghSelected.replace('https://', '').replace(/\/$/, '');
         ghLabel.textContent = '代理节点 (' + activeNode + ')';
       }
-      // 折叠状态启动自动刷新
-      if (!_expanded) startGhAutoRefresh();
+      // 初始状态：如果处于折叠状态则清除手动标记，否则保持展开状态设置的手动标记
+      if (!_expanded) {
+        browserAPI.storage.local.set({ ghManualOverride: false });
+        startGhAutoRefresh();
+      }
     });
     ghToggle.addEventListener('change', function() {
       var enabled = ghToggle.checked;
       updateGhStatus(enabled);
       if (enabled && _ghSelected) {
-        browserAPI.storage.local.set({ githubProxyEnabled: true });
-        browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
+        browserAPI.storage.local.set({ githubProxyEnabled: true, _ghProxyForceSwitch: Date.now() });
+        updateDnrRules(_ghSelected);
       } else {
         browserAPI.storage.local.set({ githubProxyEnabled: false });
-        browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
       }
     });
   }
@@ -2422,22 +2427,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // 监听 storage 变化（后台自动切换时同步 UI）
-  chrome.storage.onChanged.addListener(function(changes, area) {
-    if (area === 'local' && changes.githubProxyUrl) {
-      var newUrl = changes.githubProxyUrl.newValue;
-      if (newUrl && newUrl !== _ghSelected) {
-        _ghSelected = newUrl;
-        if (ghLabel) {
-          var n = newUrl.replace('https://', '').replace(/\/$/, '');
-          ghLabel.textContent = '代理节点 (' + n + ')';
-        }
-        renderGhNodes();
-        updateGhSummary();
-      }
-    }
-  });
-
   // 刷新延迟
   if (ghRefreshBtn) ghRefreshBtn.addEventListener('click', testGhLatencies);
 
@@ -2448,9 +2437,46 @@ document.addEventListener('DOMContentLoaded', async () => {
       _ghNodes = DEFAULT_GH_PROXIES.slice();
       _ghSelected = _ghNodes[0];
       saveGhNodes();
-      browserAPI.storage.local.set({ githubProxyUrl: _ghSelected, ghManualOverride: false });
+      browserAPI.storage.local.set({ githubProxyUrl: _ghSelected });
       browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
       renderGhNodes();
+    });
+  }
+
+  // 直接更新 DNR 规则
+  function updateDnrRules(proxyUrl) {
+    if (!proxyUrl || !chrome.declarativeNetRequest) {
+      console.log('[GitHub Proxy] DNR not available');
+      return;
+    }
+    var prefix = proxyUrl.replace(/\/+$/, '') + '/';
+    var rules = [
+      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1003, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1004, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      // 通用匹配：任意代理格式，用简单 regex
+      { id: 1009, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1010, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
+    ];
+    var allIds = [1001, 1002, 1003, 1004, 1009, 1010];
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: allIds,
+      addRules: rules
+    }, function() {
+      if (chrome.runtime.lastError) {
+        console.log('[GitHub Proxy] DNR update error:', chrome.runtime.lastError.message);
+        alert('DNR Error: ' + chrome.runtime.lastError.message);
+      } else {
+        console.log('[GitHub Proxy] DNR rules updated successfully');
+      }
+    });
+    // 验证规则是否已添加
+    chrome.declarativeNetRequest.getDynamicRules(function(rules) {
+      console.log('[GitHub Proxy] Active dynamic rules:', rules.length);
+      rules.forEach(function(r) {
+        console.log('  Rule ' + r.id + ':', r.condition.regexFilter.substring(0, 60));
+      });
     });
   }
 

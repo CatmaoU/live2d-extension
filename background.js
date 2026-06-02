@@ -250,6 +250,7 @@ chrome.runtime.onInstalled.addListener(function() {
 });
 
 // ========== GitHub 代理加速 ==========
+const GH_PROXY_RULE_PRIORITY = 1;
 const GH_PROXIES = [
   'https://gh-proxy.org/',
   'https://v4.gh-proxy.org/',
@@ -257,7 +258,90 @@ const GH_PROXIES = [
   'https://cdn.gh-proxy.org/'
 ];
 let _ghProxyEnabled = false;
-let _ghProxyUrl = GH_PROXIES[2];
+let _ghProxyUrl = GH_PROXIES[2]; // 默认 v6
+
+// 测试代理速度
+function testProxySpeed(proxyUrl, timeout) {
+  timeout = timeout || 5000;
+  var testUrl = proxyUrl + 'https://raw.githubusercontent.com/';
+  var start = Date.now();
+  return fetch(testUrl, { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(timeout) })
+    .then(function() { return Date.now() - start; })
+    .catch(function() { return null; });
+}
+
+// 选择最快代理
+function pickFastestProxy() {
+  var results = [];
+  return Promise.all(GH_PROXIES.map(function(proxy) {
+    return testProxySpeed(proxy).then(function(latency) {
+      if (latency !== null) results.push({ proxy: proxy, latency: latency });
+    });
+  })).then(function() {
+    results.sort(function(a, b) { return a.latency - b.latency; });
+    return results.length > 0 ? results[0].proxy : GH_PROXIES[2];
+  });
+}
+
+// 更新 DNR 规则
+var _ghRuleIds = [1001, 1002, 1003, 1004, 1009, 1010];
+function updateGhProxyRules(enabled, proxyUrl) {
+  var prefix = (proxyUrl || '').replace(/\/+$/, '') + '/';
+  if (enabled && proxyUrl) {
+    var rules = [
+      // 原始 GitHub 下载链接
+      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1003, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1004, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      // 通用匹配：任意代理域名后接 /https://github.com/（含 gh.api.99988866.xyz 等）
+      { id: 1009, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/.*|raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      // 兼容单 https 格式：https://proxy/github.com/...
+      { id: 1010, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
+    ];
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: _ghRuleIds,
+      addRules: rules
+    }, function() {
+      if (chrome.runtime.lastError) {
+        console.log('[GitHub Proxy] Error adding rules:', chrome.runtime.lastError.message);
+      } else {
+        console.log('[GitHub Proxy] Proxy enabled:', proxyUrl);
+      }
+    });
+  } else {
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: _ghRuleIds
+    }, function() {
+      console.log('[GitHub Proxy] Proxy disabled');
+    });
+  }
+}
+
+// 监听 GitHub 代理开关
+chrome.storage.onChanged.addListener(function(changes, area) {
+  if (area === 'local' && changes.githubProxyEnabled !== undefined) {
+    _ghProxyEnabled = changes.githubProxyEnabled.newValue;
+    if (_ghProxyEnabled) {
+      updateGhProxyRules(true, _ghProxyUrl || GH_PROXIES[2]);
+    } else {
+      updateGhProxyRules(false);
+    }
+  }
+  if (area === 'local' && (changes.githubProxyUrl !== undefined || changes._ghProxyForceSwitch !== undefined)) {
+    if (changes.githubProxyUrl) {
+      _ghProxyUrl = changes.githubProxyUrl.newValue;
+    } else {
+      // _ghProxyForceSwitch 触发，从 storage 读最新值
+      chrome.storage.local.get(['githubProxyUrl'], function(st) {
+        if (st.githubProxyUrl) _ghProxyUrl = st.githubProxyUrl;
+        if (_ghProxyUrl && _ghProxyEnabled) updateGhProxyRules(true, _ghProxyUrl);
+      });
+      return;
+    }
+    if (_ghProxyUrl && _ghProxyEnabled) updateGhProxyRules(true, _ghProxyUrl);
+  }
+});
 
 // 后台 30 秒自动测速 + 切换到最快节点
 function backgroundAutoPickFastest() {
@@ -297,25 +381,19 @@ function backgroundAutoPickFastest() {
         console.log('[GitHub Proxy] Auto-switching to fastest:', best.proxy, Math.round(best.speed) + 'KB/s');
         _ghProxyUrl = best.proxy;
         chrome.storage.local.set({ githubProxyUrl: best.proxy });
+        updateGhProxyRules(true, best.proxy);
       }
     });
   }
 }
 
 // 启动时检查状态
-// DNR 已移除，完全通过 chrome.downloads API 拦截（避免规则过期问题）
-function updateDnr(proxyUrl) {}
-
-// 清理旧 DNR 规则（残留）
-try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005] }, function(){}); } catch(e){}
-
 chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'], function(result) {
   if (result.githubProxyEnabled) {
     _ghProxyEnabled = true;
     _ghProxyUrl = result.githubProxyUrl || GH_PROXIES[2];
     if (result.ghProxyNodes) GH_PROXIES.length = 0; Array.prototype.push.apply(GH_PROXIES, result.ghProxyNodes);
-    // 启动 downloads 拦截（DNR 已废弃）
-    if (_ghProxyUrl) console.log('[GH Proxy] Enabled, proxy:', _ghProxyUrl);
+    updateGhProxyRules(true, _ghProxyUrl);
     // 启动 30 秒自动切换
     backgroundAutoPickFastest();
     setInterval(backgroundAutoPickFastest, 30000);
@@ -324,80 +402,43 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
 
 // ========== GitHub 代理拦截下载（通过 chrome.downloads API）==========
 chrome.downloads.onCreated.addListener(function(downloadItem) {
-  chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(st) {
-    if (!st.githubProxyEnabled || !st.githubProxyUrl) { console.log('[GH Proxy] disabled, skip'); return; }
-    var proxyUrl = st.githubProxyUrl;
-    var proxyBase = proxyUrl.replace(/\/+$/, '');
-    var newUrl = null;
-    var url = downloadItem.url || '';
-    if (url.indexOf(proxyUrl) === 0) { console.log('[GH Proxy] already proxied, skip'); return; }
-    
-    var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|codeload\.github\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
+  if (!_ghProxyEnabled || !_ghProxyUrl) return;
+  var url = downloadItem.url || '';
+  
+  // 跳过已通过代理的下载（避免循环）
+  if (url.indexOf(_ghProxyUrl) === 0) return;
+  
+  var proxyBase = _ghProxyUrl.replace(/\/+$/, '');
+  var newUrl = null;
+  
+  // 原始 GitHub 下载
+  var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
+  if (m) newUrl = proxyBase + '/' + m[1];
+  
+  // 已走代理双 https：https://任意域名/https://github.com/...
+  if (!newUrl) {
+    m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
     if (m) newUrl = proxyBase + '/' + m[1];
-    
-    if (!newUrl) {
-      m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
-      if (m) newUrl = proxyBase + '/' + m[1];
-    }
-    
-    if (!newUrl) {
-      m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
-      if (m) newUrl = proxyBase + '/https://' + m[1];
-    }
-    
-    if (newUrl) {
-      newUrl = newUrl.replace(/([^:])\/\//, '$1/');
-      console.log('[GH Proxy] Intercepting:', url.substring(0,60), '->', newUrl.substring(0,60));
+  }
+  
+  // 已走代理单 https：https://任意域名/github.com/...
+  if (!newUrl) {
+    m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+    if (m) newUrl = proxyBase + '/https://' + m[1];
+  }
+  
+  if (newUrl) {
+    console.log('[GitHub Proxy] Intercepting download:', url, '->', newUrl);
+    try {
       chrome.downloads.cancel(downloadItem.id, function() {
-        if (chrome.runtime.lastError) {
-          console.log('[GH Proxy] Cancel failed:', chrome.runtime.lastError.message);
-          return;
+        if (!chrome.runtime.lastError) {
+          chrome.downloads.download({ url: newUrl, filename: downloadItem.filename, conflictAction: 'overwrite' });
         }
-        chrome.downloads.download({ url: newUrl, conflictAction: 'overwrite' }, function(id) {
-          if (chrome.runtime.lastError) console.log('[GH Proxy] Download failed:', chrome.runtime.lastError.message);
-          else console.log('[GH Proxy] New download id:', id);
-        });
       });
-    } else {
-      console.log('[GH Proxy] No match for:', url.substring(0,60));
+    } catch(e) {
+      console.log('[GitHub Proxy] Cancel failed:', e);
     }
-  });
-});
-
-// 备用：onChanged 拦截
-chrome.downloads.onChanged.addListener(function(delta) {
-  if (!delta.state || delta.state.current !== 'in_progress') return;
-  // 如果下载已经开始但未拦截，尝试取消并重定向
-  chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(st) {
-    if (!st.githubProxyEnabled || !st.githubProxyUrl) return;
-    chrome.downloads.search({ id: delta.id }, function(items) {
-      if (!items || !items[0]) return;
-      var item = items[0];
-      var url = item.url || '';
-      if (url.indexOf(st.githubProxyUrl) === 0) return; // 已代理
-      var proxyBase = st.githubProxyUrl.replace(/\/+$/, '');
-      var newUrl = null;
-      var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|codeload\.github\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
-      if (m) newUrl = proxyBase + '/' + m[1];
-      if (!newUrl) {
-        m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
-        if (m) newUrl = proxyBase + '/' + m[1];
-      }
-      if (!newUrl) {
-        m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
-        if (m) newUrl = proxyBase + '/https://' + m[1];
-      }
-      if (newUrl && newUrl !== url) {
-        try {
-          chrome.downloads.cancel(delta.id, function() {
-            if (!chrome.runtime.lastError) {
-              chrome.downloads.download({ url: newUrl, filename: item.filename, conflictAction: 'overwrite' });
-            }
-          });
-        } catch(e) {}
-      }
-    });
-  });
+  }
 });
 
 // 来自 popup 的消息处理
@@ -412,12 +453,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyUrl = request.proxy;
     _ghProxyEnabled = true;
     chrome.storage.local.set({ githubProxyUrl: request.proxy, githubProxyEnabled: true });
+    updateGhProxyRules(true, request.proxy);
     sendResponse({ ok: true });
     return true;
   }
   if (request.action === 'disableGhProxy') {
     _ghProxyEnabled = false;
-    chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005] }, function(){});
+    updateGhProxyRules(false);
     sendResponse({ ok: true });
     return true;
   }
