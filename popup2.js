@@ -2254,27 +2254,34 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!el) return;
       el.textContent = '测速中...';
       var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
-      // 用 Image 对象测速（绕过 CORS，兼容所有代理）
-      var img = new Image();
+      // 先用 fetch 测速（支持跨域则获取速度+延迟）
       var start = Date.now();
-      var timedOut = false;
-      var timer = setTimeout(function() { timedOut = true; img.src = ''; }, 8000);
-      img.onload = function() {
-        clearTimeout(timer);
-        if (timedOut) return;
-        var ms = Date.now() - start;
-        el.textContent = ms + 'ms';
-        el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
-      };
-      img.onerror = function() {
-        clearTimeout(timer);
-        if (timedOut) return;
-        // 即使 error 也说明连接通了（可能是非图片格式）
-        var ms = Date.now() - start;
-        el.textContent = ms + 'ms (连通)';
-        el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
-      };
-      img.src = testUrl;
+      fetch(testUrl, { method: 'GET', mode: 'cors', signal: AbortSignal.timeout(6000) })
+        .then(function(r) {
+          var latencyMs = Date.now() - start;
+          return r.text().then(function(body) {
+            var totalMs = Date.now() - start;
+            var speedKB = totalMs > 0 ? (body.length / (totalMs / 1000)) / 1024 : 0;
+            var speedStr = speedKB >= 1024 ? (speedKB/1024).toFixed(1) + 'MB/s' : Math.round(speedKB) + 'KB/s';
+            el.textContent = latencyMs + 'ms | ' + speedStr;
+            el.style.color = speedKB >= 500 ? '#4CAF50' : speedKB >= 100 ? '#FF9800' : '#e06060';
+          });
+        })
+        .catch(function() {
+          // fetch 失败（CORS），退回到 Image 方式只测延迟
+          var img = new Image();
+          var start2 = Date.now();
+          var timedOut = false;
+          var timer = setTimeout(function() { timedOut = true; img.src = ''; }, 6000);
+          img.onerror = function() {
+            clearTimeout(timer);
+            if (timedOut) return;
+            var ms = Date.now() - start2;
+            el.textContent = ms + 'ms';
+            el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
+          };
+          img.src = testUrl;
+        });
     });
   }
 
