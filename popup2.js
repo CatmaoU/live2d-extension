@@ -2304,12 +2304,31 @@ document.addEventListener('DOMContentLoaded', async () => {
   var ghArrow = document.getElementById('ghProxyArrow');
   var ghLabel = document.getElementById('ghProxyToggleLabel');
   var _expanded = false;
+  var _ghAutoTimer = null;
   if (ghToggleBtn && ghBody) {
     ghToggleBtn.addEventListener('click', function() {
       _expanded = !_expanded;
       ghBody.style.display = _expanded ? 'block' : 'none';
       if (ghArrow) ghArrow.style.transform = _expanded ? 'rotate(90deg)' : 'none';
+      if (_expanded) {
+        // 展开时停止自动刷新
+        if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
+      } else {
+        // 折叠时启动自动刷新
+        startGhAutoRefresh();
+      }
     });
+  }
+  function startGhAutoRefresh() {
+    if (_ghAutoTimer) clearInterval(_ghAutoTimer);
+    if (_expanded) return;
+    // 首次测速
+    testGhLatencies();
+    // 每 2 秒刷新
+    _ghAutoTimer = setInterval(function() {
+      if (_expanded) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; return; }
+      testGhLatencies();
+    }, 2000);
   }
 
   // 测速完成后自动选择最快节点（折叠状态下）
@@ -2350,6 +2369,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         var activeNode = _ghSelected.replace('https://', '').replace(/\/$/, '');
         ghLabel.textContent = '代理节点 (' + activeNode + ')';
       }
+      // 折叠时启动 2 秒自动刷新
+      startGhAutoRefresh();
     });
     ghToggle.addEventListener('change', function() {
       var enabled = ghToggle.checked;
