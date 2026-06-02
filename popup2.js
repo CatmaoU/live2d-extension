@@ -2256,9 +2256,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
       browserAPI.runtime.sendMessage({ action: 'testProxyLatency', proxyUrl: url, testUrl: testUrl }, function(resp) {
         if (resp && resp.latency !== null) {
-          var ms = resp.latency;
-          el.textContent = ms + 'ms';
-          el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
+          var kb = resp.latency;
+          el.textContent = kb >= 1024 ? (kb/1024).toFixed(1) + 'MB/s' : kb + 'KB/s';
+          el.style.color = kb >= 500 ? '#4CAF50' : kb >= 100 ? '#FF9800' : '#e06060';
         } else {
           el.textContent = '超时';
           el.style.color = '#e06060';
