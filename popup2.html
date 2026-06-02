@@ -342,7 +342,10 @@
       <div style="margin-top:8px; border:1px solid rgba(102,126,234,0.2); border-radius:6px; overflow:hidden;">
         <div id="ghProxyToggleBtn" style="display:flex; align-items:center; justify-content:space-between; padding:6px 10px; cursor:pointer; font-size:12px; color:#667eea; user-select:none;">
           <span id="ghProxyToggleLabel">代理节点 (自动选择最快)</span>
-          <span id="ghProxyArrow" style="transition:transform 0.2s;">▶</span>
+          <span style="display:flex; align-items:center; gap:6px;">
+            <span id="ghProxySummary" style="font-size:11px; color:#999;"></span>
+            <span id="ghProxyArrow" style="transition:transform 0.2s;">▶</span>
+          </span>
         </div>
         <div id="ghProxyBody" style="display:none; padding:8px; border-top:1px solid rgba(102,126,234,0.15);">
           <div id="ghProxyNodeList" style="max-height:160px; overflow-y:auto;">

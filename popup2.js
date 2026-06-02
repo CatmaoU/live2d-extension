@@ -2248,13 +2248,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     testGhLatencies();
   }
 
+  function updateGhSummary() {
+    var summaryEl = document.getElementById('ghProxySummary');
+    if (!summaryEl) return;
+    // 找到当前选中节点对应的延迟显示
+    var idx = _ghNodes.indexOf(_ghSelected);
+    if (idx < 0) { summaryEl.textContent = ''; return; }
+    var el = document.getElementById('ghLat_' + idx);
+    if (el && el.textContent && el.textContent !== '测速中...' && el.textContent !== '...') {
+      summaryEl.textContent = el.textContent;
+      summaryEl.style.color = el.style.color;
+    }
+  }
+
   function testGhLatencies() {
     _ghNodes.forEach(function(url, idx) {
       var el = document.getElementById('ghLat_' + idx);
       if (!el) return;
       el.textContent = '测速中...';
       var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
-      // 先用 fetch 测速（支持跨域则获取速度+延迟）
       var start = Date.now();
       fetch(testUrl, { method: 'GET', mode: 'cors', signal: AbortSignal.timeout(6000) })
         .then(function(r) {
@@ -2265,10 +2277,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             var speedStr = speedKB >= 1024 ? (speedKB/1024).toFixed(1) + 'MB/s' : Math.round(speedKB) + 'KB/s';
             el.textContent = latencyMs + 'ms | ' + speedStr;
             el.style.color = speedKB >= 500 ? '#4CAF50' : speedKB >= 100 ? '#FF9800' : '#e06060';
+            updateGhSummary();
           });
         })
         .catch(function() {
-          // fetch 失败（CORS），退回到 Image 方式只测延迟
           var img = new Image();
           var start2 = Date.now();
           var timedOut = false;
@@ -2279,6 +2291,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             var ms = Date.now() - start2;
             el.textContent = ms + 'ms';
             el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
+            updateGhSummary();
           };
           img.src = testUrl;
         });
