@@ -284,36 +284,50 @@ function pickFastestProxy() {
 }
 
 // 更新 DNR 规则
+var _ghRuleIds = [1001, 1002, 1003, 1004];
 function updateGhProxyRules(enabled, proxyUrl) {
-  var ruleId = 1001;
+  var prefix = (proxyUrl || '').replace(/\/+$/, '') + '/';
   if (enabled && proxyUrl) {
-    var redirectUrl = proxyUrl.replace(/\/+$/, '') + '/';
-    var rule = {
-      id: ruleId,
-      priority: GH_PROXY_RULE_PRIORITY,
-      action: {
-        type: 'redirect',
-        redirect: { regexSubstitution: redirectUrl + '\\1' }
+    // 分路径类型创建独立规则（RE2 不支持复杂嵌套正则）
+    var rules = [
+      {
+        id: 1001,
+        priority: 1,
+        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
+        condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
       },
-      condition: {
-        // 仅匹配下载路径（archive/release/raw/raw.githubusercontent），不拦截 GitHub 页面
-        regexFilter: '^(https://(raw\\.githubusercontent\\.com/.*|github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*))',
-        resourceTypes: ['main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object', 'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket', 'other']
+      {
+        id: 1002,
+        priority: 1,
+        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
+        condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
+      },
+      {
+        id: 1003,
+        priority: 1,
+        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
+        condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
+      },
+      {
+        id: 1004,
+        priority: 1,
+        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
+        condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
       }
-    };
+    ];
     chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [ruleId],
-      addRules: [rule]
+      removeRuleIds: _ghRuleIds,
+      addRules: rules
     }, function() {
       if (chrome.runtime.lastError) {
-        console.log('[GitHub Proxy] Error adding rule:', chrome.runtime.lastError.message);
+        console.log('[GitHub Proxy] Error adding rules:', chrome.runtime.lastError.message);
       } else {
         console.log('[GitHub Proxy] Proxy enabled:', proxyUrl);
       }
     });
   } else {
     chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [ruleId]
+      removeRuleIds: _ghRuleIds
     }, function() {
       console.log('[GitHub Proxy] Proxy disabled');
     });
