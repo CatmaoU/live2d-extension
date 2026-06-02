@@ -467,23 +467,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyUrl = '';
     chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
     updateGhProxyRules(false);
-    // 获取并移除所有动态规则（不论 ID）
-    try {
-      chrome.declarativeNetRequest.getDynamicRules(function(rules) {
-        var ids = rules.map(function(r) { return r.id; });
-        console.log('[GH] Disable: found', ids.length, 'dynamic rules:', ids.join(','));
-        if (ids.length > 0) {
-          chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids }, function() {
-            if (chrome.runtime.lastError) {
-              console.log('[GH] DNR remove error:', chrome.runtime.lastError.message);
-            } else {
-              console.log('[GH] All DNR rules removed successfully');
-            }
-          });
-        }
-      });
-    } catch(e) {
-      console.log('[GH] DNR get/remove exception:', e.message);
+    // 获取并移除所有动态规则
+    if (chrome.declarativeNetRequest) {
+      try {
+        chrome.declarativeNetRequest.getDynamicRules(function(rules) {
+          var ids = rules.map(function(r) { return r.id; });
+          console.log('[GH] Disable: found', ids.length, 'dynamic rules:', ids.join(','));
+          if (ids.length > 0) {
+            chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids }, function() {
+              console.log('[GH] DNR remove done, err:', chrome.runtime.lastError ? chrome.runtime.lastError.message : 'none');
+            });
+          }
+        });
+      } catch(e) {
+        console.log('[GH] DNR exception:', e.message);
+      }
+    } else {
+      console.log('[GH] DNR API not available');
     }
     sendResponse({ ok: true });
     return true;
