@@ -355,18 +355,19 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
   }
   
     if (newUrl) {
-      console.log('[GitHub Proxy] Intercepting download:', url, '->', newUrl);
-      try {
-        chrome.downloads.cancel(downloadItem.id, function() {
-          if (!chrome.runtime.lastError) {
-            chrome.downloads.download({ url: newUrl, filename: downloadItem.filename, conflictAction: 'overwrite' });
-          }
+      console.log('[GitHub Proxy] Intercepting:', url.substring(0,60), '->', newUrl.substring(0,60));
+      chrome.downloads.cancel(downloadItem.id, function() {
+        if (chrome.runtime.lastError) {
+          console.log('[GitHub Proxy] Cancel failed:', chrome.runtime.lastError.message);
+          return;
+        }
+        chrome.downloads.download({ url: newUrl, conflictAction: 'overwrite' }, function(id) {
+          if (chrome.runtime.lastError) console.log('[GitHub Proxy] New download failed:', chrome.runtime.lastError.message);
+          else console.log('[GitHub Proxy] New download id:', id);
         });
-      } catch(e) {
-        console.log('[GitHub Proxy] Cancel failed:', e);
-      }
+      });
     }
-  }); // 关闭 storage.get 回调
+  });
 });
 
 // 备用：捕获 onCreated 可能遗漏的下载
