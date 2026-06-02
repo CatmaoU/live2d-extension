@@ -2390,12 +2390,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
     ghToggle.addEventListener('change', function() {
       var enabled = ghToggle.checked;
-      browserAPI.storage.local.set({ githubProxyEnabled: enabled });
       updateGhStatus(enabled);
       if (enabled && _ghSelected) {
-        browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
+        browserAPI.storage.local.set({ githubProxyEnabled: true, _ghProxyForceSwitch: Date.now() });
       } else {
-        browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
+        browserAPI.storage.local.set({ githubProxyEnabled: false });
       }
     });
   }
