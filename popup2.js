@@ -2310,12 +2310,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       ghBody.style.display = _expanded ? 'block' : 'none';
       if (ghArrow) ghArrow.style.transform = _expanded ? 'rotate(90deg)' : 'none';
       if (_expanded) {
-        // 展开时停止自动刷新
+        // 展开时停止自动刷新，并通知后台停止自动切换
         if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
+        browserAPI.storage.local.set({ ghManualOverride: true });
       } else {
-        // 折叠时清除手动标记，恢复自动切换
+        // 折叠时清除手动标记，恢复后台自动切换
         browserAPI.storage.local.set({ ghManualOverride: false });
-        // 折叠时启动自动刷新
         startGhAutoRefresh();
       }
     });
