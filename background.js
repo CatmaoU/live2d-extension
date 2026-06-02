@@ -445,6 +445,9 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
     }
   }
   
+  // 如果是原始 GitHub 链接（未被代理），不处理
+  if (/^https:\/\/(raw\.githubusercontent\.com|github\.com)\//.test(url)) return;
+  
   // 定向代理关闭时：还原被代理的下载链接
   var restoreUrl = null;
   var restoreMatch = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
