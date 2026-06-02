@@ -490,8 +490,17 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyUrl = '';
     chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
     updateGhProxyRules(false);
+    // 用空规则覆盖（直接跳转到原 URL，等价于关闭代理）
+    try {
+      chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010],
+        addRules: [
+          { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+          { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
+        ]
+      });
+    } catch(e){}
     // 清理所有动态 + session 规则
-    if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.getDynamicRules) {
       chrome.declarativeNetRequest.getDynamicRules(function(rules) {
         var ids = rules.map(function(r) { return r.id; });
         if (ids.length > 0) {
