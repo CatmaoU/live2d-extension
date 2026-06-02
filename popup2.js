@@ -2206,8 +2206,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       radio.addEventListener('change', function() {
         if (radio.checked) {
           _ghSelected = url;
-          browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true });
-          browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
+          browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true, _ghProxyForceSwitch: Date.now() });
           // 更新折叠状态标签
           if (ghLabel) {
             var activeNode = url.replace('https://', '').replace(/\/$/, '');

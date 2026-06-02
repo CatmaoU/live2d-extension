@@ -328,17 +328,14 @@ chrome.storage.onChanged.addListener(function(changes, area) {
   if (area === 'local' && changes.githubProxyEnabled !== undefined) {
     _ghProxyEnabled = changes.githubProxyEnabled.newValue;
     if (_ghProxyEnabled) {
-      pickFastestProxy().then(function(bestUrl) {
-        _ghProxyUrl = bestUrl;
-        updateGhProxyRules(true, bestUrl);
-      });
+      updateGhProxyRules(true, _ghProxyUrl || GH_PROXIES[2]);
     } else {
       updateGhProxyRules(false);
     }
   }
-  if (area === 'local' && changes.githubProxyUrl !== undefined) {
-    _ghProxyUrl = changes.githubProxyUrl.newValue;
-    if (_ghProxyEnabled) {
+  if (area === 'local' && (changes.githubProxyUrl !== undefined || changes._ghProxyForceSwitch !== undefined)) {
+    if (changes.githubProxyUrl) _ghProxyUrl = changes.githubProxyUrl.newValue;
+    if (_ghProxyUrl && _ghProxyEnabled) {
       updateGhProxyRules(true, _ghProxyUrl);
     }
   }
