@@ -400,15 +400,16 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
   }
 });
 
-// ========== GitHub 代理拦截下载（通过 chrome.downloads API）==========
+// ========== GitHub 代理拦截下载（通过 chrome.downloads API，从 storage 读最新节点）==========
 chrome.downloads.onCreated.addListener(function(downloadItem) {
-  if (!_ghProxyEnabled || !_ghProxyUrl) return;
-  var url = downloadItem.url || '';
-  
-  // 跳过已通过代理的下载（避免循环）
-  if (url.indexOf(_ghProxyUrl) === 0) return;
-  
-  var proxyBase = _ghProxyUrl.replace(/\/+$/, '');
+  // 从 storage 实时读取当前节点（而非缓存变量，确保与 UI 一致）
+  chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(st) {
+    if (!st.githubProxyEnabled || !st.githubProxyUrl) return;
+    var proxyUrl = st.githubProxyUrl;
+    var url = downloadItem.url || '';
+    if (url.indexOf(proxyUrl) === 0) return; // 跳过已代理下载
+    
+    var proxyBase = proxyUrl.replace(/\/+$/, '');
   var newUrl = null;
   
   // 原始 GitHub 下载
@@ -427,18 +428,19 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
     if (m) newUrl = proxyBase + '/https://' + m[1];
   }
   
-  if (newUrl) {
-    console.log('[GitHub Proxy] Intercepting download:', url, '->', newUrl);
-    try {
-      chrome.downloads.cancel(downloadItem.id, function() {
-        if (!chrome.runtime.lastError) {
-          chrome.downloads.download({ url: newUrl, filename: downloadItem.filename, conflictAction: 'overwrite' });
-        }
-      });
-    } catch(e) {
-      console.log('[GitHub Proxy] Cancel failed:', e);
+    if (newUrl) {
+      console.log('[GitHub Proxy] Intercepting download:', url, '->', newUrl);
+      try {
+        chrome.downloads.cancel(downloadItem.id, function() {
+          if (!chrome.runtime.lastError) {
+            chrome.downloads.download({ url: newUrl, filename: downloadItem.filename, conflictAction: 'overwrite' });
+          }
+        });
+      } catch(e) {
+        console.log('[GitHub Proxy] Cancel failed:', e);
+      }
     }
-  }
+  }); // 关闭 storage.get 回调
 });
 
 // 来自 popup 的消息处理
