@@ -445,17 +445,20 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
     }
   }
   
-  // 定向代理关闭时：如果检测到走的是已知代理，还原为原始 GitHub 链接
+  // 定向代理关闭时：还原被代理的下载链接
+  var restoreUrl = null;
   var restoreMatch = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
-  if (!restoreMatch) {
+  if (restoreMatch) restoreUrl = restoreMatch[1];
+  if (!restoreUrl) {
     restoreMatch = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
-    if (restoreMatch) {
-      var originalUrl = 'https://' + restoreMatch[1];
-      console.log('[GH] Restore:', url.substring(0,50), '->', originalUrl.substring(0,50));
+    if (restoreMatch) restoreUrl = 'https://' + restoreMatch[1];
+  }
+  if (restoreUrl) {
+      console.log('[GH] Restore:', url.substring(0,50), '->', restoreUrl.substring(0,50));
       try {
         chrome.downloads.cancel(downloadItem.id, function() {
           if (!chrome.runtime.lastError) {
-            chrome.downloads.download({ url: originalUrl, conflictAction: 'overwrite' });
+            chrome.downloads.download({ url: restoreUrl, conflictAction: 'overwrite' });
           }
         });
       } catch(e) {}
