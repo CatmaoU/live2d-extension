@@ -2439,9 +2439,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 直接更新 DNR（绕过 background，确保即时生效）
   function updateDnr(proxyUrl) {
-    var dnr = chrome.declarativeNetRequest || (typeof browser !== 'undefined' && browser.declarativeNetRequest);
-    if (!proxyUrl || !dnr) return;
+    console.log('[GitHub Proxy] updateDnr called:', proxyUrl);
+    var dnr = chrome.declarativeNetRequest;
+    if (!dnr) {
+      console.log('[GitHub Proxy] DNR API not available');
+      return;
+    }
+    if (!proxyUrl) return;
     var prefix = proxyUrl.replace(/\/+$/, '') + '/';
+    console.log('[GitHub Proxy] DNR prefix:', prefix);
     dnr.updateDynamicRules({
       removeRuleIds: [1001, 1002],
       addRules: [
