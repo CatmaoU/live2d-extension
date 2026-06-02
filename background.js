@@ -250,9 +250,12 @@ chrome.runtime.onInstalled.addListener(function() {
 });
 
 // 启动时清理任何残留的 DNR 规则
-try { _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){
-  if (chrome.runtime.lastError) console.log('[GH] Startup DNR cleanup error:', chrome.runtime.lastError.message);
-}); } catch(e){ console.log('[GH] Startup DNR cleanup exception:', e); }
+if (_dnr) try {
+  var runtime = chrome || browser;
+  _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function() {
+    if (runtime.runtime && runtime.runtime.lastError) console.log('[GH] Startup DNR cleanup error:', runtime.runtime.lastError.message);
+  });
+} catch(e){ console.log('[GH] Startup DNR cleanup exception:', e); }
 
 // ========== GitHub 代理加速 ==========
 const GH_PROXY_RULE_PRIORITY = 1;
@@ -505,23 +508,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       });
     } catch(e){}
     // 清理所有动态 + session 规则
-      _dnr.declarativeNetRequest.getDynamicRules(function(rules) {
-        var ids = rules.map(function(r) { return r.id; });
-        if (ids.length > 0) {
-          _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
-        }
-      });
-      _dnr.declarativeNetRequest.getSessionRules(function(rules) {
-        var ids = rules.map(function(r) { return r.id; });
-        if (ids.length > 0) {
-          _dnr.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids });
-        }
-      });
+    if (_dnr) {
+      try {
+        _dnr.declarativeNetRequest.getDynamicRules(function(rules) {
+          var ids = rules.map(function(r) { return r.id; });
+          if (ids.length > 0) _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
+        });
+      } catch(ex) {}
+      try {
+        _dnr.declarativeNetRequest.getSessionRules(function(rules) {
+          var ids = rules.map(function(r) { return r.id; });
+          if (ids.length > 0) _dnr.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids });
+        });
+      } catch(ex) {}
+      // 用简单 removal 做最后保障
+      try { _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }); } catch(ex) {}
+      try { _dnr.declarativeNetRequest.updateSessionRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }); } catch(ex) {}
     }
-    // 用简单 removal 做最后保障（移除所有已知 ID）
-    var allIds = [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010];
-    try { _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: allIds }); } catch(e){}
-    try { _dnr.declarativeNetRequest.updateSessionRules({ removeRuleIds: allIds }); } catch(e){}
     sendResponse({ ok: true });
     return true;
   }
