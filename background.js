@@ -407,37 +407,60 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
 
 // ========== GitHub 代理拦截下载（通过 chrome.downloads API）==========
 chrome.downloads.onCreated.addListener(function(downloadItem) {
-  if (!_ghProxyEnabled || !_ghProxyUrl) return;
   var url = downloadItem.url || '';
   
-  // 跳过已通过代理的下载（避免循环）
-  if (url.indexOf(_ghProxyUrl) === 0) return;
-  
-  var proxyBase = _ghProxyUrl.replace(/\/+$/, '');
-  var newUrl = null;
-  
-  // 原始 GitHub 下载
-  var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
-  if (m) newUrl = proxyBase + '/' + m[1];
-  
-  // 已走代理双 https：https://任意域名/https://github.com/...
-  if (!newUrl) {
-    m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+  // 如果定向代理开启，使用选中的节点
+  if (_ghProxyEnabled && _ghProxyUrl) {
+    if (url.indexOf(_ghProxyUrl) === 0) return; // 已走当前节点，跳过
+    
+    var proxyBase = _ghProxyUrl.replace(/\/+$/, '');
+    var newUrl = null;
+    
+    // 原始 GitHub 下载
+    var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
     if (m) newUrl = proxyBase + '/' + m[1];
+    
+    // 已走代理双 https
+    if (!newUrl) {
+      m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+      if (m) newUrl = proxyBase + '/' + m[1];
+    }
+    
+    // 已走代理单 https
+    if (!newUrl) {
+      m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+      if (m) newUrl = proxyBase + '/https://' + m[1];
+    }
+    
+    if (newUrl) {
+      console.log('[GH] Intercept:', url.substring(0,50), '->', newUrl.substring(0,50));
+      try {
+        chrome.downloads.cancel(downloadItem.id, function() {
+          if (!chrome.runtime.lastError) {
+            chrome.downloads.download({ url: newUrl, conflictAction: 'overwrite' });
+          }
+        });
+      } catch(e) {}
+      return;
+    }
   }
   
-  // 已走代理单 https：https://任意域名/github.com/...
-  if (!newUrl) {
-    m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
-    if (m) newUrl = proxyBase + '/https://' + m[1];
+  // 定向代理关闭时：如果检测到走的是已知代理，还原为原始 GitHub 链接
+  var restoreMatch = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+  if (!restoreMatch) {
+    restoreMatch = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+    if (restoreMatch) {
+      var originalUrl = 'https://' + restoreMatch[1];
+      console.log('[GH] Restore:', url.substring(0,50), '->', originalUrl.substring(0,50));
+      try {
+        chrome.downloads.cancel(downloadItem.id, function() {
+          if (!chrome.runtime.lastError) {
+            chrome.downloads.download({ url: originalUrl, conflictAction: 'overwrite' });
+          }
+        });
+      } catch(e) {}
+    }
   }
-  
-  if (newUrl) {
-    console.log('[GitHub Proxy] Intercepting download:', url, '->', newUrl);
-    try {
-      chrome.downloads.cancel(downloadItem.id, function() {
-        if (!chrome.runtime.lastError) {
-          chrome.downloads.download({ url: newUrl, filename: downloadItem.filename, conflictAction: 'overwrite' });
         }
       });
     } catch(e) {
@@ -468,24 +491,24 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
     updateGhProxyRules(false);
     // 清理所有动态 + session 规则
-    if (chrome.declarativeNetRequest) {
-      try {
-        chrome.declarativeNetRequest.getDynamicRules(function(rules) {
-          var ids = rules.map(function(r) { return r.id; });
-          console.log('[GH] Disable: dynamic rules:', ids.length, ids.join(','));
-          if (ids.length > 0) chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
-        });
-      } catch(e) { console.log('[GH] DNR dyn exception:', e.message); }
-      try {
-        chrome.declarativeNetRequest.getSessionRules(function(rules) {
-          var ids = rules.map(function(r) { return r.id; });
-          console.log('[GH] Disable: session rules:', ids.length, ids.join(','));
-          if (ids.length > 0) chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids });
-        });
-      } catch(e) { console.log('[GH] DNR sess exception:', e.message); }
-    } else {
-      console.log('[GH] DNR API not available');
+    if (chrome.declarativeNetRequest && chrome.declarativeNetRequest.getDynamicRules) {
+      chrome.declarativeNetRequest.getDynamicRules(function(rules) {
+        var ids = rules.map(function(r) { return r.id; });
+        if (ids.length > 0) {
+          chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
+        }
+      });
+      chrome.declarativeNetRequest.getSessionRules(function(rules) {
+        var ids = rules.map(function(r) { return r.id; });
+        if (ids.length > 0) {
+          chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids });
+        }
+      });
     }
+    // 用简单 removal 做最后保障（移除所有已知 ID）
+    var allIds = [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010];
+    try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: allIds }); } catch(e){}
+    try { chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: allIds }); } catch(e){}
     sendResponse({ ok: true });
     return true;
   }
