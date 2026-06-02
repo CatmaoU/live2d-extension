@@ -313,6 +313,9 @@ function backgroundAutoPickFastest() {
 }
 
 // 启动时检查状态
+// 启动时清理之前残留的 DNR 规则（旧版本遗留）
+try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){}); } catch(e){}
+
 chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'], function(result) {
   if (result.githubProxyEnabled) {
     _ghProxyEnabled = true;
@@ -324,9 +327,8 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
   }
 });
 
-// ========== GitHub 代理拦截下载（通过 chrome.downloads API，从 storage 读最新节点）==========
+// ========== GitHub 代理拦截下载（通过 chrome.downloads API）==========
 chrome.downloads.onCreated.addListener(function(downloadItem) {
-  // 从 storage 实时读取当前节点（而非缓存变量，确保与 UI 一致）
   chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(st) {
     if (!st.githubProxyEnabled || !st.githubProxyUrl) return;
     var proxyUrl = st.githubProxyUrl;
