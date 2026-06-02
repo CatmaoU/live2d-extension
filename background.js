@@ -357,42 +357,41 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
 // ========== GitHub 代理拦截下载（通过 chrome.downloads API）==========
 chrome.downloads.onCreated.addListener(function(downloadItem) {
   chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(st) {
-    if (!st.githubProxyEnabled || !st.githubProxyUrl) return;
+    if (!st.githubProxyEnabled || !st.githubProxyUrl) { console.log('[GH Proxy] disabled, skip'); return; }
     var proxyUrl = st.githubProxyUrl;
     var proxyBase = proxyUrl.replace(/\/+$/, '');
     var newUrl = null;
     var url = downloadItem.url || '';
-    if (url.indexOf(proxyUrl) === 0) return; // 跳过已代理下载
+    if (url.indexOf(proxyUrl) === 0) { console.log('[GH Proxy] already proxied, skip'); return; }
     
-  // 原始 GitHub 下载（含 codeload）
-  var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|codeload\.github\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
-  if (m) newUrl = proxyBase + '/' + m[1];
-  
-  // 已走代理双 https：https://任意域名/https://github.com/...
-  if (!newUrl) {
-    m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
+    var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|codeload\.github\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
     if (m) newUrl = proxyBase + '/' + m[1];
-  }
-  
-  // 已走代理单 https：https://任意域名/github.com/...
-  if (!newUrl) {
-    m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
-    if (m) newUrl = proxyBase + '/https://' + m[1];
-  }
-  
-  if (newUrl) {
-    newUrl = newUrl.replace(/([^:])\/\//, '$1/');
-      console.log('[GitHub Proxy] Intercepting:', url.substring(0,60), '->', newUrl.substring(0,60));
+    
+    if (!newUrl) {
+      m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
+      if (m) newUrl = proxyBase + '/' + m[1];
+    }
+    
+    if (!newUrl) {
+      m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
+      if (m) newUrl = proxyBase + '/https://' + m[1];
+    }
+    
+    if (newUrl) {
+      newUrl = newUrl.replace(/([^:])\/\//, '$1/');
+      console.log('[GH Proxy] Intercepting:', url.substring(0,60), '->', newUrl.substring(0,60));
       chrome.downloads.cancel(downloadItem.id, function() {
         if (chrome.runtime.lastError) {
-          console.log('[GitHub Proxy] Cancel failed:', chrome.runtime.lastError.message);
+          console.log('[GH Proxy] Cancel failed:', chrome.runtime.lastError.message);
           return;
         }
         chrome.downloads.download({ url: newUrl, conflictAction: 'overwrite' }, function(id) {
-          if (chrome.runtime.lastError) console.log('[GitHub Proxy] New download failed:', chrome.runtime.lastError.message);
-          else console.log('[GitHub Proxy] New download id:', id);
+          if (chrome.runtime.lastError) console.log('[GH Proxy] Download failed:', chrome.runtime.lastError.message);
+          else console.log('[GH Proxy] New download id:', id);
         });
       });
+    } else {
+      console.log('[GH Proxy] No match for:', url.substring(0,60));
     }
   });
 });
