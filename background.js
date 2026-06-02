@@ -367,6 +367,42 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
   }); // 关闭 storage.get 回调
 });
 
+// 备用：捕获 onCreated 可能遗漏的下载
+chrome.downloads.onChanged.addListener(function(delta) {
+  if (!delta.state || delta.state.current !== 'in_progress') return;
+  // 如果下载已经开始但未拦截，尝试取消并重定向
+  chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(st) {
+    if (!st.githubProxyEnabled || !st.githubProxyUrl) return;
+    chrome.downloads.search({ id: delta.id }, function(items) {
+      if (!items || !items[0]) return;
+      var item = items[0];
+      var url = item.url || '';
+      if (url.indexOf(st.githubProxyUrl) === 0) return; // 已代理
+      var proxyBase = st.githubProxyUrl.replace(/\/+$/, '');
+      var newUrl = null;
+      var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
+      if (m) newUrl = proxyBase + '/' + m[1];
+      if (!newUrl) {
+        m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+        if (m) newUrl = proxyBase + '/' + m[1];
+      }
+      if (!newUrl) {
+        m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+        if (m) newUrl = proxyBase + '/https://' + m[1];
+      }
+      if (newUrl && newUrl !== url) {
+        try {
+          chrome.downloads.cancel(delta.id, function() {
+            if (!chrome.runtime.lastError) {
+              chrome.downloads.download({ url: newUrl, filename: item.filename, conflictAction: 'overwrite' });
+            }
+          });
+        } catch(e) {}
+      }
+    });
+  });
+});
+
 // 来自 popup 的消息处理
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'checkUpdate') {
