@@ -2389,11 +2389,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       var enabled = ghToggle.checked;
       updateGhStatus(enabled);
       if (enabled && _ghSelected) {
-        browserAPI.storage.local.set({ githubProxyEnabled: true, _ghProxyForceSwitch: Date.now() });
+        browserAPI.storage.local.set({ githubProxyEnabled: true });
         browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
         updateDnr(_ghSelected);
       } else {
         browserAPI.storage.local.set({ githubProxyEnabled: false });
+        browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
       }
     });
   }
