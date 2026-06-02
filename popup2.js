@@ -2206,9 +2206,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       radio.addEventListener('change', function() {
         if (radio.checked) {
           _ghSelected = url;
-          browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true, _ghProxyForceSwitch: Date.now() });
-          // 直接更新 DNR 规则（绕过 background，确保即时生效）
-          updateDnrRules(url);
+          browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true });
+          // 只有开关开启时才激活代理
+          if (ghToggle && ghToggle.checked) {
+            browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
+          }
           // 更新折叠状态标签
           if (ghLabel) {
             var activeNode = url.replace('https://', '').replace(/\/$/, '');
