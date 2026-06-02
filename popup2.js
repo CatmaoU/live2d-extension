@@ -2208,7 +2208,6 @@ document.addEventListener('DOMContentLoaded', async () => {
           _ghSelected = url;
           browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true, _ghProxyForceSwitch: Date.now() });
           browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
-          updateDnr(url);
           // 更新折叠状态标签
           if (ghLabel) {
             var activeNode = url.replace('https://', '').replace(/\/$/, '');
@@ -2391,7 +2390,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (enabled && _ghSelected) {
         browserAPI.storage.local.set({ githubProxyEnabled: true });
         browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
-        updateDnr(_ghSelected);
       } else {
         browserAPI.storage.local.set({ githubProxyEnabled: false });
         browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
@@ -2439,28 +2437,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
   });
-
-  // 直接更新 DNR（绕过 background，确保即时生效）
-  function updateDnr(proxyUrl) {
-    console.log('[GH] updateDnr:', proxyUrl);
-    var dnr = chrome.declarativeNetRequest;
-    if (!dnr) { console.log('[GH] DNR N/A'); return; }
-    if (!proxyUrl) return;
-    var prefix = proxyUrl.replace(/\/+$/, '') + '/';
-    console.log('[GitHub Proxy] DNR prefix:', prefix);
-    dnr.updateDynamicRules({
-      removeRuleIds: [1001, 1002, 1003, 1004, 1005],
-      addRules: [
-        { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-        { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://codeload\\.github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-        { id: 1003, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-        { id: 1004, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-        { id: 1005, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
-      ]
-    }, function() {
-      if (chrome.runtime.lastError) alert('DNR Error: ' + chrome.runtime.lastError.message);
-    });
-  }
 
   // 刷新延迟
   if (ghRefreshBtn) ghRefreshBtn.addEventListener('click', testGhLatencies);
