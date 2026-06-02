@@ -2208,7 +2208,13 @@ document.addEventListener('DOMContentLoaded', async () => {
           _ghSelected = url;
           browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true });
           browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
+          // 更新折叠状态标签
+          if (ghLabel) {
+            var activeNode = url.replace('https://', '').replace(/\/$/, '');
+            ghLabel.textContent = '代理节点 (' + activeNode + ')';
+          }
           renderGhNodes();
+          updateGhSummary();
         }
       });
       row.appendChild(radio);
