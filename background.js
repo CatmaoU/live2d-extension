@@ -249,6 +249,9 @@ chrome.runtime.onInstalled.addListener(function() {
   setInterval(function() { checkForUpdate(function() {}); }, 21600000);
 });
 
+// 启动时清理任何残留的 DNR 规则
+try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){}); } catch(e){}
+
 // ========== GitHub 代理加速 ==========
 const GH_PROXY_RULE_PRIORITY = 1;
 const GH_PROXIES = [
