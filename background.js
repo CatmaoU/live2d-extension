@@ -313,7 +313,31 @@ function backgroundAutoPickFastest() {
 }
 
 // 启动时检查状态
-// 启动时清理之前残留的 DNR 规则（旧版本遗留）
+// ========== DNR 规则（轻量，仅匹配下载路径） ==========
+function updateDnr(proxyUrl) {
+  var prefix = (proxyUrl || '').replace(/\/+$/, '') + '/';
+  var id = 1001;
+  chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [1001, 1002],
+    addRules: [
+      // 已走代理单 https：https://任意域名/github.com/...
+      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      // 已走代理双 https：https://任意域名/https://github.com/...
+      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
+    ]
+  }, function() {
+    if (chrome.runtime.lastError) console.log('[DNR] Error:', chrome.runtime.lastError.message);
+  });
+}
+
+// storage 变化时同步 DNR
+chrome.storage.onChanged.addListener(function(changes, area) {
+  if (area === 'local' && changes.githubProxyUrl) {
+    updateDnr(changes.githubProxyUrl.newValue);
+  }
+});
+
+// 启动时清理旧规则 + 应用当前节点
 try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){}); } catch(e){}
 
 chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'], function(result) {
@@ -321,6 +345,8 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
     _ghProxyEnabled = true;
     _ghProxyUrl = result.githubProxyUrl || GH_PROXIES[2];
     if (result.ghProxyNodes) GH_PROXIES.length = 0; Array.prototype.push.apply(GH_PROXIES, result.ghProxyNodes);
+    // 应用 DNR 规则
+    if (_ghProxyUrl) updateDnr(_ghProxyUrl);
     // 启动 30 秒自动切换
     backgroundAutoPickFastest();
     setInterval(backgroundAutoPickFastest, 30000);
