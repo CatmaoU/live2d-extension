@@ -2397,6 +2397,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (enabled && _ghSelected) {
         browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
       } else {
+        browserAPI.storage.local.set({ githubProxyUrl: '' });
         browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
       }
     });
