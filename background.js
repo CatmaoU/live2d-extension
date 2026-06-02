@@ -206,7 +206,7 @@ chrome.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
       url: dataUrl,
       filename: filename,
       saveAs: false
-    }, function() { chrome.runtime.lastError; });
+    }, function() { (chrome || browser).runtime.lastError; });
     return;
   }
 });
@@ -314,8 +314,8 @@ function updateGhProxyRules(enabled, proxyUrl) {
       removeRuleIds: _ghRuleIds,
       addRules: rules
     }, function() {
-      if (chrome.runtime.lastError) {
-        console.log('[GitHub Proxy] Error adding rules:', chrome.runtime.lastError.message);
+      if ((chrome || browser).runtime.lastError) {
+        console.log('[GitHub Proxy] Error adding rules:', (chrome || browser).runtime.lastError.message);
       } else {
         console.log('[GitHub Proxy] Proxy enabled:', proxyUrl);
       }
@@ -443,7 +443,7 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
       console.log('[GH] Intercept:', url.substring(0,50), '->', newUrl.substring(0,50));
       try {
         chrome.downloads.cancel(downloadItem.id, function() {
-          if (!chrome.runtime.lastError) {
+          if (!(chrome || browser).runtime.lastError) {
             chrome.downloads.download({ url: newUrl, conflictAction: 'overwrite' });
           }
         });
@@ -467,7 +467,7 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
       console.log('[GH] Restore:', url.substring(0,50), '->', restoreUrl.substring(0,50));
       try {
         chrome.downloads.cancel(downloadItem.id, function() {
-          if (!chrome.runtime.lastError) {
+          if (!(chrome || browser).runtime.lastError) {
             chrome.downloads.download({ url: restoreUrl, conflictAction: 'overwrite' });
           }
         });
