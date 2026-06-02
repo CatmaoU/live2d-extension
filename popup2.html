@@ -292,6 +292,27 @@
     body.dark-theme .page-indicator {
       color:#888;
     }
+    .gh-node-row {
+      display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; margin-bottom:2px; cursor:pointer; font-size:12px;
+    }
+    .gh-node-row:hover {
+      background:rgba(102,126,234,0.06);
+    }
+    .gh-node-row.selected {
+      background:rgba(102,126,234,0.1);
+    }
+    body.dark-theme .gh-node-row {
+      color:#ddd;
+    }
+    body.dark-theme .gh-node-row.selected {
+      background:rgba(160,160,255,0.12);
+    }
+    .gh-node-label {
+      flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    }
+    body.dark-theme .gh-node-label {
+      color:#ddd;
+    }
   </style>
 </head>
 <body>

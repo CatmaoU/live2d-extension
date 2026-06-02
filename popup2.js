@@ -2194,8 +2194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     ghNodeListEl.innerHTML = '';
     _ghNodes.forEach(function(url, idx) {
       var row = document.createElement('div');
-      row.style.cssText = 'display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; margin-bottom:2px; cursor:pointer; font-size:12px;';
-      if (url === _ghSelected) row.style.background = 'rgba(102,126,234,0.1)';
+      row.className = 'gh-node-row' + (url === _ghSelected ? ' selected' : '');
       // 选中 radio
       var radio = document.createElement('input');
       radio.type = 'radio';
@@ -2213,8 +2212,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       row.appendChild(radio);
       // 地址显示
       var label = document.createElement('span');
+      label.className = 'gh-node-label';
       label.textContent = url.replace('https://', '').replace(/\/$/, '');
-      label.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
       row.appendChild(label);
       // 延迟标签
       var latency = document.createElement('span');
