@@ -2321,9 +2321,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     browserAPI.storage.local.set({ ghProxyExpanded: expanded });
     if (expanded) {
       if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
-      browserAPI.storage.local.set({ ghManualOverride: true });
     } else {
-      browserAPI.storage.local.set({ ghManualOverride: false });
       startGhAutoRefresh();
     }
   }
@@ -2383,11 +2381,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         var activeNode = _ghSelected.replace('https://', '').replace(/\/$/, '');
         ghLabel.textContent = '代理节点 (' + activeNode + ')';
       }
-      // 初始状态：如果处于折叠状态则清除手动标记，否则保持展开状态设置的手动标记
-      if (!_expanded) {
-        browserAPI.storage.local.set({ ghManualOverride: false });
-        startGhAutoRefresh();
-      }
+      // 折叠状态启动自动刷新
+      if (!_expanded) startGhAutoRefresh();
     });
     ghToggle.addEventListener('change', function() {
       var enabled = ghToggle.checked;
@@ -2466,7 +2461,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       _ghNodes = DEFAULT_GH_PROXIES.slice();
       _ghSelected = _ghNodes[0];
       saveGhNodes();
-      browserAPI.storage.local.set({ githubProxyUrl: _ghSelected });
+      browserAPI.storage.local.set({ githubProxyUrl: _ghSelected, ghManualOverride: false });
       browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
       renderGhNodes();
     });
