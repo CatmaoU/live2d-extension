@@ -373,6 +373,17 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     sendResponse({ ok: true });
     return true;
   }
+  if (request.action === 'testProxyLatency') {
+    var start = Date.now();
+    fetch(request.testUrl, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(8000) })
+      .then(function() {
+        sendResponse({ latency: Date.now() - start });
+      })
+      .catch(function() {
+        sendResponse({ latency: null });
+      });
+    return true;
+  }
 });
 
 console.log('[Live2D Background] Title fetching service worker started');

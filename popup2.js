@@ -2254,17 +2254,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!el) return;
       el.textContent = '测速中...';
       var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
-      var start = Date.now();
-      fetch(testUrl, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(8000) })
-        .then(function() {
-          var ms = Date.now() - start;
+      browserAPI.runtime.sendMessage({ action: 'testProxyLatency', proxyUrl: url, testUrl: testUrl }, function(resp) {
+        if (resp && resp.latency !== null) {
+          var ms = resp.latency;
           el.textContent = ms + 'ms';
           el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
-        })
-        .catch(function() {
+        } else {
           el.textContent = '超时';
           el.style.color = '#e06060';
-        });
+        }
+      });
     });
   }
 
