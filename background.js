@@ -467,21 +467,22 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyUrl = '';
     chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
     updateGhProxyRules(false);
-    // 获取并移除所有动态规则
+    // 清理所有动态 + session 规则
     if (chrome.declarativeNetRequest) {
       try {
         chrome.declarativeNetRequest.getDynamicRules(function(rules) {
           var ids = rules.map(function(r) { return r.id; });
-          console.log('[GH] Disable: found', ids.length, 'dynamic rules:', ids.join(','));
-          if (ids.length > 0) {
-            chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids }, function() {
-              console.log('[GH] DNR remove done, err:', chrome.runtime.lastError ? chrome.runtime.lastError.message : 'none');
-            });
-          }
+          console.log('[GH] Disable: dynamic rules:', ids.length, ids.join(','));
+          if (ids.length > 0) chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
         });
-      } catch(e) {
-        console.log('[GH] DNR exception:', e.message);
-      }
+      } catch(e) { console.log('[GH] DNR dyn exception:', e.message); }
+      try {
+        chrome.declarativeNetRequest.getSessionRules(function(rules) {
+          var ids = rules.map(function(r) { return r.id; });
+          console.log('[GH] Disable: session rules:', ids.length, ids.join(','));
+          if (ids.length > 0) chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids });
+        });
+      } catch(e) { console.log('[GH] DNR sess exception:', e.message); }
     } else {
       console.log('[GH] DNR API not available');
     }
