@@ -2257,13 +2257,15 @@ document.addEventListener('DOMContentLoaded', async () => {
   function updateGhSummary() {
     var summaryEl = document.getElementById('ghProxySummary');
     if (!summaryEl) return;
-    // 找到当前选中节点对应的延迟显示
     var idx = _ghNodes.indexOf(_ghSelected);
     if (idx < 0) { summaryEl.textContent = ''; return; }
     var el = document.getElementById('ghLat_' + idx);
     if (el && el.textContent && el.textContent !== '测速中...' && el.textContent !== '...') {
       summaryEl.textContent = el.textContent;
       summaryEl.style.color = el.style.color;
+    } else {
+      summaryEl.textContent = '测速中...';
+      summaryEl.style.color = '#999';
     }
   }
 
