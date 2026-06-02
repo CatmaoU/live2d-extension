@@ -467,12 +467,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyUrl = '';
     chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
     updateGhProxyRules(false);
-    // 额外清理：明确移除所有可能残留的规则
+    // 获取并移除所有动态规则（不论 ID）
     try {
-      chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010]
-      }, function() {
-        if (chrome.runtime.lastError) console.log('[GH] DNR cleanup error:', chrome.runtime.lastError.message);
+      chrome.declarativeNetRequest.getDynamicRules(function(rules) {
+        var ids = rules.map(function(r) { return r.id; });
+        if (ids.length > 0) {
+          chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids }, function() {
+            if (chrome.runtime.lastError) console.log('[GH] DNR cleanup error:', chrome.runtime.lastError.message);
+          });
+        }
       });
     } catch(e) {
       console.log('[GH] DNR cleanup exception:', e);
