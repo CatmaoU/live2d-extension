@@ -287,7 +287,7 @@ function pickFastestProxy() {
 function updateGhProxyRules(enabled, proxyUrl) {
   var ruleId = 1001;
   if (enabled && proxyUrl) {
-    var redirectUrl = proxyUrl.replace(/\/+$/, '') + '/https://github.com/';
+    var redirectUrl = proxyUrl.replace(/\/+$/, '') + '/';
     var rule = {
       id: ruleId,
       priority: GH_PROXY_RULE_PRIORITY,
@@ -296,7 +296,8 @@ function updateGhProxyRules(enabled, proxyUrl) {
         redirect: { regexSubstitution: redirectUrl + '\\1' }
       },
       condition: {
-        regexFilter: '^https://github\\.com/(.*)',
+        // 仅匹配下载路径（archive/release/raw/raw.githubusercontent），不拦截 GitHub 页面
+        regexFilter: '^(https://(raw\\.githubusercontent\\.com/.*|github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*))',
         resourceTypes: ['main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object', 'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket', 'other']
       }
     };
