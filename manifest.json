@@ -35,7 +35,8 @@
     "webNavigation",
     "tabs",
     "downloads",
-    "declarativeNetRequestWithHostAccess"
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback"
   ],
   "background": {
     "service_worker": "background.js"
