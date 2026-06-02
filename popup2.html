@@ -254,7 +254,7 @@
       color: #fff;
     }
     .page-nav {
-      display:flex; align-items:center; justify-content:center; gap:12px;
+      display:flex; align-items:center; justify-content:space-between;
       margin-top:16px; padding-top:12px; border-top:1px solid #e0e0e0;
       font-size:13px; color:#667eea;
     }
@@ -517,9 +517,9 @@
 
     <!-- 分页导航 -->
     <div class="page-nav" id="pageNav">
-      <button id="pagePrevBtn" disabled>&lt;</button>
+      <button id="pagePrevBtn" disabled style="flex-shrink:0;">&lt;</button>
       <span class="page-indicator" id="pageIndicator">1 / 2</span>
-      <button id="pageNextBtn">&gt;</button>
+      <button id="pageNextBtn" style="flex-shrink:0;">&gt;</button>
     </div>
 
   </div>
