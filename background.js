@@ -316,8 +316,8 @@ function backgroundAutoPickFastest() {
 // 启动时检查状态
 // ========== DNR 规则（轻量，仅匹配下载路径） ==========
 function updateDnr(proxyUrl) {
+  console.log('[DNR] updateDnr called with:', proxyUrl);
   var prefix = (proxyUrl || '').replace(/\/+$/, '') + '/';
-  var id = 1001;
   chrome.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [1001, 1002],
     addRules: [
