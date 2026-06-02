@@ -2254,17 +2254,27 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!el) return;
       el.textContent = '测速中...';
       var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
-      browserAPI.runtime.sendMessage({ action: 'testProxyLatency', proxyUrl: url, testUrl: testUrl }, function(resp) {
-        if (resp && resp.latency !== null) {
-          var kb = resp.speed || 0;
-          var speedStr = kb >= 1024 ? (kb/1024).toFixed(1) + 'MB/s' : kb + 'KB/s';
-          el.textContent = resp.latency + 'ms | ' + speedStr;
-          el.style.color = kb >= 500 ? '#4CAF50' : kb >= 100 ? '#FF9800' : '#e06060';
-        } else {
-          el.textContent = '超时';
-          el.style.color = '#e06060';
-        }
-      });
+      // 用 Image 对象测速（绕过 CORS，兼容所有代理）
+      var img = new Image();
+      var start = Date.now();
+      var timedOut = false;
+      var timer = setTimeout(function() { timedOut = true; img.src = ''; }, 8000);
+      img.onload = function() {
+        clearTimeout(timer);
+        if (timedOut) return;
+        var ms = Date.now() - start;
+        el.textContent = ms + 'ms';
+        el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
+      };
+      img.onerror = function() {
+        clearTimeout(timer);
+        if (timedOut) return;
+        // 即使 error 也说明连接通了（可能是非图片格式）
+        var ms = Date.now() - start;
+        el.textContent = ms + 'ms (连通)';
+        el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
+      };
+      img.src = testUrl;
     });
   }
 
