@@ -307,6 +307,7 @@ function backgroundAutoPickFastest() {
         console.log('[GitHub Proxy] Auto-switching to fastest:', best.proxy, Math.round(best.speed) + 'KB/s');
         _ghProxyUrl = best.proxy;
         chrome.storage.local.set({ githubProxyUrl: best.proxy });
+        updateDnr(best.proxy);
       }
     });
   }
