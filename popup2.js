@@ -2427,6 +2427,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // 监听 storage 变化（后台自动切换时同步 UI）
+  chrome.storage.onChanged.addListener(function(changes, area) {
+    if (area === 'local' && changes.githubProxyUrl) {
+      var newUrl = changes.githubProxyUrl.newValue;
+      if (newUrl && newUrl !== _ghSelected) {
+        _ghSelected = newUrl;
+        if (ghLabel) {
+          var n = newUrl.replace('https://', '').replace(/\/$/, '');
+          ghLabel.textContent = '代理节点 (' + n + ')';
+        }
+        renderGhNodes();
+        updateGhSummary();
+      }
+    }
+  });
+
   // 刷新延迟
   if (ghRefreshBtn) ghRefreshBtn.addEventListener('click', testGhLatencies);
 
