@@ -249,11 +249,117 @@ chrome.runtime.onInstalled.addListener(function() {
   setInterval(function() { checkForUpdate(function() {}); }, 21600000);
 });
 
-// 来自 popup 的更新检查请求
+// ========== GitHub 代理加速 ==========
+const GH_PROXY_RULE_PRIORITY = 1;
+const GH_PROXIES = [
+  'https://gh-proxy.org/',
+  'https://v4.gh-proxy.org/',
+  'https://v6.gh-proxy.org/',
+  'https://cdn.gh-proxy.org/'
+];
+let _ghProxyEnabled = false;
+let _ghProxyUrl = GH_PROXIES[2]; // 默认 v6
+
+// 测试代理速度
+function testProxySpeed(proxyUrl, timeout) {
+  timeout = timeout || 5000;
+  var testUrl = proxyUrl + 'https://raw.githubusercontent.com/';
+  var start = Date.now();
+  return fetch(testUrl, { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(timeout) })
+    .then(function() { return Date.now() - start; })
+    .catch(function() { return null; });
+}
+
+// 选择最快代理
+function pickFastestProxy() {
+  var results = [];
+  return Promise.all(GH_PROXIES.map(function(proxy) {
+    return testProxySpeed(proxy).then(function(latency) {
+      if (latency !== null) results.push({ proxy: proxy, latency: latency });
+    });
+  })).then(function() {
+    results.sort(function(a, b) { return a.latency - b.latency; });
+    return results.length > 0 ? results[0].proxy : GH_PROXIES[2];
+  });
+}
+
+// 更新 DNR 规则
+function updateGhProxyRules(enabled, proxyUrl) {
+  var ruleId = 1001;
+  if (enabled && proxyUrl) {
+    var redirectUrl = proxyUrl.replace(/\/+$/, '') + '/https://github.com/';
+    var rule = {
+      id: ruleId,
+      priority: GH_PROXY_RULE_PRIORITY,
+      action: {
+        type: 'redirect',
+        redirect: { regexSubstitution: redirectUrl + '\\1' }
+      },
+      condition: {
+        regexFilter: '^https://github\\.com/(.*)',
+        resourceTypes: ['main_frame', 'sub_frame', 'stylesheet', 'script', 'image', 'font', 'object', 'xmlhttprequest', 'ping', 'csp_report', 'media', 'websocket', 'other']
+      }
+    };
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [ruleId],
+      addRules: [rule]
+    }, function() {
+      if (chrome.runtime.lastError) {
+        console.log('[GitHub Proxy] Error adding rule:', chrome.runtime.lastError.message);
+      } else {
+        console.log('[GitHub Proxy] Proxy enabled:', proxyUrl);
+      }
+    });
+  } else {
+    chrome.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [ruleId]
+    }, function() {
+      console.log('[GitHub Proxy] Proxy disabled');
+    });
+  }
+}
+
+// 监听 GitHub 代理开关
+chrome.storage.onChanged.addListener(function(changes, area) {
+  if (area === 'local' && changes.githubProxyEnabled !== undefined) {
+    _ghProxyEnabled = changes.githubProxyEnabled.newValue;
+    if (_ghProxyEnabled) {
+      pickFastestProxy().then(function(bestUrl) {
+        _ghProxyUrl = bestUrl;
+        updateGhProxyRules(true, bestUrl);
+      });
+    } else {
+      updateGhProxyRules(false);
+    }
+  }
+  if (area === 'local' && changes.githubProxyUrl !== undefined) {
+    _ghProxyUrl = changes.githubProxyUrl.newValue;
+    if (_ghProxyEnabled) {
+      updateGhProxyRules(true, _ghProxyUrl);
+    }
+  }
+});
+
+// 启动时检查状态
+chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(result) {
+  if (result.githubProxyEnabled) {
+    _ghProxyEnabled = true;
+    _ghProxyUrl = result.githubProxyUrl || GH_PROXIES[2];
+    updateGhProxyRules(true, _ghProxyUrl);
+  }
+});
+
+// 来自 popup 的消息处理
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'checkUpdate') {
     checkForUpdate(function(info) {
       sendResponse(info || { version: chrome.runtime.getManifest().version, upToDate: true });
+    });
+    return true;
+  }
+  if (request.action === 'testGhProxySpeed') {
+    pickFastestProxy().then(function(bestUrl) {
+      sendResponse({ proxy: bestUrl });
     });
     return true;
   }

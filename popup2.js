@@ -2157,6 +2157,39 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // ========== GitHub 代理加速 ==========
+  var ghToggle = document.getElementById('githubProxyToggle');
+  var ghStatus = document.getElementById('githubProxyStatus');
+  if (ghToggle) {
+    // 读取当前状态
+    browserAPI.storage.local.get(['githubProxyEnabled'], function(r) {
+      ghToggle.checked = !!r.githubProxyEnabled;
+      updateGhStatus(ghToggle.checked);
+    });
+    ghToggle.addEventListener('change', function() {
+      var enabled = ghToggle.checked;
+      browserAPI.storage.local.set({ githubProxyEnabled: enabled });
+      updateGhStatus(enabled);
+      if (enabled) {
+        // 测速选择最快节点
+        ghStatus.textContent = '正在测速选择最快节点...';
+        browserAPI.runtime.sendMessage({ action: 'testGhProxySpeed' }, function(resp) {
+          if (resp && resp.proxy) {
+            browserAPI.storage.local.set({ githubProxyUrl: resp.proxy });
+            ghStatus.textContent = '已启用 · 节点: ' + resp.proxy.replace('https://', '').replace('/', '');
+          } else {
+            ghStatus.textContent = '已启用 · 使用默认节点';
+          }
+        });
+      }
+    });
+  }
+  function updateGhStatus(enabled) {
+    if (!ghStatus) return;
+    ghStatus.textContent = enabled ? '已启用' : '已关闭';
+    ghStatus.style.color = enabled ? '#4CAF50' : '#888';
+  }
+
   // ========== 分页导航 ==========
   (function() {
     var page1 = document.getElementById('page1');

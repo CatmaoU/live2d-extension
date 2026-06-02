@@ -34,7 +34,9 @@
     "activeTab",
     "webNavigation",
     "tabs",
-    "downloads"
+    "downloads",
+    "declarativeNetRequest",
+    "declarativeNetRequestFeedback"
   ],
   "background": {
     "service_worker": "background.js"
@@ -56,6 +58,11 @@
     "https://api.minimax.chat/*",
     "https://ai.zkmjnic.tech/*",
     "https://raw.githubusercontent.com/*",
+    "https://github.com/*",
+    "https://gh-proxy.org/*",
+    "https://v4.gh-proxy.org/*",
+    "https://v6.gh-proxy.org/*",
+    "https://cdn.gh-proxy.org/*",
     "https://gitee.com/*",
     "https://cdn.jsdelivr.net/*",
     "https://raw.fastgit.org/*",
