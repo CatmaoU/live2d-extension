@@ -59,6 +59,7 @@
     "https://ai.zkmjnic.tech/*",
     "https://raw.githubusercontent.com/*",
     "https://github.com/*",
+    https://gh.api.99988866.xyz/*
     "https://gh-proxy.org/*",
     "https://v4.gh-proxy.org/*",
     "https://v6.gh-proxy.org/*",
@@ -97,7 +98,7 @@
     }
   ],
   "content_security_policy": {
-    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'self'; img-src 'self' https: data:; connect-src 'self' https://v1.hitokoto.cn https://api.deepseek.com https://api.siliconflow.cn https://api.univibe.cc https://api.longcat.chat https://dashscope.aliyuncs.com https://hunyuan.cloud.tencent.com https://tokenhub.tencentmaas.com https://qianfan.baidubce.com https://ark.cn-beijing.volces.com https://spark-api.xf-yun.com https://open.bigmodel.cn https://api.moonshot.cn https://api.minimax.chat https://ai.zkmjnic.tech https://raw.githubusercontent.com https://gitee.com https://cdn.jsdelivr.net https://raw.fastgit.org https://api.github.com https://api.duckduckgo.com https://gh-proxy.org https://v4.gh-proxy.org https://v6.gh-proxy.org https://cdn.gh-proxy.org http://localhost:*"
+    "extension_pages": "script-src 'self'; style-src 'self' 'unsafe-inline'; object-src 'self'; img-src 'self' https: data:; connect-src 'self' https://v1.hitokoto.cn https://api.deepseek.com https://api.siliconflow.cn https://api.univibe.cc https://api.longcat.chat https://dashscope.aliyuncs.com https://hunyuan.cloud.tencent.com https://tokenhub.tencentmaas.com https://qianfan.baidubce.com https://ark.cn-beijing.volces.com https://spark-api.xf-yun.com https://open.bigmodel.cn https://api.moonshot.cn https://api.minimax.chat https://ai.zkmjnic.tech https://raw.githubusercontent.com https://gitee.com https://cdn.jsdelivr.net https://raw.fastgit.org https://api.github.com https://api.duckduckgo.com https://gh.api.99988866.xyz https://gh-proxy.org https://v4.gh-proxy.org https://v6.gh-proxy.org https://cdn.gh-proxy.org http://localhost:*"
   },
   "browser_specific_settings": {
       "gecko": {
