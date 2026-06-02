@@ -2207,8 +2207,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (radio.checked) {
           _ghSelected = url;
           browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true, _ghProxyForceSwitch: Date.now() });
-          // 直接更新 DNR 规则（绕过 background，确保即时生效）
-          updateDnrRules(url);
           // 更新折叠状态标签
           if (ghLabel) {
             var activeNode = url.replace('https://', '').replace(/\/$/, '');
@@ -2395,7 +2393,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateGhStatus(enabled);
       if (enabled && _ghSelected) {
         browserAPI.storage.local.set({ githubProxyEnabled: true, _ghProxyForceSwitch: Date.now() });
-        updateDnrRules(_ghSelected);
       } else {
         browserAPI.storage.local.set({ githubProxyEnabled: false });
       }
@@ -2456,43 +2453,6 @@ document.addEventListener('DOMContentLoaded', async () => {
       browserAPI.storage.local.set({ githubProxyUrl: _ghSelected });
       browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
       renderGhNodes();
-    });
-  }
-
-  // 直接更新 DNR 规则
-  function updateDnrRules(proxyUrl) {
-    if (!proxyUrl || !chrome.declarativeNetRequest) {
-      console.log('[GitHub Proxy] DNR not available');
-      return;
-    }
-    var prefix = proxyUrl.replace(/\/+$/, '') + '/';
-    var rules = [
-      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-      { id: 1003, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-      { id: 1004, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-      // 通用匹配：任意代理格式，用简单 regex
-      { id: 1009, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-      { id: 1010, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
-    ];
-    var allIds = [1001, 1002, 1003, 1004, 1009, 1010];
-    chrome.declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: allIds,
-      addRules: rules
-    }, function() {
-      if (chrome.runtime.lastError) {
-        console.log('[GitHub Proxy] DNR update error:', chrome.runtime.lastError.message);
-        alert('DNR Error: ' + chrome.runtime.lastError.message);
-      } else {
-        console.log('[GitHub Proxy] DNR rules updated successfully');
-      }
-    });
-    // 验证规则是否已添加
-    chrome.declarativeNetRequest.getDynamicRules(function(rules) {
-      console.log('[GitHub Proxy] Active dynamic rules:', rules.length);
-      rules.forEach(function(r) {
-        console.log('  Rule ' + r.id + ':', r.condition.regexFilter.substring(0, 60));
-      });
     });
   }
 
