@@ -253,31 +253,36 @@
     body.dark-theme a:hover {
       color: #fff;
     }
-    /* 分页两侧箭头 - 固定在窗口左右，悬停显示 */
-    .page-arrow {
-      position:fixed; top:50%; transform:translateY(-50%);
-      background:rgba(102,126,234,0.15); border:1px solid rgba(102,126,234,0.4);
-      border-radius:50%; width:36px; height:36px;
-      cursor:pointer; font-size:16px; color:#667eea;
+    /* 分页两侧 - 整条可点击区域，悬停显示箭头 */
+    .page-side {
+      position:fixed; top:0; bottom:0; width:44px;
+      z-index:999; cursor:pointer;
       display:flex; align-items:center; justify-content:center;
-      z-index:999; transition:all 0.2s;
-      opacity:0; pointer-events:none;
+      opacity:0; transition:opacity 0.2s;
     }
-    .page-arrow:hover {
+    .container:hover .page-side {
+      opacity:1;
+    }
+    .page-side-left { left:0; }
+    .page-side-right { right:0; }
+    .page-side::before {
+      content:''; display:block;
+      width:32px; height:32px; border-radius:50%;
+      background:rgba(102,126,234,0.12); border:1px solid rgba(102,126,234,0.35);
+      color:#667eea; font-size:16px; line-height:32px; text-align:center;
+      transition:all 0.2s;
+    }
+    .page-side-left::before { content:'<'; }
+    .page-side-right::before { content:'>'; }
+    .page-side:hover::before {
       background:rgba(102,126,234,0.3);
     }
-    .page-arrow:disabled {
-      opacity:0 !important;
-      pointer-events:none !important;
-    }
-    .page-arrow-left { left:4px; }
-    .page-arrow-right { right:4px; }
-    .container:hover .page-arrow {
-      opacity:1; pointer-events:auto;
+    .page-side:disabled, .page-side[disabled] {
+      opacity:0 !important; pointer-events:none !important;
     }
     .page-indicator {
       position:fixed; left:50%; bottom:12px; transform:translateX(-50%);
-      font-size:12px; color:#999; z-index:999; pointer-events:none;
+      font-size:12px; color:#999; z-index:998; pointer-events:none;
     }
     body.dark-theme .page-indicator {
       color:#888;
@@ -517,10 +522,10 @@
     </div>
     </div><!-- page2 end -->
 
-    <!-- 分页导航 - 两侧箭头 -->
-    <button id="pagePrevBtn" class="page-arrow page-arrow-left" disabled>&lt;</button>
+    <!-- 分页导航 - 两侧可点击区域 -->
+    <div id="pagePrevBtn" class="page-side page-side-left" disabled></div>
     <span class="page-indicator" id="pageIndicator">1 / 2</span>
-    <button id="pageNextBtn" class="page-arrow page-arrow-right">&gt;</button>
+    <div id="pageNextBtn" class="page-side page-side-right"></div>
 
   </div>
   <script src="popup2.js"></script>

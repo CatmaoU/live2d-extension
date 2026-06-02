@@ -2169,8 +2169,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       currentPage = num;
       if (page1) page1.style.display = num === 1 ? 'block' : 'none';
       if (page2) page2.style.display = num === 2 ? 'block' : 'none';
-      if (pagePrev) pagePrev.disabled = num === 1;
-      if (pageNext) pageNext.disabled = num === 2;
+      if (pagePrev) {
+        if (num === 1) pagePrev.setAttribute('disabled', '');
+        else pagePrev.removeAttribute('disabled');
+      }
+      if (pageNext) {
+        if (num === 2) pageNext.setAttribute('disabled', '');
+        else pageNext.removeAttribute('disabled');
+      }
       if (pageIndicator) pageIndicator.textContent = num + ' / 2';
     }
     if (pagePrev) pagePrev.addEventListener('click', function() { if (currentPage > 1) showPage(currentPage - 1); });
