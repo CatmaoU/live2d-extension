@@ -257,17 +257,7 @@ const GH_PROXIES = [
   'https://cdn.gh-proxy.org/'
 ];
 let _ghProxyEnabled = false;
-let _ghProxyUrl = GH_PROXIES[2]; // 默认 v6
-
-// 监听 GitHub 代理开关（仅同步状态，不再下发 DNR）
-chrome.storage.onChanged.addListener(function(changes, area) {
-  if (area === 'local' && changes.githubProxyEnabled !== undefined) {
-    _ghProxyEnabled = changes.githubProxyEnabled.newValue;
-  }
-  if (area === 'local' && changes.githubProxyUrl !== undefined) {
-    _ghProxyUrl = changes.githubProxyUrl.newValue;
-  }
-});
+let _ghProxyUrl = GH_PROXIES[2];
 
 // 后台 30 秒自动测速 + 切换到最快节点
 function backgroundAutoPickFastest() {
@@ -331,13 +321,6 @@ function updateDnr(proxyUrl) {
   });
 }
 
-// storage 变化时同步 DNR
-chrome.storage.onChanged.addListener(function(changes, area) {
-  if (area === 'local' && changes.githubProxyUrl) {
-    updateDnr(changes.githubProxyUrl.newValue);
-  }
-});
-
 // 启动时清理旧规则 + 应用当前节点
 try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){}); } catch(e){}
 
@@ -396,7 +379,7 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
   });
 });
 
-// 备用：捕获 onCreated 可能遗漏的下载
+// 备用：onChanged 拦截
 chrome.downloads.onChanged.addListener(function(delta) {
   if (!delta.state || delta.state.current !== 'in_progress') return;
   // 如果下载已经开始但未拦截，尝试取消并重定向
