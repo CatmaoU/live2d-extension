@@ -471,14 +471,19 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     try {
       chrome.declarativeNetRequest.getDynamicRules(function(rules) {
         var ids = rules.map(function(r) { return r.id; });
+        console.log('[GH] Disable: found', ids.length, 'dynamic rules:', ids.join(','));
         if (ids.length > 0) {
           chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids }, function() {
-            if (chrome.runtime.lastError) console.log('[GH] DNR cleanup error:', chrome.runtime.lastError.message);
+            if (chrome.runtime.lastError) {
+              console.log('[GH] DNR remove error:', chrome.runtime.lastError.message);
+            } else {
+              console.log('[GH] All DNR rules removed successfully');
+            }
           });
         }
       });
     } catch(e) {
-      console.log('[GH] DNR cleanup exception:', e);
+      console.log('[GH] DNR get/remove exception:', e.message);
     }
     sendResponse({ ok: true });
     return true;
