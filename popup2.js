@@ -2444,9 +2444,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 直接更新 DNR（绕过 background，确保即时生效）
   function updateDnr(proxyUrl) {
-    if (!proxyUrl || !chrome.declarativeNetRequest) return;
+    var dnr = chrome.declarativeNetRequest || (typeof browser !== 'undefined' && browser.declarativeNetRequest);
+    if (!proxyUrl || !dnr) return;
     var prefix = proxyUrl.replace(/\/+$/, '') + '/';
-    chrome.declarativeNetRequest.updateDynamicRules({
+    dnr.updateDynamicRules({
       removeRuleIds: [1001, 1002],
       addRules: [
         { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
