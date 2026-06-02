@@ -2253,9 +2253,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       var el = document.getElementById('ghLat_' + idx);
       if (!el) return;
       el.textContent = '测速中...';
-      var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/';
+      var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
       var start = Date.now();
-      fetch(testUrl, { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(5000) })
+      fetch(testUrl, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(8000) })
         .then(function() {
           var ms = Date.now() - start;
           el.textContent = ms + 'ms';
