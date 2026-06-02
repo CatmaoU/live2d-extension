@@ -266,16 +266,22 @@
     .page-side-left { left:0; }
     .page-side-right { right:0; }
     .page-side::before {
-      content:''; display:block;
-      width:32px; height:32px; border-radius:50%;
-      background:rgba(102,126,234,0.12); border:1px solid rgba(102,126,234,0.35);
-      color:#667eea; font-size:16px; line-height:32px; text-align:center;
+      content:''; display:flex;
+      align-items:center; justify-content:center;
+      width:100%; height:80px;
+      border-radius:0 8px 8px 0;
+      background:rgba(102,126,234,0.08);
+      color:#667eea; font-size:18px; font-weight:bold;
       transition:all 0.2s;
+      letter-spacing:2px;
     }
-    .page-side-left::before { content:'<'; }
-    .page-side-right::before { content:'>'; }
+    .page-side-right::before {
+      border-radius:8px 0 0 8px;
+    }
+    .page-side-left::before { content:'‹ 上一页'; }
+    .page-side-right::before { content:'下一页 ›'; }
     .page-side:hover::before {
-      background:rgba(102,126,234,0.3);
+      background:rgba(102,126,234,0.2);
     }
     .page-side:disabled, .page-side[disabled] {
       opacity:0 !important; pointer-events:none !important;
