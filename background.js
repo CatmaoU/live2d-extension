@@ -250,7 +250,9 @@ chrome.runtime.onInstalled.addListener(function() {
 });
 
 // 启动时清理任何残留的 DNR 规则
-try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){}); } catch(e){}
+try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){
+  if (chrome.runtime.lastError) console.log('[GH] Startup DNR cleanup error:', chrome.runtime.lastError.message);
+}); } catch(e){ console.log('[GH] Startup DNR cleanup exception:', e); }
 
 // ========== GitHub 代理加速 ==========
 const GH_PROXY_RULE_PRIORITY = 1;
@@ -464,6 +466,16 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyEnabled = false;
     chrome.storage.local.set({ githubProxyEnabled: false });
     updateGhProxyRules(false);
+    // 额外清理：明确移除所有可能残留的规则
+    try {
+      chrome.declarativeNetRequest.updateDynamicRules({
+        removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010]
+      }, function() {
+        if (chrome.runtime.lastError) console.log('[GH] DNR cleanup error:', chrome.runtime.lastError.message);
+      });
+    } catch(e) {
+      console.log('[GH] DNR cleanup exception:', e);
+    }
     sendResponse({ ok: true });
     return true;
   }
