@@ -314,17 +314,19 @@ function backgroundAutoPickFastest() {
 }
 
 // 启动时检查状态
-// ========== DNR 规则（轻量，仅匹配下载路径） ==========
+// ========== DNR 规则 ==========
 function updateDnr(proxyUrl) {
   console.log('[DNR] updateDnr called with:', proxyUrl);
   var prefix = (proxyUrl || '').replace(/\/+$/, '') + '/';
   chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [1001, 1002],
+    removeRuleIds: [1001, 1002, 1003],
     addRules: [
+      // 原始 GitHub 下载链接
+      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://(raw\\.githubusercontent\\.com/|codeload\\.github\\.com/|github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/)).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
       // 已走代理单 https：https://任意域名/github.com/...
-      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/|codeload\\.github\\.com/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/|codeload\\.github\\.com/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
       // 已走代理双 https：https://任意域名/https://github.com/...
-      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/|codeload\\.github\\.com/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
+      { id: 1003, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/|codeload\\.github\\.com/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
     ]
   }, function() {
     if (chrome.runtime.lastError) console.log('[DNR] Error:', chrome.runtime.lastError.message);
