@@ -2175,9 +2175,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   var _ghSelected = '';
 
   function loadGhNodes(callback) {
-    browserAPI.storage.local.get(['ghProxyNodes', 'ghProxyUrl', 'githubProxyEnabled', 'ghProxyExpanded'], function(r) {
+    browserAPI.storage.local.get(['ghProxyNodes', 'githubProxyUrl', 'githubProxyEnabled', 'ghProxyExpanded'], function(r) {
       _ghNodes = r.ghProxyNodes || DEFAULT_GH_PROXIES.slice();
-      _ghSelected = r.ghProxyUrl || _ghNodes[0] || '';
+      _ghSelected = r.githubProxyUrl || _ghNodes[0] || '';
       if (ghToggle) ghToggle.checked = !!r.githubProxyEnabled;
       updateGhStatus(!!r.githubProxyEnabled);
       renderGhNodes();
