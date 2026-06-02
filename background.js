@@ -400,6 +400,40 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
   }
 });
 
+// ========== GitHub 代理拦截下载 ==========
+// 监听下载请求，通过 chrome.downloads API 实现（替代 DNR）
+chrome.downloads.onCreated.addListener(function(downloadItem) {
+  if (!_ghProxyEnabled || !_ghProxyUrl) return;
+  var url = downloadItem.url || '';
+  // 检查是否是需要代理的 GitHub URL
+  var match = url.match(/^https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/))/);
+  if (match) {
+    // 原始 GitHub 下载
+    chrome.downloads.cancel(downloadItem.id, function() {
+      var proxyUrl = _ghProxyUrl.replace(/\/+$/, '') + '/' + url;
+      chrome.downloads.download({ url: proxyUrl });
+    });
+    return;
+  }
+  // 已走代理的格式：https://任意域名/https://github.com/...
+  var proxyMatch = url.match(/^https:\/\/[^\/]+\/https:\/\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+  if (proxyMatch) {
+    chrome.downloads.cancel(downloadItem.id, function() {
+      var proxyUrl = _ghProxyUrl.replace(/\/+$/, '') + '/https://' + proxyMatch[1];
+      chrome.downloads.download({ url: proxyUrl });
+    });
+    return;
+  }
+  // 单 https 格式：https://任意域名/github.com/...
+  var singleMatch = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+  if (singleMatch) {
+    chrome.downloads.cancel(downloadItem.id, function() {
+      var proxyUrl = _ghProxyUrl.replace(/\/+$/, '') + '/https://' + singleMatch[1];
+      chrome.downloads.download({ url: proxyUrl });
+    });
+  }
+});
+
 // 来自 popup 的消息处理
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'checkUpdate') {

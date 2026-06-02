@@ -107,7 +107,7 @@
         "strict_min_version": "109.0"
       }
     },
-    "chrome_url_overrides": {
+"chrome_url_overrides": {
       "newtab": "lemon-tab/index.html"
     }
   }
