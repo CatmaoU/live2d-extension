@@ -250,7 +250,7 @@ chrome.runtime.onInstalled.addListener(function() {
 });
 
 // 启动时清理任何残留的 DNR 规则
-try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){
+try { _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010] }, function(){
   if (chrome.runtime.lastError) console.log('[GH] Startup DNR cleanup error:', chrome.runtime.lastError.message);
 }); } catch(e){ console.log('[GH] Startup DNR cleanup exception:', e); }
 
@@ -290,7 +290,10 @@ function pickFastestProxy() {
 
 // 更新 DNR 规则
 var _ghRuleIds = [1001, 1002, 1003, 1004, 1009, 1010];
+var _dnr = (typeof chrome !== 'undefined' && chrome.declarativeNetRequest) ? chrome : (typeof browser !== 'undefined' && browser.declarativeNetRequest ? browser : null);
+
 function updateGhProxyRules(enabled, proxyUrl) {
+  if (!_dnr) { console.log('[GH] DNR not available'); return; }
   var prefix = (proxyUrl || '').replace(/\/+$/, '') + '/';
   if (enabled && proxyUrl) {
     var rules = [
@@ -304,7 +307,7 @@ function updateGhProxyRules(enabled, proxyUrl) {
       // 兼容单 https 格式：https://proxy/github.com/...
       { id: 1010, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
     ];
-    chrome.declarativeNetRequest.updateDynamicRules({
+    _dnr.declarativeNetRequest.updateDynamicRules({
       removeRuleIds: _ghRuleIds,
       addRules: rules
     }, function() {
@@ -315,7 +318,7 @@ function updateGhProxyRules(enabled, proxyUrl) {
       }
     });
   } else {
-    chrome.declarativeNetRequest.updateDynamicRules({
+    _dnr.declarativeNetRequest.updateDynamicRules({
       removeRuleIds: _ghRuleIds
     }, function() {
       console.log('[GitHub Proxy] Proxy disabled');
@@ -493,7 +496,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
     // 直接替换为回源规则（移除旧规则 + 添加还原规则）
     try {
-      chrome.declarativeNetRequest.updateDynamicRules({
+      _dnr.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010],
         addRules: [
           { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
@@ -502,23 +505,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       });
     } catch(e){}
     // 清理所有动态 + session 规则
-      chrome.declarativeNetRequest.getDynamicRules(function(rules) {
+      _dnr.declarativeNetRequest.getDynamicRules(function(rules) {
         var ids = rules.map(function(r) { return r.id; });
         if (ids.length > 0) {
-          chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
+          _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: ids });
         }
       });
-      chrome.declarativeNetRequest.getSessionRules(function(rules) {
+      _dnr.declarativeNetRequest.getSessionRules(function(rules) {
         var ids = rules.map(function(r) { return r.id; });
         if (ids.length > 0) {
-          chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids });
+          _dnr.declarativeNetRequest.updateSessionRules({ removeRuleIds: ids });
         }
       });
     }
     // 用简单 removal 做最后保障（移除所有已知 ID）
     var allIds = [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010];
-    try { chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: allIds }); } catch(e){}
-    try { chrome.declarativeNetRequest.updateSessionRules({ removeRuleIds: allIds }); } catch(e){}
+    try { _dnr.declarativeNetRequest.updateDynamicRules({ removeRuleIds: allIds }); } catch(e){}
+    try { _dnr.declarativeNetRequest.updateSessionRules({ removeRuleIds: allIds }); } catch(e){}
     sendResponse({ ok: true });
     return true;
   }
