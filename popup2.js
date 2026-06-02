@@ -2370,6 +2370,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         var activeNode = _ghSelected.replace('https://', '').replace(/\/$/, '');
         ghLabel.textContent = '代理节点 (' + activeNode + ')';
       }
+      // 启动时如果处于折叠状态（默认），清除手动标记
+      browserAPI.storage.local.set({ ghManualOverride: false });
       // 折叠时启动 2 秒自动刷新
       startGhAutoRefresh();
     });
