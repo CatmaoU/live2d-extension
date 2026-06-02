@@ -330,7 +330,8 @@ chrome.storage.onChanged.addListener(function(changes, area) {
     if (_ghProxyEnabled) {
       updateGhProxyRules(true, _ghProxyUrl || GH_PROXIES[2]);
     } else {
-      updateGhProxyRules(false);
+      // 不再调用 updateGhProxyRules(false)，避免移除回源规则
+      // 由 disableGhProxy message handler 负责回源规则
     }
   }
   if (area === 'local' && (changes.githubProxyUrl !== undefined || changes._ghProxyForceSwitch !== undefined)) {
@@ -489,8 +490,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyEnabled = false;
     _ghProxyUrl = '';
     chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
-    updateGhProxyRules(false);
-    // 用空规则覆盖（直接跳转到原 URL，等价于关闭代理）
+    // 直接替换为回源规则（移除旧规则 + 添加还原规则）
     try {
       chrome.declarativeNetRequest.updateDynamicRules({
         removeRuleIds: [1001,1002,1003,1004,1005,1006,1007,1008,1009,1010],
