@@ -321,6 +321,12 @@
     // 防止重复应用样式的标志
     var isApplyingStyles = false;
     
+    // 监听 waifu 元素变化 + 调度器，确保样式始终覆盖
+    window.addEventListener('live2d-waifu-ready', function() {
+        console.log('[Live2D NewTab] live2d-waifu-ready event received');
+        applyCustomStyles();
+    });
+    
     // 简单的样式应用调度器 - 延迟调用几次确保样式生效
     function setupStyleObserver() {
         console.log('[Live2D NewTab] Setting up style scheduler');

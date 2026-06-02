@@ -1663,6 +1663,8 @@
                     </div>\
                 ');
             });
+            // 通知外部 waifu 容器已创建（供 newtab-inject 等覆盖样式）
+            try { window.dispatchEvent(new CustomEvent('live2d-waifu-ready', { detail: { position: position } })); } catch(exx) {}
             
             console.log('[Live2D Cubism3] Position:', position);
 
