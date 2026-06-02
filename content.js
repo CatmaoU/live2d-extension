@@ -218,19 +218,16 @@
             }
             sendResponse({ success: true });
         } else if (message.type === 'updatePosition') {
-            // 更新 localStorage 中的 position 值
             var settingsData = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
             settingsData.position = message.position;
-            // 位置改变时清除拖拽位置
             delete settingsData.draggedLeft;
             delete settingsData.draggedTop;
-            // 重置原始位置标记
             delete settingsData.originalIsTopPosition;
             localStorage.setItem('live2dExtensionSettings', JSON.stringify(settingsData));
             console.log('[Live2D] Position updated to:', message.position);
-            
-            // 应用自定义样式
             applyCustomStyles();
+            // 通知 Cubism3 更新位置
+            window.dispatchEvent(new CustomEvent('live2d-update-position', { detail: { position: message.position } }));
             sendResponse({ success: true });
         } else if (message.type === 'updateModelSize') {
                 // 更新 localStorage 中的 size 值

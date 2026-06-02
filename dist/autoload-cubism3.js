@@ -4038,6 +4038,32 @@
         }
     });
 
+    // 监听位置更新事件（不重建容器，只更新样式）
+    window.addEventListener('live2d-update-position', function(e) {
+        if (!e.detail || !e.detail.position) return;
+        var pos = e.detail.position;
+        if (pos === 'all') return;
+        var waifu = document.getElementById('waifu');
+        if (!waifu) return;
+        var cfg = {
+            'left-bottom': { l:0, b:0 },
+            'right-bottom': { r:0, b:0 },
+            'left-top': { l:0, t:35 },
+            'right-top': { r:0, t:35 },
+            'center': { l:'50%', t:'50%', tr:'translate(-50%,-50%)' },
+            'top-center': { l:'50%', t:35, tr:'translateX(-50%)' },
+            'bottom-center': { l:'50%', b:0, tr:'translateX(-50%)' },
+            'left-center': { l:0, t:'50%', tr:'translateY(-50%)' },
+            'right-center': { r:0, t:'50%', tr:'translateY(-50%)' }
+        };
+        var p = cfg[pos] || cfg['left-bottom'];
+        waifu.style.left = p.l !== undefined ? (typeof p.l === 'string' ? p.l : p.l + 'px') : 'auto';
+        waifu.style.right = p.r !== undefined ? (typeof p.r === 'string' ? p.r : p.r + 'px') : 'auto';
+        waifu.style.top = p.t !== undefined ? (typeof p.t === 'string' ? p.t : p.t + 'px') : 'auto';
+        waifu.style.bottom = p.b !== undefined ? (typeof p.b === 'string' ? p.b : p.b + 'px') : 'auto';
+        waifu.style.transform = p.tr || 'none';
+    });
+
     console.log('[Live2D Cubism3] Page visibility memory optimization enabled');
     
     if (document.readyState === 'loading') {

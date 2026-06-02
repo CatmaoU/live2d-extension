@@ -875,7 +875,13 @@
             updateSakanaWidgetPosition(x, y);
         }
         
-        // 监听重置标记 - 只有点击"重置位置"按钮时才会设置这个标记
+        // 位置变化时重新应用样式
+        if (changes.position) {
+            console.log('[Live2D NewTab] Position changed, reapplying styles');
+            applyCustomStyles();
+        }
+        
+        // 监听重置标记
         if (changes.sakanaWidgetPositionReset !== undefined && changes.sakanaWidgetPositionReset.newValue === true) {
             updateSakanaWidgetPosition(20, 20);
             // 清除重置标记
