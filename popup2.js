@@ -2175,12 +2175,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   var _ghSelected = '';
 
   function loadGhNodes(callback) {
-    browserAPI.storage.local.get(['ghProxyNodes', 'ghProxyUrl', 'githubProxyEnabled'], function(r) {
+    browserAPI.storage.local.get(['ghProxyNodes', 'ghProxyUrl', 'githubProxyEnabled', 'ghProxyExpanded'], function(r) {
       _ghNodes = r.ghProxyNodes || DEFAULT_GH_PROXIES.slice();
       _ghSelected = r.ghProxyUrl || _ghNodes[0] || '';
       if (ghToggle) ghToggle.checked = !!r.githubProxyEnabled;
       updateGhStatus(!!r.githubProxyEnabled);
       renderGhNodes();
+      // 恢复展开/折叠状态
+      if (r.ghProxyExpanded) setGhExpanded(true);
       if (callback) callback();
     });
   }
@@ -2303,20 +2305,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   var ghLabel = document.getElementById('ghProxyToggleLabel');
   var _expanded = false;
   var _ghAutoTimer = null;
+
+  function setGhExpanded(expanded) {
+    _expanded = expanded;
+    if (ghBody) ghBody.style.display = expanded ? 'block' : 'none';
+    if (ghArrow) ghArrow.style.transform = expanded ? 'rotate(90deg)' : 'none';
+    browserAPI.storage.local.set({ ghProxyExpanded: expanded });
+    if (expanded) {
+      if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
+      browserAPI.storage.local.set({ ghManualOverride: true });
+    } else {
+      browserAPI.storage.local.set({ ghManualOverride: false });
+      startGhAutoRefresh();
+    }
+  }
+
   if (ghToggleBtn && ghBody) {
     ghToggleBtn.addEventListener('click', function() {
-      _expanded = !_expanded;
-      ghBody.style.display = _expanded ? 'block' : 'none';
-      if (ghArrow) ghArrow.style.transform = _expanded ? 'rotate(90deg)' : 'none';
-      if (_expanded) {
-        // 展开时停止自动刷新，并通知后台停止自动切换
-        if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
-        browserAPI.storage.local.set({ ghManualOverride: true });
-      } else {
-        // 折叠时清除手动标记，恢复后台自动切换
-        browserAPI.storage.local.set({ ghManualOverride: false });
-        startGhAutoRefresh();
-      }
+      setGhExpanded(!_expanded);
     });
   }
   function startGhAutoRefresh() {
