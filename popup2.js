@@ -2401,7 +2401,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         browserAPI.storage.local.set({ githubProxyUrl: '', githubProxyEnabled: false });
         // 直接调用 DNR API 移除规则
         try {
-          var dnr = chrome.declarativeNetRequest;
+          var dnr = (chrome || browser).declarativeNetRequest;
           if (dnr) {
             dnr.getDynamicRules(function(rules) {
               var ids = rules.map(function(r) { return r.id; });
