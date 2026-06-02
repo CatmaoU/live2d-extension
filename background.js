@@ -464,12 +464,6 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
       } catch(e) {}
     }
   }
-        }
-      });
-    } catch(e) {
-      console.log('[GitHub Proxy] Cancel failed:', e);
-    }
-  }
 });
 
 // 来自 popup 的消息处理
