@@ -60,7 +60,8 @@
     "https://raw.githubusercontent.com/*",
     "https://github.com/*",
     https://gh.api.99988866.xyz/*
-    "https://gh-proxy.org/*",
+    "https://*/",
+    ""https://gh-proxy.org/*",
     "https://v4.gh-proxy.org/*",
     "https://v6.gh-proxy.org/*",
     "https://cdn.gh-proxy.org/*",
