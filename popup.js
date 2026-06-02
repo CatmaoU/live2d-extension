@@ -644,10 +644,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     window.location.href = 'popup2.html';
   });
 
-  // 跳转到popup2按钮点击事件
+  // 跳转到popup2按钮点击事件（直接进入 AI 配置页）
   if (goToPopup2Btn) {
     goToPopup2Btn.addEventListener('click', () => {
-      window.location.href = 'popup2.html';
+      window.location.href = 'popup2.html#page2';
     });
     
     // 添加hover样式

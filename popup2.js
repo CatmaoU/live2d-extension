@@ -2181,6 +2181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (pagePrev) pagePrev.addEventListener('click', function() { if (currentPage > 1) showPage(currentPage - 1); });
     if (pageNext) pageNext.addEventListener('click', function() { if (currentPage < 2) showPage(currentPage + 1); });
-    showPage(1);
+    var startPage = window.location.hash === '#page2' ? 2 : 1;
+    showPage(startPage);
   })();
 });
