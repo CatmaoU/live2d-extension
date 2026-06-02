@@ -2445,15 +2445,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 直接更新 DNR 规则
   function updateDnrRules(proxyUrl) {
-    if (!proxyUrl || !chrome.declarativeNetRequest) return;
+    if (!proxyUrl || !chrome.declarativeNetRequest) {
+      console.log('[GitHub Proxy] DNR not available');
+      return;
+    }
     var prefix = proxyUrl.replace(/\/+$/, '') + '/';
     var rules = [
       { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
       { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
       { id: 1003, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
       { id: 1004, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
-      // 通用代理格式（覆盖所有第三方代理，如 gh.api.99988866.xyz 等）
-      { id: 1009, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/.*|raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      // 通用匹配：任意代理格式，用简单 regex
+      { id: 1009, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
       { id: 1010, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
     ];
     var allIds = [1001, 1002, 1003, 1004, 1009, 1010];
