@@ -2465,6 +2465,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log('[GitHub Proxy] DNR update error:', chrome.runtime.lastError.message);
       }
     });
+    // 验证规则是否已添加
+    chrome.declarativeNetRequest.getDynamicRules(function(rules) {
+      console.log('[GitHub Proxy] Active dynamic rules:', rules.length);
+      rules.forEach(function(r) {
+        console.log('  Rule ' + r.id + ':', r.condition.regexFilter.substring(0, 60));
+      });
+    });
   }
 
   function updateGhStatus(enabled) {
