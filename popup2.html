@@ -253,29 +253,31 @@
     body.dark-theme a:hover {
       color: #fff;
     }
-    .page-nav {
-      display:flex; align-items:center; justify-content:space-between;
-      margin-top:16px; padding-top:12px; border-top:1px solid #e0e0e0;
-      font-size:13px; color:#667eea;
+    /* 分页两侧箭头 - 固定在窗口左右，悬停显示 */
+    .page-arrow {
+      position:fixed; top:50%; transform:translateY(-50%);
+      background:rgba(102,126,234,0.15); border:1px solid rgba(102,126,234,0.4);
+      border-radius:50%; width:36px; height:36px;
+      cursor:pointer; font-size:16px; color:#667eea;
+      display:flex; align-items:center; justify-content:center;
+      z-index:999; transition:all 0.2s;
+      opacity:0; pointer-events:none;
     }
-    body.dark-theme .page-nav {
-      border-top-color:#333;
+    .page-arrow:hover {
+      background:rgba(102,126,234,0.3);
     }
-    .page-nav button {
-      background:none; border:1px solid #667eea; border-radius:4px;
-      color:#667eea; padding:2px 10px; cursor:pointer; font-size:14px;
+    .page-arrow:disabled {
+      opacity:0 !important;
+      pointer-events:none !important;
     }
-    .page-nav button:hover {
-      background:#667eea; color:white;
-    }
-    .page-nav button:disabled {
-      opacity:0.3; cursor:default;
-    }
-    .page-nav button:disabled:hover {
-      background:none; color:#667eea;
+    .page-arrow-left { left:4px; }
+    .page-arrow-right { right:4px; }
+    .container:hover .page-arrow {
+      opacity:1; pointer-events:auto;
     }
     .page-indicator {
-      font-size:12px; color:#999; min-width:60px; text-align:center;
+      position:fixed; left:50%; bottom:12px; transform:translateX(-50%);
+      font-size:12px; color:#999; z-index:999; pointer-events:none;
     }
     body.dark-theme .page-indicator {
       color:#888;
@@ -515,12 +517,10 @@
     </div>
     </div><!-- page2 end -->
 
-    <!-- 分页导航 -->
-    <div class="page-nav" id="pageNav">
-      <button id="pagePrevBtn" disabled style="flex-shrink:0;">&lt;</button>
-      <span class="page-indicator" id="pageIndicator">1 / 2</span>
-      <button id="pageNextBtn" style="flex-shrink:0;">&gt;</button>
-    </div>
+    <!-- 分页导航 - 两侧箭头 -->
+    <button id="pagePrevBtn" class="page-arrow page-arrow-left" disabled>&lt;</button>
+    <span class="page-indicator" id="pageIndicator">1 / 2</span>
+    <button id="pageNextBtn" class="page-arrow page-arrow-right">&gt;</button>
 
   </div>
   <script src="popup2.js"></script>
