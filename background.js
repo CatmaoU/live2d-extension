@@ -479,6 +479,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     return true;
   }
   if (request.action === 'switchGhProxy') {
+    console.log('[GH] switchGhProxy:', request.proxy);
     _ghProxyUrl = request.proxy;
     _ghProxyEnabled = true;
     chrome.storage.local.set({ githubProxyUrl: request.proxy, githubProxyEnabled: true });
