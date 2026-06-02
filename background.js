@@ -284,36 +284,23 @@ function pickFastestProxy() {
 }
 
 // 更新 DNR 规则
-var _ghRuleIds = [1001, 1002, 1003, 1004];
+var _ghRuleIds = [1001, 1002, 1003, 1004, 1005, 1006, 1007, 1008, 1009];
 function updateGhProxyRules(enabled, proxyUrl) {
   var prefix = (proxyUrl || '').replace(/\/+$/, '') + '/';
   if (enabled && proxyUrl) {
-    // 分路径类型创建独立规则（RE2 不支持复杂嵌套正则）
     var rules = [
-      {
-        id: 1001,
-        priority: 1,
-        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
-        condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
-      },
-      {
-        id: 1002,
-        priority: 1,
-        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
-        condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
-      },
-      {
-        id: 1003,
-        priority: 1,
-        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
-        condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
-      },
-      {
-        id: 1004,
-        priority: 1,
-        action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } },
-        condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] }
-      }
+      // 原始 GitHub 下载链接
+      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/archive/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1003, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/releases/download/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1004, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^(https://github\\.com/[^/]+/[^/]+/raw/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      // 已走第三方代理的 GitHub 下载，提取原始 URL 重新走最快节点
+      { id: 1005, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^https://gh\\.api\\.99988866\\.xyz/https://(.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1006, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^https://ghproxy\\.com/https://(.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1007, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^https://gh-proxy\\.com/https://(.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1008, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^https://github\\.abskoop\\.com/https://(.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      // 通用匹配：任意域名后接 /https://github.com/ 的代理格式
+      { id: 1009, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + '\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/.*|raw\\.githubusercontent\\.com/.*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
     ];
     chrome.declarativeNetRequest.updateDynamicRules({
       removeRuleIds: _ghRuleIds,
