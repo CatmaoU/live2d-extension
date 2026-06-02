@@ -2205,8 +2205,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       radio.addEventListener('change', function() {
         if (radio.checked) {
           _ghSelected = url;
-          browserAPI.storage.local.set({ githubProxyUrl: url });
-          // 通知后台切换节点
+          browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true });
           browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
           renderGhNodes();
         }
@@ -2314,6 +2313,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 展开时停止自动刷新
         if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
       } else {
+        // 折叠时清除手动标记，恢复自动切换
+        browserAPI.storage.local.set({ ghManualOverride: false });
         // 折叠时启动自动刷新
         startGhAutoRefresh();
       }
