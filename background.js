@@ -322,9 +322,9 @@ function updateDnr(proxyUrl) {
     removeRuleIds: [1001, 1002],
     addRules: [
       // 已走代理单 https：https://任意域名/github.com/...
-      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
+      { id: 1001, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/|codeload\\.github\\.com/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } },
       // 已走代理双 https：https://任意域名/https://github.com/...
-      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
+      { id: 1002, priority: 1, action: { type: 'redirect', redirect: { regexSubstitution: prefix + 'https://\\1' } }, condition: { regexFilter: '^https://[^/]+/https://(github\\.com/[^/]+/[^/]+/(archive/|releases/download/|raw/|codeload\\.github\\.com/).*)', resourceTypes: ['main_frame','sub_frame','stylesheet','script','image','font','object','xmlhttprequest','ping','csp_report','media','websocket','other'] } }
     ]
   }, function() {
     if (chrome.runtime.lastError) console.log('[DNR] Error:', chrome.runtime.lastError.message);
@@ -359,30 +359,28 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
   chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl'], function(st) {
     if (!st.githubProxyEnabled || !st.githubProxyUrl) return;
     var proxyUrl = st.githubProxyUrl;
+    var proxyBase = proxyUrl.replace(/\/+$/, '');
+    var newUrl = null;
     var url = downloadItem.url || '';
     if (url.indexOf(proxyUrl) === 0) return; // 跳过已代理下载
     
-    var proxyBase = proxyUrl.replace(/\/+$/, '');
-  var newUrl = null;
-  
-  // 原始 GitHub 下载
-  var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
+  // 原始 GitHub 下载（含 codeload）
+  var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|codeload\.github\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
   if (m) newUrl = proxyBase + '/' + m[1];
   
   // 已走代理双 https：https://任意域名/https://github.com/...
   if (!newUrl) {
-    m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+    m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
     if (m) newUrl = proxyBase + '/' + m[1];
   }
   
   // 已走代理单 https：https://任意域名/github.com/...
   if (!newUrl) {
-    m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+    m = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
     if (m) newUrl = proxyBase + '/https://' + m[1];
   }
   
   if (newUrl) {
-    // 修复双斜杠
     newUrl = newUrl.replace(/([^:])\/\//, '$1/');
       console.log('[GitHub Proxy] Intercepting:', url.substring(0,60), '->', newUrl.substring(0,60));
       chrome.downloads.cancel(downloadItem.id, function() {
@@ -412,10 +410,10 @@ chrome.downloads.onChanged.addListener(function(delta) {
       if (url.indexOf(st.githubProxyUrl) === 0) return; // 已代理
       var proxyBase = st.githubProxyUrl.replace(/\/+$/, '');
       var newUrl = null;
-      var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
+      var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|codeload\.github\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
       if (m) newUrl = proxyBase + '/' + m[1];
       if (!newUrl) {
-        m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+        m = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/|codeload\.github\.com\/).*)/);
         if (m) newUrl = proxyBase + '/' + m[1];
       }
       if (!newUrl) {
