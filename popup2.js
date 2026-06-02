@@ -2399,22 +2399,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (enabled && _ghSelected) {
         browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
       } else {
-        // 关闭时：清空所有代理相关存储 + 强制移除 DNR 规则
+        // 关闭时：清空存储 + 只发消息（由 background 处理回源规则）
         browserAPI.storage.local.set({ githubProxyUrl: '', githubProxyEnabled: false });
-        // 直接调用 DNR API 移除规则
-        try {
-          var dnr = (chrome || browser).declarativeNetRequest;
-          if (dnr) {
-            dnr.getDynamicRules(function(rules) {
-              var ids = rules.map(function(r) { return r.id; });
-              if (ids.length > 0) dnr.updateDynamicRules({ removeRuleIds: ids });
-            });
-            dnr.getSessionRules(function(rules) {
-              var ids = rules.map(function(r) { return r.id; });
-              if (ids.length > 0) dnr.updateSessionRules({ removeRuleIds: ids });
-            });
-          }
-        } catch(e) {}
         browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
       }
     });
