@@ -444,13 +444,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     _ghProxyUrl = request.proxy;
     _ghProxyEnabled = true;
     chrome.storage.local.set({ githubProxyUrl: request.proxy, githubProxyEnabled: true });
-    updateGhProxyRules(true, request.proxy);
+    updateDnr(request.proxy);
     sendResponse({ ok: true });
     return true;
   }
   if (request.action === 'disableGhProxy') {
     _ghProxyEnabled = false;
-    updateGhProxyRules(false);
+    chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: [1001,1002,1003,1004,1005] }, function(){});
     sendResponse({ ok: true });
     return true;
   }

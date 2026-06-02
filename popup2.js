@@ -2207,6 +2207,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (radio.checked) {
           _ghSelected = url;
           browserAPI.storage.local.set({ githubProxyUrl: url, ghManualOverride: true, _ghProxyForceSwitch: Date.now() });
+          browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
           updateDnr(url);
           // 更新折叠状态标签
           if (ghLabel) {
@@ -2389,6 +2390,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       updateGhStatus(enabled);
       if (enabled && _ghSelected) {
         browserAPI.storage.local.set({ githubProxyEnabled: true, _ghProxyForceSwitch: Date.now() });
+        browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
         updateDnr(_ghSelected);
       } else {
         browserAPI.storage.local.set({ githubProxyEnabled: false });
