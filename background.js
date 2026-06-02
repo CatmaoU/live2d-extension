@@ -375,26 +375,20 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
   if (request.action === 'testProxyLatency') {
     var start = Date.now();
-    var firstByteTime = null;
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', request.testUrl, true);
-    xhr.timeout = 8000;
-    xhr.onprogress = function(e) {
-      if (firstByteTime === null && e.loaded > 0) {
-        firstByteTime = Date.now() - start;
-      }
-    };
-    xhr.onload = function() {
-      var totalTime = (Date.now() - start) / 1000;
-      if (totalTime <= 0) totalTime = 0.001;
-      var speedKB = (xhr.responseText.length / totalTime) / 1024;
-      var latencyMs = firstByteTime !== null ? firstByteTime : (Date.now() - start);
-      sendResponse({ latency: latencyMs, speed: Math.round(speedKB) });
-    };
-    xhr.onerror = xhr.ontimeout = function() {
-      sendResponse({ latency: null, speed: null });
-    };
-    xhr.send();
+    fetch(request.testUrl, { method: 'GET', cache: 'no-store' })
+      .then(function(r) {
+        var latencyMs = Date.now() - start;
+        return r.text().then(function(body) {
+          var elapsed = (Date.now() - start) / 1000;
+          if (elapsed <= 0) elapsed = 0.001;
+          var speedKB = (body.length / elapsed) / 1024;
+          sendResponse({ latency: latencyMs, speed: Math.round(speedKB) });
+        });
+      })
+      .catch(function(e) {
+        console.log('[GitHub Proxy] Speed test failed:', request.testUrl, e.message);
+        sendResponse({ latency: null, speed: null });
+      });
     return true;
   }
 });
