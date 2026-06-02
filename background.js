@@ -359,10 +359,18 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     });
     return true;
   }
-  if (request.action === 'testGhProxySpeed') {
-    pickFastestProxy().then(function(bestUrl) {
-      sendResponse({ proxy: bestUrl });
-    });
+  if (request.action === 'switchGhProxy') {
+    _ghProxyUrl = request.proxy;
+    _ghProxyEnabled = true;
+    chrome.storage.local.set({ githubProxyUrl: request.proxy, githubProxyEnabled: true });
+    updateGhProxyRules(true, request.proxy);
+    sendResponse({ ok: true });
+    return true;
+  }
+  if (request.action === 'disableGhProxy') {
+    _ghProxyEnabled = false;
+    updateGhProxyRules(false);
+    sendResponse({ ok: true });
     return true;
   }
 });

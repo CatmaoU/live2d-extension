@@ -2157,33 +2157,165 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // ========== GitHub 代理加速 ==========
+  // ========== GitHub 代理加速（节点管理）==========
+  var DEFAULT_GH_PROXIES = [
+    'https://v6.gh-proxy.org/',
+    'https://gh-proxy.org/',
+    'https://v4.gh-proxy.org/',
+    'https://cdn.gh-proxy.org/'
+  ];
   var ghToggle = document.getElementById('githubProxyToggle');
   var ghStatus = document.getElementById('githubProxyStatus');
-  if (ghToggle) {
-    // 读取当前状态
-    browserAPI.storage.local.get(['githubProxyEnabled'], function(r) {
-      ghToggle.checked = !!r.githubProxyEnabled;
-      updateGhStatus(ghToggle.checked);
+  var ghNodeListEl = document.getElementById('ghProxyNodeList');
+  var ghCustomInput = document.getElementById('ghProxyCustomInput');
+  var ghAddBtn = document.getElementById('ghProxyAddBtn');
+  var ghRefreshBtn = document.getElementById('ghProxyRefreshBtn');
+  var ghResetBtn = document.getElementById('ghProxyResetBtn');
+  var _ghNodes = [];
+  var _ghSelected = '';
+
+  function loadGhNodes(callback) {
+    browserAPI.storage.local.get(['ghProxyNodes', 'ghProxyUrl', 'githubProxyEnabled'], function(r) {
+      _ghNodes = r.ghProxyNodes || DEFAULT_GH_PROXIES.slice();
+      _ghSelected = r.ghProxyUrl || _ghNodes[0] || '';
+      if (ghToggle) ghToggle.checked = !!r.githubProxyEnabled;
+      updateGhStatus(!!r.githubProxyEnabled);
+      renderGhNodes();
+      if (callback) callback();
     });
+  }
+
+  function saveGhNodes() {
+    browserAPI.storage.local.set({ ghProxyNodes: _ghNodes });
+  }
+
+  function renderGhNodes() {
+    if (!ghNodeListEl) return;
+    ghNodeListEl.innerHTML = '';
+    _ghNodes.forEach(function(url, idx) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex; align-items:center; gap:4px; padding:4px 6px; border-radius:4px; margin-bottom:2px; cursor:pointer; font-size:12px;';
+      if (url === _ghSelected) row.style.background = 'rgba(102,126,234,0.1)';
+      // 选中 radio
+      var radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'ghProxyNode';
+      radio.checked = url === _ghSelected;
+      radio.style.cssText = 'margin:0; flex-shrink:0;';
+      radio.addEventListener('change', function() {
+        if (radio.checked) {
+          _ghSelected = url;
+          browserAPI.storage.local.set({ githubProxyUrl: url });
+          // 通知后台切换节点
+          browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: url });
+          renderGhNodes();
+        }
+      });
+      row.appendChild(radio);
+      // 地址显示
+      var label = document.createElement('span');
+      label.textContent = url.replace('https://', '').replace(/\/$/, '');
+      label.style.cssText = 'flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;';
+      row.appendChild(label);
+      // 延迟标签
+      var latency = document.createElement('span');
+      latency.id = 'ghLat_' + idx;
+      latency.textContent = '...';
+      latency.style.cssText = 'font-size:10px; color:#888; min-width:48px; text-align:right;';
+      row.appendChild(latency);
+      // 删除按钮（最少保留一条）
+      var delBtn = document.createElement('button');
+      delBtn.textContent = '✕';
+      delBtn.title = '删除节点';
+      delBtn.style.cssText = 'background:none; border:none; color:#e06060; cursor:pointer; font-size:12px; padding:0 2px; flex-shrink:0;';
+      delBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (_ghNodes.length <= 1) return;
+        _ghNodes.splice(idx, 1);
+        if (_ghSelected === url) {
+          _ghSelected = _ghNodes[0];
+          browserAPI.storage.local.set({ githubProxyUrl: _ghSelected });
+          browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
+        }
+        saveGhNodes();
+        renderGhNodes();
+        testGhLatencies();
+      });
+      row.appendChild(delBtn);
+      ghNodeListEl.appendChild(row);
+    });
+    // 触发延迟测试
+    testGhLatencies();
+  }
+
+  function testGhLatencies() {
+    _ghNodes.forEach(function(url, idx) {
+      var el = document.getElementById('ghLat_' + idx);
+      if (!el) return;
+      el.textContent = '测速中...';
+      var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/';
+      var start = Date.now();
+      fetch(testUrl, { method: 'HEAD', mode: 'no-cors', signal: AbortSignal.timeout(5000) })
+        .then(function() {
+          var ms = Date.now() - start;
+          el.textContent = ms + 'ms';
+          el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
+        })
+        .catch(function() {
+          el.textContent = '超时';
+          el.style.color = '#e06060';
+        });
+    });
+  }
+
+  if (ghToggle) {
+    loadGhNodes();
     ghToggle.addEventListener('change', function() {
       var enabled = ghToggle.checked;
       browserAPI.storage.local.set({ githubProxyEnabled: enabled });
       updateGhStatus(enabled);
-      if (enabled) {
-        // 测速选择最快节点
-        ghStatus.textContent = '正在测速选择最快节点...';
-        browserAPI.runtime.sendMessage({ action: 'testGhProxySpeed' }, function(resp) {
-          if (resp && resp.proxy) {
-            browserAPI.storage.local.set({ githubProxyUrl: resp.proxy });
-            ghStatus.textContent = '已启用 · 节点: ' + resp.proxy.replace('https://', '').replace('/', '');
-          } else {
-            ghStatus.textContent = '已启用 · 使用默认节点';
-          }
-        });
+      if (enabled && _ghSelected) {
+        browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
+      } else {
+        browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
       }
     });
   }
+
+  // 添加自定义节点
+  if (ghAddBtn && ghCustomInput) {
+    ghAddBtn.addEventListener('click', function() {
+      var val = ghCustomInput.value.trim();
+      if (!val) return;
+      if (!val.startsWith('http://') && !val.startsWith('https://')) val = 'https://' + val;
+      if (!val.endsWith('/')) val += '/';
+      if (_ghNodes.indexOf(val) >= 0) { ghCustomInput.value = ''; return; }
+      _ghNodes.push(val);
+      saveGhNodes();
+      ghCustomInput.value = '';
+      renderGhNodes();
+    });
+    ghCustomInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') ghAddBtn.click();
+    });
+  }
+
+  // 刷新延迟
+  if (ghRefreshBtn) ghRefreshBtn.addEventListener('click', testGhLatencies);
+
+  // 重置节点
+  if (ghResetBtn) {
+    ghResetBtn.addEventListener('click', function() {
+      if (_ghNodes.length === DEFAULT_GH_PROXIES.length && _ghNodes.every(function(v,i){ return v === DEFAULT_GH_PROXIES[i]; })) return;
+      _ghNodes = DEFAULT_GH_PROXIES.slice();
+      _ghSelected = _ghNodes[0];
+      saveGhNodes();
+      browserAPI.storage.local.set({ githubProxyUrl: _ghSelected });
+      browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
+      renderGhNodes();
+    });
+  }
+
   function updateGhStatus(enabled) {
     if (!ghStatus) return;
     ghStatus.textContent = enabled ? '已启用' : '已关闭';
