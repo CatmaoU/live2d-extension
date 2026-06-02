@@ -2463,6 +2463,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     }, function() {
       if (chrome.runtime.lastError) {
         console.log('[GitHub Proxy] DNR update error:', chrome.runtime.lastError.message);
+        alert('DNR Error: ' + chrome.runtime.lastError.message);
+      } else {
+        console.log('[GitHub Proxy] DNR rules updated successfully');
       }
     });
     // 验证规则是否已添加
