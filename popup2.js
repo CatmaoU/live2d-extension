@@ -2268,8 +2268,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // 折叠切换
+  var ghToggleBtn = document.getElementById('ghProxyToggleBtn');
+  var ghBody = document.getElementById('ghProxyBody');
+  var ghArrow = document.getElementById('ghProxyArrow');
+  var ghLabel = document.getElementById('ghProxyToggleLabel');
+  var _expanded = false;
+  if (ghToggleBtn && ghBody) {
+    ghToggleBtn.addEventListener('click', function() {
+      _expanded = !_expanded;
+      ghBody.style.display = _expanded ? 'block' : 'none';
+      if (ghArrow) ghArrow.style.transform = _expanded ? 'rotate(90deg)' : 'none';
+    });
+  }
+
+  // 测速完成后自动选择最快节点（折叠状态下）
+  function autoPickFastest() {
+    // 如果已展开（用户手动模式）不自动切换
+    if (_expanded) return;
+    // 读取测速结果，找速度最快的
+    var bestIdx = -1;
+    var bestSpeed = -1;
+    _ghNodes.forEach(function(url, idx) {
+      var el = document.getElementById('ghLat_' + idx);
+      if (!el) return;
+      // 从显示文本中提取速度值
+      var text = el.textContent;
+      var match = text.match(/([\d.]+)\s*(KB|MB)/);
+      if (!match) return;
+      var val = parseFloat(match[1]);
+      if (match[2] === 'MB') val *= 1024;
+      if (val > bestSpeed) {
+        bestSpeed = val;
+        bestIdx = idx;
+      }
+    });
+    if (bestIdx >= 0 && _ghNodes[bestIdx] !== _ghSelected) {
+      _ghSelected = _ghNodes[bestIdx];
+      browserAPI.storage.local.set({ githubProxyUrl: _ghSelected });
+      browserAPI.runtime.sendMessage({ action: 'switchGhProxy', proxy: _ghSelected });
+      if (ghLabel) ghLabel.textContent = '代理节点 (' + _ghSelected.replace('https://', '').replace(/\/$/, '') + ')';
+    }
+  }
+
   if (ghToggle) {
-    loadGhNodes();
+    loadGhNodes(function() {
+      // 测速完成后自动选最快
+      setTimeout(autoPickFastest, 3000);
+      // 状态标签
+      if (ghLabel) {
+        var activeNode = _ghSelected.replace('https://', '').replace(/\/$/, '');
+        ghLabel.textContent = '代理节点 (' + activeNode + ')';
+      }
+    });
     ghToggle.addEventListener('change', function() {
       var enabled = ghToggle.checked;
       browserAPI.storage.local.set({ githubProxyEnabled: enabled });
@@ -2280,6 +2331,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         browserAPI.runtime.sendMessage({ action: 'disableGhProxy' });
       }
     });
+  }
+  // 展开时显示当前选中节点
+  function onExpandSelect() {
+    if (ghLabel) {
+      var activeNode = _ghSelected.replace('https://', '').replace(/\/$/, '');
+      ghLabel.textContent = '代理节点 (' + activeNode + ')';
+    }
   }
 
   // 添加自定义节点
