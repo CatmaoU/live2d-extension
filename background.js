@@ -465,7 +465,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   if (request.action === 'disableGhProxy') {
     _ghProxyEnabled = false;
     _ghProxyUrl = '';
-    chrome.storage.local.set({ githubProxyEnabled: false });
+    chrome.storage.local.set({ githubProxyEnabled: false, githubProxyUrl: '' });
     updateGhProxyRules(false);
     // 额外清理：明确移除所有可能残留的规则
     try {
