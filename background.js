@@ -375,7 +375,7 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
   if (request.action === 'testProxyLatency') {
     var start = Date.now();
-    fetch(request.testUrl, { method: 'GET', mode: 'no-cors', signal: AbortSignal.timeout(8000) })
+    fetch(request.testUrl, { method: 'GET', signal: AbortSignal.timeout(8000) })
       .then(function() {
         sendResponse({ latency: Date.now() - start });
       })
