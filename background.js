@@ -354,7 +354,9 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
     if (m) newUrl = proxyBase + '/https://' + m[1];
   }
   
-    if (newUrl) {
+  if (newUrl) {
+    // 修复双斜杠
+    newUrl = newUrl.replace(/([^:])\/\//, '$1/');
       console.log('[GitHub Proxy] Intercepting:', url.substring(0,60), '->', newUrl.substring(0,60));
       chrome.downloads.cancel(downloadItem.id, function() {
         if (chrome.runtime.lastError) {
