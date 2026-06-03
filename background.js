@@ -430,7 +430,7 @@ _browser.downloads.onCreated.addListener(function(downloadItem) {
     var newUrl = null;
     
     // 原始 GitHub 下载
-    var m = url.match(/^(https:\/\/(?:raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
+    var m = url.match(/^(https:\/\/(?:codeload\.github\.com\/|raw\.githubusercontent\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
     if (m) newUrl = proxyBase + '/' + m[1];
     
     // 已走代理双 https
@@ -459,14 +459,14 @@ _browser.downloads.onCreated.addListener(function(downloadItem) {
   }
   
   // 如果是原始 GitHub 链接（未被代理），不处理
-  if (/^https:\/\/(raw\.githubusercontent\.com|github\.com)\//.test(url)) return;
+  if (/^https:\/\/(codeload\.github\.com|raw\.githubusercontent\.com|github\.com)\//.test(url)) return;
   
   // 定向代理关闭时：还原被代理的下载链接
   var restoreUrl = null;
-  var restoreMatch = url.match(/^https:\/\/[^\/]+\/(https:\/\/github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+  var restoreMatch = url.match(/^https:\/\/[^\/]+\/(https:\/\/(?:codeload\.github\.com\/|github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*))/);
   if (restoreMatch) restoreUrl = restoreMatch[1];
   if (!restoreUrl) {
-    restoreMatch = url.match(/^https:\/\/[^\/]+\/(github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
+    restoreMatch = url.match(/^https:\/\/[^\/]+\/((?:codeload\.)?github\.com\/[^\/]+\/[^\/]+\/(?:archive\/|releases\/download\/|raw\/).*)/);
     if (restoreMatch) restoreUrl = 'https://' + restoreMatch[1];
   }
   if (restoreUrl) {
