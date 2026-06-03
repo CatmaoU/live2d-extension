@@ -492,11 +492,15 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
   if (request.action === 'testProxyLatency') {
     var startTime = Date.now();
-    fetch(request.testUrl, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(15000) })
+    var controller = new AbortController();
+    var timer = setTimeout(function() { controller.abort(); }, 15000);
+    fetch(request.testUrl, { method: 'GET', cache: 'no-store', signal: controller.signal })
       .then(function() {
+        clearTimeout(timer);
         sendResponse({ latency: Date.now() - startTime, speed: 0 });
       })
       .catch(function() {
+        clearTimeout(timer);
         sendResponse({ latency: null, speed: null });
       });
     return true;
