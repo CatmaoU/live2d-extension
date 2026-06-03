@@ -2278,34 +2278,19 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!el) return;
       el.textContent = '测速中...';
       var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
-      var start = Date.now();
-      fetch(testUrl, { method: 'GET', mode: 'cors', signal: AbortSignal.timeout(6000) })
-        .then(function(r) {
-          var latencyMs = Date.now() - start;
-          return r.text().then(function(body) {
-            var totalMs = Date.now() - start;
-            var speedKB = totalMs > 0 ? (body.length / (totalMs / 1000)) / 1024 : 0;
-            var speedStr = speedKB >= 1024 ? (speedKB/1024).toFixed(1) + 'MB/s' : Math.round(speedKB) + 'KB/s';
-            el.textContent = latencyMs + 'ms | ' + speedStr;
-            el.style.color = speedKB >= 500 ? '#4CAF50' : speedKB >= 100 ? '#FF9800' : '#e06060';
-            updateGhSummary();
-          });
-        })
-        .catch(function() {
-          var img = new Image();
-          var start2 = Date.now();
-          var timedOut = false;
-          var timer = setTimeout(function() { timedOut = true; img.src = ''; }, 6000);
-          img.onerror = function() {
-            clearTimeout(timer);
-            if (timedOut) return;
-            var ms = Date.now() - start2;
-            el.textContent = ms + 'ms';
-            el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
-            updateGhSummary();
-          };
-          img.src = testUrl;
-        });
+      // 通过 background 测速（绕过 CSP 限制）
+      browserAPI.runtime.sendMessage({ action: 'testProxyLatency', testUrl: testUrl }, function(resp) {
+        if (resp && resp.latency !== null) {
+          var kb = resp.speed || 0;
+          var speedStr = kb >= 1024 ? (kb/1024).toFixed(1) + 'MB/s' : kb + 'KB/s';
+          el.textContent = resp.latency + 'ms | ' + speedStr;
+          el.style.color = kb >= 500 ? '#4CAF50' : kb >= 100 ? '#FF9800' : '#e06060';
+        } else {
+          el.textContent = '超时';
+          el.style.color = '#e06060';
+        }
+        updateGhSummary();
+      });
     });
   }
 
