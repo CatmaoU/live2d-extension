@@ -507,11 +507,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       .catch(function(e) {
         // cors 失败则用 no-cors 只测延迟
         var start2 = Date.now();
-        fetch(request.testUrl, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(10000) })
+        fetch(request.testUrl, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(15000) })
           .then(function() {
+            console.log('[GH] No-cors OK:', request.testUrl.substring(0,50));
             sendResponse({ latency: Date.now() - start2, speed: 0 });
           })
-          .catch(function() {
+          .catch(function(e) {
+            console.log('[GH] No-cors failed:', e.message, request.testUrl.substring(0,50));
             sendResponse({ latency: null, speed: null });
           });
       });
