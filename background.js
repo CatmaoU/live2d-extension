@@ -491,31 +491,13 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     return true;
   }
   if (request.action === 'testProxyLatency') {
-    var start = Date.now();
-    // 先用 cors 模式获取完整数据（计算速度）
-    fetch(request.testUrl, { method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(10000) })
-      .then(function(r) {
-        var latencyMs = Date.now() - start;
-        // 尝试读取 body，如果跨域则 body 可能为空
-        return r.text().then(function(body) {
-          var totalMs = Date.now() - start;
-          if (totalMs <= 0) totalMs = 1;
-          var speedKB = body.length > 0 ? (body.length / (totalMs / 1000)) / 1024 : 0;
-          sendResponse({ latency: latencyMs, speed: Math.round(speedKB || 0) });
-        });
+    var startTime = Date.now();
+    fetch(request.testUrl, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(15000) })
+      .then(function() {
+        sendResponse({ latency: Date.now() - startTime, speed: 0 });
       })
-      .catch(function(e) {
-        // cors 失败则用 no-cors 只测延迟
-        var start2 = Date.now();
-        fetch(request.testUrl, { method: 'GET', mode: 'no-cors', cache: 'no-store', signal: AbortSignal.timeout(15000) })
-          .then(function() {
-            console.log('[GH] No-cors OK:', request.testUrl.substring(0,50));
-            sendResponse({ latency: Date.now() - start2, speed: 0 });
-          })
-          .catch(function(e) {
-            console.log('[GH] No-cors failed:', e.message, request.testUrl.substring(0,50));
-            sendResponse({ latency: null, speed: null });
-          });
+      .catch(function() {
+        sendResponse({ latency: null, speed: null });
       });
     return true;
   }
