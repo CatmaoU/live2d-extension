@@ -2431,6 +2431,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       saveGhNodes();
       ghCustomInput.value = '';
       renderGhNodes();
+      // 延迟再次测速确保自定义节点也显示速度
+      setTimeout(testGhLatencies, 500);
     });
     ghCustomInput.addEventListener('keydown', function(e) {
       if (e.key === 'Enter') ghAddBtn.click();
