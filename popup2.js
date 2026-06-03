@@ -2316,6 +2316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   var ghLabel = document.getElementById('ghProxyToggleLabel');
   var _expanded = false;
   var _ghAutoTimer = null;
+  var _ghSlowTimer = null;
 
   function setGhExpanded(expanded) {
     _expanded = expanded;
@@ -2325,7 +2326,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (expanded) {
       if (_ghAutoTimer) { clearInterval(_ghAutoTimer); _ghAutoTimer = null; }
       browserAPI.storage.local.set({ ghManualOverride: true });
+      // 展开时每 30 秒刷新
+      if (_ghSlowTimer) clearInterval(_ghSlowTimer);
+      testGhLatencies();
+      _ghSlowTimer = setInterval(function() { testGhLatencies(); }, 30000);
     } else {
+      if (_ghSlowTimer) { clearInterval(_ghSlowTimer); _ghSlowTimer = null; }
       browserAPI.storage.local.set({ ghManualOverride: false });
       startGhAutoRefresh();
     }
