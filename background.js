@@ -202,7 +202,7 @@ chrome.runtime?.onMessage?.addListener((request, sender, sendResponse) => {
   // Download screenshot (direct dataUrl from content script)
   if (request.action === 'downloadFile') {
     const { dataUrl, filename } = request;
-    chrome.downloads.download({
+    (chrome || browser).downloads.download({
       url: dataUrl,
       filename: filename,
       saveAs: false
@@ -414,8 +414,10 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
   }
 });
 
-// ========== GitHub 代理拦截下载（通过 chrome.downloads API）==========
-chrome.downloads.onCreated.addListener(function(downloadItem) {
+// ========== GitHub 代理拦截下载 ==========
+var _browser = typeof chrome !== 'undefined' ? chrome : (typeof browser !== 'undefined' ? browser : null);
+if (_browser && _browser.downloads) {
+_browser.downloads.onCreated.addListener(function(downloadItem) {
   var url = downloadItem.url || '';
   
   // 如果定向代理开启，使用选中的节点
@@ -444,9 +446,9 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
     if (newUrl) {
       console.log('[GH] Intercept:', url.substring(0,50), '->', newUrl.substring(0,50));
       try {
-        chrome.downloads.cancel(downloadItem.id, function() {
+        _browser.downloads.cancel(downloadItem.id, function() {
           if (!(chrome || browser).runtime.lastError) {
-            chrome.downloads.download({ url: newUrl, conflictAction: 'overwrite' });
+            _browser.downloads.download({ url: newUrl, conflictAction: 'overwrite' });
           }
         });
       } catch(e) {}
@@ -468,15 +470,15 @@ chrome.downloads.onCreated.addListener(function(downloadItem) {
   if (restoreUrl) {
       console.log('[GH] Restore:', url.substring(0,50), '->', restoreUrl.substring(0,50));
       try {
-        chrome.downloads.cancel(downloadItem.id, function() {
+        _browser.downloads.cancel(downloadItem.id, function() {
           if (!(chrome || browser).runtime.lastError) {
-            chrome.downloads.download({ url: restoreUrl, conflictAction: 'overwrite' });
+            _browser.downloads.download({ url: restoreUrl, conflictAction: 'overwrite' });
           }
         });
       } catch(e) {}
     }
-  }
-});
+  });
+} // end if(_browser && _browser.downloads)
 
 // 来自 popup 的消息处理
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
