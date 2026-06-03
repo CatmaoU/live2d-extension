@@ -294,6 +294,8 @@ function pickFastestProxy() {
 // 更新 DNR 规则
 var _ghRuleIds = [1001, 1002, 1003, 1004, 1005, 1009, 1010];
 var _dnr = (typeof chrome !== 'undefined' && chrome.declarativeNetRequest) ? chrome : (typeof browser !== 'undefined' && browser.declarativeNetRequest ? browser : null);
+if (_dnr) { console.log('[GH] DNR available:', _dnr === chrome ? 'chrome' : 'browser'); }
+else { console.log('[GH] DNR NOT available - using downloads only'); }
 
 function updateGhProxyRules(enabled, proxyUrl) {
   if (!_dnr) { console.log('[GH] DNR not available'); return; }
