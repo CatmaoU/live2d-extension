@@ -360,18 +360,6 @@ chrome.storage.onChanged.addListener(function(changes, area) {
 });
 
 // 后台 30 秒自动测速 + 切换到最快节点
-function backgroundAutoPickFastest() {}
-
-// 启动时检查状态
-chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'], function(result) {
-  if (result.githubProxyEnabled) {
-    _ghProxyEnabled = true;
-    _ghProxyUrl = result.githubProxyUrl || GH_PROXIES[2];
-    if (result.ghProxyNodes) GH_PROXIES.length = 0; Array.prototype.push.apply(GH_PROXIES, result.ghProxyNodes);
-    updateGhProxyRules(true, _ghProxyUrl);
-  }
-});
-
 // ========== GitHub 代理拦截下载 ==========
 var _browser = typeof chrome !== 'undefined' ? chrome : (typeof browser !== 'undefined' ? browser : null);
 if (_browser && _browser.downloads) {
