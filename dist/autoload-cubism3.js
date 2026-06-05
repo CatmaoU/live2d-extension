@@ -1466,12 +1466,11 @@
             if (settings.aiEnabled) {
                 setInterval(function() {
                     if (!window.Live2DAI || !window.Live2DAI.isConnected) return;
-                    // 发送一个简单的 ping 请求检查连接
-                    var pingMsg = { role: 'user', content: '.' };
-                    window.Live2DAI.sendMessage([pingMsg]).then(function(resp) {
-                        if (!resp || resp.error) {
-                            throw new Error('心跳检测失败');
-                        }
+                    // 发一个简单请求看 API 是否可达
+                    var key = settings.aiApiKey || settings.siliconflowApiKey || '';
+                    var heartbeatUrl = (settings.aiApiBaseUrl || 'https://api.deepseek.com').replace(/\/+$/, '') + '/v1/models';
+                    fetch(heartbeatUrl, { method: 'GET', headers: { 'Authorization': 'Bearer ' + key }, signal: AbortSignal.timeout(10000) }).then(function(r) {
+                        if (!r.ok) throw new Error();
                     }).catch(function() {
                         console.log('[Live2D AI] 心跳检测失败，标记为断开');
                         window.Live2DAI.isConnected = false;
