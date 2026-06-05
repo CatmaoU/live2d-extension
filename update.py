@@ -534,6 +534,24 @@ def main():
     print()
     current = get_current_version()
     print(f"当前版本：v{current}")
+    
+    # 检测模型索引是否缺失（build.js 不存在则提示安装）
+    build_js = BASE_DIR / "live2d-static-api" / "build.js"
+    if not build_js.exists():
+        print("\n[检测] 缺少模型索引组件 (build.js)")
+        try:
+            _, _, _rels = get_versions()
+            has_dev = any("Develop" in a.get("name", "") for rel in _rels for a in rel.get("assets", []))
+            if has_dev:
+                ans = input("是否下载并安装模型索引？(Y/n): ").strip().lower()
+                if ans in ("", "y", "yes"):
+                    try:
+                        _install_model_index(_rels[0].get("tag_name", ""))
+                    except Exception as e:
+                        print(f"[错误] 安装失败：{e}")
+        except Exception as e:
+            print(f"[错误] 无法检查模型索引更新：{e}")
+    
     try:
         with_zip, no_zip, _releases = get_versions()
     except Exception as e:
@@ -560,15 +578,6 @@ def main():
         return
     else:
         print("\n当前已是最新版本，无需更新。")
-        # 检查是否缺少模型索引（以 build.js 为标志）
-        build_js = BASE_DIR / "live2d-static-api" / "build.js"
-        if not build_js.exists():
-            print("检测到缺少模型索引组件。")
-            has_develop = any("Develop" in a.get("name", "") for rel in _releases for a in rel.get("assets", []))
-            if has_develop:
-                ans = input("是否安装模型索引组件 (Y/n): ").strip().lower()
-                if ans in ("", "y", "yes"):
-                    _install_model_index(with_zip["tag_name"] if with_zip else _releases[0].get("tag_name", ""))
         input("\n按 Enter 退出...")
         return
     if release.get("body"):
