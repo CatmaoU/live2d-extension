@@ -2501,10 +2501,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     var _domainWhitelist = [];
     var _domainBlacklist = [];
 
-    var _domainFilterInitialized = false;
-
     function loadDomainFilter() {
-      browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList'], function(r) {
+      browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList', 'domainFilterDefaultsSet'], function(r) {
         var blacklistFromStorage = r.domainFilterBlacklist;
         // 迁移旧版 domainFilterList 到新格式
         if (r.domainFilterList && r.domainFilterList.length > 0 && (!r.domainFilterWhitelist || r.domainFilterWhitelist.length === 0) && (!blacklistFromStorage || blacklistFromStorage.length === 0)) {
@@ -2515,11 +2513,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         _domainMode = r.domainFilterMode || 'blacklist';
         _domainWhitelist = r.domainFilterWhitelist || [];
         _domainBlacklist = blacklistFromStorage || [];
-        // 首次使用时（storage 中没有任何名单数据）默认添加 live.bilibili.com
-        if (!_domainFilterInitialized && !r.domainFilterWhitelist && !blacklistFromStorage && !r.domainFilterList) {
-          _domainFilterInitialized = true;
+        // 仅当从未设置过默认值时添加 live.bilibili.com
+        if (!r.domainFilterDefaultsSet && !r.domainFilterWhitelist && !blacklistFromStorage && !r.domainFilterList) {
           _domainBlacklist = ['live.bilibili.com'];
-          browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist });
+          browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist, domainFilterDefaultsSet: true });
         }
         renderDomainFilter();
       });

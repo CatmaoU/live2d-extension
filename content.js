@@ -203,7 +203,7 @@
     syncSettingsFromStorage();
     
     // 同步域名过滤设置
-    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList'], function(r) {
+    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList', 'domainFilterDefaultsSet'], function(r) {
         var hasWhitelist = r.domainFilterWhitelist && r.domainFilterWhitelist.length > 0;
         var hasBlacklist = r.domainFilterBlacklist && r.domainFilterBlacklist.length > 0;
         var hasOldList = r.domainFilterList && r.domainFilterList.length > 0;
@@ -216,11 +216,10 @@
             browserAPI.storage.local.remove('domainFilterList');
             hasBlacklist = true;
         }
-        // 首次使用且没有任何名单 → 默认添加 live.bilibili.com
-        if (!hasWhitelist && !hasBlacklist && !hasOldList && !_domainFilterDefaultsSet) {
-            _domainFilterDefaultsSet = true;
+        // 仅当从未设置过默认值时添加 live.bilibili.com
+        if (!r.domainFilterDefaultsSet && !hasWhitelist && !hasBlacklist && !hasOldList) {
             black = ['live.bilibili.com'];
-            browserAPI.storage.local.set({ domainFilterBlacklist: black });
+            browserAPI.storage.local.set({ domainFilterBlacklist: black, domainFilterDefaultsSet: true });
         }
         var mode = r.domainFilterMode || 'blacklist';
         localStorage.setItem('live2d_domainFilterMode', mode);
@@ -228,7 +227,6 @@
         localStorage.setItem('live2d_domainFilterBlacklist', JSON.stringify(black));
         checkDomainFilter();
     });
-    var _domainFilterDefaultsSet = false;
 
     // 定期同步设置（每 5 秒，减少日志频率）
     setInterval(syncSettingsFromStorage, 5000);
