@@ -157,6 +157,8 @@
     var _domainFiltered = false;
 
     function checkDomainFilter() {
+        var wasFiltered = _domainFiltered;
+        var nowBlocked = false;
         try {
             var mode = localStorage.getItem('live2d_domainFilterMode') || 'blacklist';
             var list = mode === 'whitelist' 
@@ -166,18 +168,23 @@
             var matched = list.some(function(d) { return host === d || host.endsWith('.' + d); });
             if (mode === 'whitelist' && !matched) {
                 console.log('[Live2D] Domain not in whitelist, blocking:', host);
-                _domainFiltered = true;
-                removeWaifu();
-                return true;
+                nowBlocked = true;
             }
             if (mode === 'blacklist' && matched) {
                 console.log('[Live2D] Domain in blacklist, blocking:', host);
-                _domainFiltered = true;
-                removeWaifu();
-                return true;
+                nowBlocked = true;
             }
         } catch(e) {}
-        _domainFiltered = false;
+        _domainFiltered = nowBlocked;
+        if (nowBlocked) {
+            removeWaifu();
+            return true;
+        }
+        // 之前被屏蔽而现在解除了 → 重新加载看板娘
+        if (wasFiltered && !_domainFiltered) {
+            console.log('[Live2D] Domain filter removed, reloading waifu');
+            reloadLive2DModel();
+        }
         return false;
     }
 
@@ -212,7 +219,7 @@
         var black = r.domainFilterBlacklist || [];
         if (hasOldList && !hasWhitelist && !hasBlacklist) {
             black = r.domainFilterList.slice();
-            browserAPI.storage.local.set({ domainFilterBlacklist: black });
+            browserAPI.storage.local.set({ domainFilterBlacklist: black, domainFilterDefaultsSet: true });
             browserAPI.storage.local.remove('domainFilterList');
             hasBlacklist = true;
         }

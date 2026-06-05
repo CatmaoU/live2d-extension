@@ -2507,7 +2507,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 迁移旧版 domainFilterList 到新格式
         if (r.domainFilterList && r.domainFilterList.length > 0 && (!r.domainFilterWhitelist || r.domainFilterWhitelist.length === 0) && (!blacklistFromStorage || blacklistFromStorage.length === 0)) {
           blacklistFromStorage = r.domainFilterList.slice();
-          browserAPI.storage.local.set({ domainFilterBlacklist: blacklistFromStorage });
+          browserAPI.storage.local.set({ domainFilterBlacklist: blacklistFromStorage, domainFilterDefaultsSet: true });
           browserAPI.storage.local.remove('domainFilterList');
         }
         _domainMode = r.domainFilterMode || 'blacklist';
