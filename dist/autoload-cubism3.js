@@ -1461,6 +1461,33 @@
                 window.Live2DAI.startReconnect();
                 console.log('[Live2D AI] 自动重连已启动');
             }
+            
+            // AI 连接心跳检测（每 60 秒检查一次连接是否有效）
+            if (settings.aiEnabled) {
+                setInterval(function() {
+                    if (!window.Live2DAI || !window.Live2DAI.isConnected) return;
+                    // 发送一个简单的 ping 请求检查连接
+                    var pingMsg = { role: 'user', content: '.' };
+                    window.Live2DAI.sendMessage([pingMsg]).then(function(resp) {
+                        if (!resp || resp.error) {
+                            throw new Error('心跳检测失败');
+                        }
+                    }).catch(function() {
+                        console.log('[Live2D AI] 心跳检测失败，标记为断开');
+                        window.Live2DAI.isConnected = false;
+                        try {
+                            var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                            s.aiConnected = false;
+                            localStorage.setItem('live2dExtensionSettings', JSON.stringify(s));
+                            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                                chrome.storage.local.set({ aiConnected: false });
+                            }
+                        } catch(e) {}
+                        var stEl = document.getElementById('aiConnectionStatus');
+                        if (stEl) { stEl.textContent = '未连接'; stEl.style.color = '#dc3545'; }
+                    });
+                }, 60000);
+            }
 
             let cubism3Model = settings.cubism3Model || '';
             const baseUrl = settings.baseUrl || '';
