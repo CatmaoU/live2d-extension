@@ -2501,21 +2501,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     var _domainWhitelist = [];
     var _domainBlacklist = [];
 
+    var _domainFilterInitialized = false;
+
     function loadDomainFilter() {
       browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList'], function(r) {
+        var blacklistFromStorage = r.domainFilterBlacklist;
         // 迁移旧版 domainFilterList 到新格式
-        if (r.domainFilterList && r.domainFilterList.length > 0 && (!r.domainFilterWhitelist || r.domainFilterWhitelist.length === 0) && (!r.domainFilterBlacklist || r.domainFilterBlacklist.length === 0)) {
-          _domainBlacklist = r.domainFilterList.slice();
-          browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist });
+        if (r.domainFilterList && r.domainFilterList.length > 0 && (!r.domainFilterWhitelist || r.domainFilterWhitelist.length === 0) && (!blacklistFromStorage || blacklistFromStorage.length === 0)) {
+          blacklistFromStorage = r.domainFilterList.slice();
+          browserAPI.storage.local.set({ domainFilterBlacklist: blacklistFromStorage });
           browserAPI.storage.local.remove('domainFilterList');
-        } else {
-          _domainBlacklist = r.domainFilterBlacklist || [];
         }
         _domainMode = r.domainFilterMode || 'blacklist';
         _domainWhitelist = r.domainFilterWhitelist || [];
-        // 首次使用时默认添加 live.bilibili.com 到黑名单
-        if (_domainBlacklist.length === 0 && _domainMode === 'blacklist') {
-          _domainBlacklist.push('live.bilibili.com');
+        _domainBlacklist = blacklistFromStorage || [];
+        // 首次使用时（storage 中没有任何名单数据）默认添加 live.bilibili.com
+        if (!_domainFilterInitialized && !r.domainFilterWhitelist && !blacklistFromStorage && !r.domainFilterList) {
+          _domainFilterInitialized = true;
+          _domainBlacklist = ['live.bilibili.com'];
           browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist });
         }
         renderDomainFilter();
