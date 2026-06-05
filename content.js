@@ -150,6 +150,8 @@
     }
 
     // 域名过滤检查
+    var _domainFiltered = false;
+
     function checkDomainFilter() {
         try {
             var mode = localStorage.getItem('live2d_domainFilterMode') || 'blacklist';
@@ -157,22 +159,25 @@
             var host = window.location.hostname.toLowerCase();
             var matched = list.some(function(d) { return host === d || host.endsWith('.' + d); });
             if (mode === 'whitelist' && !matched) {
-                console.log('[Live2D] Domain not in whitelist, hiding waifu:', host);
-                removeWaifu();
+                console.log('[Live2D] Domain not in whitelist, blocking:', host);
+                _domainFiltered = true;
                 return true;
             }
             if (mode === 'blacklist' && matched) {
-                console.log('[Live2D] Domain in blacklist, hiding waifu:', host);
-                removeWaifu();
+                console.log('[Live2D] Domain in blacklist, blocking:', host);
+                _domainFiltered = true;
                 return true;
             }
         } catch(e) {}
+        _domainFiltered = false;
         return false;
     }
 
     function removeWaifu() {
         var el = document.getElementById('live2d-waifu');
         if (el) el.style.display = 'none';
+        var tips = document.getElementById('waifu-tips');
+        if (tips) tips.style.display = 'none';
         // 删除所有 canvas 和 waifu 相关元素
         document.querySelectorAll('[class*=\"live2d\"], [id*=\"live2d\"], canvas.live2d-canvas').forEach(function(e) {
             e.style.display = 'none';
@@ -2960,6 +2965,12 @@
             console.log('[Live2D] Settings:', settingsData);
             localStorage.setItem('live2dExtensionSettings', JSON.stringify(settingsData));
             
+            // 域名过滤：阻止加载
+            if (_domainFiltered) {
+                console.log('[Live2D] Domain filtered, skipping Cubism3 load');
+                return;
+            }
+            
             // 标记模型已开始加载
             hasStartedLoading = true;
             console.log('[Live2D] Model loading started');
@@ -3035,6 +3046,12 @@
 
         console.log('[Live2D] Settings:', settingsData);
         localStorage.setItem('live2dExtensionSettings', JSON.stringify(settingsData));
+        
+        // 域名过滤：阻止加载
+        if (_domainFiltered) {
+            console.log('[Live2D] Domain filtered, skipping Cubism2 load');
+            return;
+        }
         
         // 标记模型已开始加载
         hasStartedLoading = true;
@@ -3709,6 +3726,11 @@
     }
     
     function reloadLive2DModel() {
+        // 域名过滤：阻止加载
+        if (_domainFiltered) {
+            console.log('[Live2D] Domain filtered, skipping reload');
+            return;
+        }
         console.log('[Live2D] Reloading Live2D model after full freeze');
         
         try {
