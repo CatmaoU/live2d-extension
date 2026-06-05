@@ -399,11 +399,6 @@ def _install_model_index(tag_name):
                 shutil.copytree(item, dest, dirs_exist_ok=True)
             else:
                 shutil.copy2(item, dest)
-    # 创建安装标记
-    try:
-        (BASE_DIR / ".model_index_installed").write_text("1")
-    except Exception:
-        pass
     shutil.rmtree(tmp_dir, ignore_errors=True)
     print("[模型索引] 模型索引组件安装完成！")
 
@@ -566,9 +561,9 @@ def main():
     else:
         print("\n当前已是最新版本，无需更新。")
         # 检查是否缺少模型索引（以 build.js 为标志）
-        installed_flag = BASE_DIR / ".model_index_installed"
-        if not installed_flag.exists():
-            print("检测到未安装模型索引组件。")
+        build_js = BASE_DIR / "live2d-static-api" / "build.js"
+        if not build_js.exists():
+            print("检测到缺少模型索引组件。")
             has_develop = any("Develop" in a.get("name", "") for rel in _releases for a in rel.get("assets", []))
             if has_develop:
                 ans = input("是否安装模型索引组件 (Y/n): ").strip().lower()
