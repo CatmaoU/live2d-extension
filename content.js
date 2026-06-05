@@ -3787,6 +3787,9 @@
             return;
         }
         console.log('[Live2D] Reloading Live2D model after full freeze');
+        // 清理 autoload 的初始化标志，允许重新加载
+        try { window.__live2d_cubism3_initialized = false; } catch(e) {}
+        try { window.__live2d_initialized = false; } catch(e) {}
         
         try {
             // 获取当前设置
