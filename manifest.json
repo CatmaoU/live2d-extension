@@ -86,7 +86,7 @@
         "live2d-static-api/model_list.json",
         "live2d-static-api/models.json",
         "live2d-moc3/**/*",
-        "live2d-moc3/Whitelist/Whitelist.json",
+        "live2d-moc3/blacklist/blacklist.json",
         "live2d-ai/**/*",
         "mouse-features/**/*",
         "lemon-tab/**/*",
