@@ -311,6 +311,54 @@ def download_and_extract(zip_url, tag_name):
     return tmp_dir
 
 
+def _install_model_index(tag_name):
+    """下载 Develop.zip 并解压到当前目录（覆盖不删除）"""
+    print("\n[模型索引] 正在获取下载地址...")
+    try:
+        req = urllib.request.Request(GITHUB_API + "/tags/" + tag_name)
+        req.add_header("User-Agent", "Live2D-Updater/1.0")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            rel = json.loads(resp.read().decode("utf-8"))
+    except Exception:
+        # 回退到 releases
+        try:
+            req = urllib.request.Request(GITHUB_API)
+            req.add_header("User-Agent", "Live2D-Updater/1.0")
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                releases = json.loads(resp.read().decode("utf-8"))
+            rel = next((r for r in releases if r.get("tag_name", "").lstrip("v") == tag_name), releases[0])
+        except Exception as e:
+            print(f"[错误] 无法获取版本信息: {e}")
+            return
+
+    assets = rel.get("assets", [])
+    develop_asset = next((a for a in assets if "Develop" in a.get("name", "") and a.get("name", "").endswith(".zip")), None)
+    if not develop_asset:
+        print("[模型索引] 未找到 Develop.zip，跳过")
+        return
+
+    dev_url = develop_asset.get("browser_download_url")
+    if not dev_url:
+        print("[模型索引] 无法获取下载链接")
+        return
+
+    # 下载
+    tmp_zip = Path(tempfile.mkdtemp(prefix="live2d_develop_")) / "Develop.zip"
+    print("[模型索引] 正在下载 Develop.zip...")
+    download_with_progress(dev_url, tmp_zip, "下载 Develop.zip")
+
+    # 解压到当前目录（覆盖模式，不删除已有文件）
+    print("[模型索引] 正在解压...")
+    try:
+        import py7zr
+        with py7zr.SevenZipFile(tmp_zip, 'r') as sz:
+            sz.extractall(BASE_DIR)
+    except ImportError:
+        with zipfile.ZipFile(tmp_zip, "r") as zf:
+            zf.extractall(BASE_DIR)
+    tmp_zip.unlink()
+    print("[模型索引] 模型索引组件安装完成！")
+
 def replace_extension(extracted_dir):
     print("[替换中] 正在更新本地文件...")
     exclude = {".git", "node_modules", "__pycache__", "live2d-static-api/assets", "Develop.zip"}
@@ -487,6 +535,11 @@ def main():
         print("  请重新加载浏览器扩展：")
         print("  chrome://extensions → 点击 ↻ 刷新")
         print("=" * 50)
+        # 询问是否安装模型索引
+        print()
+        ans = input("是否安装模型索引组件 (Y/n): ").strip().lower()
+        if ans in ("", "y", "yes"):
+            _install_model_index(release["tag_name"])
     except Exception as e:
         print(f"\n[错误] 更新失败：{e}")
         import traceback
