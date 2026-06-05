@@ -2502,10 +2502,17 @@ document.addEventListener('DOMContentLoaded', async () => {
     var _domainBlacklist = [];
 
     function loadDomainFilter() {
-      browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist'], function(r) {
+      browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList'], function(r) {
+        // 迁移旧版 domainFilterList 到新格式
+        if (r.domainFilterList && r.domainFilterList.length > 0 && (!r.domainFilterWhitelist || r.domainFilterWhitelist.length === 0) && (!r.domainFilterBlacklist || r.domainFilterBlacklist.length === 0)) {
+          _domainBlacklist = r.domainFilterList.slice();
+          browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist });
+          browserAPI.storage.local.remove('domainFilterList');
+        } else {
+          _domainBlacklist = r.domainFilterBlacklist || [];
+        }
         _domainMode = r.domainFilterMode || 'blacklist';
         _domainWhitelist = r.domainFilterWhitelist || [];
-        _domainBlacklist = r.domainFilterBlacklist || [];
         // 首次使用时默认添加 live.bilibili.com 到黑名单
         if (_domainBlacklist.length === 0 && _domainMode === 'blacklist') {
           _domainBlacklist.push('live.bilibili.com');
@@ -2604,7 +2611,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (domainModeWhitelist) {
       domainModeWhitelist.addEventListener('click', function() {
         _domainMode = 'whitelist';
-        if (_domainWhitelist.length === 0) _domainWhitelist.push('live.bilibili.com');
         saveDomainFilter();
         renderDomainFilter();
       });
@@ -2612,7 +2618,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (domainModeBlacklist) {
       domainModeBlacklist.addEventListener('click', function() {
         _domainMode = 'blacklist';
-        if (_domainBlacklist.length === 0) _domainBlacklist.push('live.bilibili.com');
         saveDomainFilter();
         renderDomainFilter();
       });
