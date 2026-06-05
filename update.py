@@ -350,18 +350,56 @@ def _install_model_index(tag_name):
     # 解压到当前目录（覆盖模式，不删除已有文件）
     print("[模型索引] 正在解压...")
     ext = os.path.splitext(str(tmp_zip))[1].lower()
+    tmp_dir = tmp_zip.parent / "develop_extracted"
+    tmp_dir.mkdir(exist_ok=True)
     if ext == '.7z':
         try:
             import py7zr
             with py7zr.SevenZipFile(tmp_zip, 'r') as sz:
-                sz.extractall(BASE_DIR)
+                sz.extractall(tmp_dir)
         except ImportError:
             with zipfile.ZipFile(tmp_zip, "r") as zf:
-                zf.extractall(BASE_DIR)
+                zf.extractall(tmp_dir)
     else:
         with zipfile.ZipFile(tmp_zip, "r") as zf:
-            zf.extractall(BASE_DIR)
+            zf.extractall(tmp_dir)
     tmp_zip.unlink()
+    # 如果解压后只有一个顶层文件夹，将其内容上移
+    items = list(tmp_dir.iterdir())
+    if len(items) == 1 and items[0].is_dir():
+        src_dir = items[0]
+        for item in src_dir.iterdir():
+            dest = BASE_DIR / item.name
+            if item.is_dir():
+                if dest.exists():
+                    # 目录合并：逐个文件复制覆盖
+                    for sub in item.rglob("*"):
+                        rel = sub.relative_to(src_dir)
+                        target = BASE_DIR / rel
+                        if sub.is_dir():
+                            target.mkdir(parents=True, exist_ok=True)
+                        else:
+                            try:
+                                shutil.copy2(sub, target)
+                            except Exception as e:
+                                print(f"  [跳过] {rel}: {e}")
+                else:
+                    shutil.copytree(item, dest, dirs_exist_ok=True)
+            else:
+                try:
+                    shutil.copy2(item, dest)
+                except Exception as e:
+                    print(f"  [跳过] {item.name}: {e}")
+        shutil.rmtree(src_dir)
+    else:
+        # 没有顶层文件夹，直接复制
+        for item in items:
+            dest = BASE_DIR / item.name
+            if item.is_dir():
+                shutil.copytree(item, dest, dirs_exist_ok=True)
+            else:
+                shutil.copy2(item, dest)
+    shutil.rmtree(tmp_dir, ignore_errors=True)
     print("[模型索引] 模型索引组件安装完成！")
 
 def replace_extension(extracted_dir):
