@@ -37,7 +37,7 @@ live2d-widget-extension/
 
 ## 更新日志
 ### v1.0.8
-- GitHub 定向代理：支持 codeload.github.com 下载加速、自定义代理节点、Firefox 兼容
+- GitHub 定向代理：支持 codeload.github.com 下载加速、自定义代理节点
 - 域名过滤：白名单/黑名单模式，支持路径细分（如 `bilibili.com/video`），独立列表存储
 - 暗色主题适配：全局滚动条、分页箭头、冻结模型下拉菜单、域名过滤弹窗、数字输入框
 - 模型大小：碰撞箱/红框随缩放同步（通过 deviceToScreen 矩阵更新）
