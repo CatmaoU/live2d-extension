@@ -115,7 +115,7 @@ def get_versions():
         if latest_with_zip and latest_no_zip:
             break
     
-    return latest_with_zip, latest_no_zip
+    return latest_with_zip, latest_no_zip, releases
 
 
 def compare_versions(a, b):
@@ -332,7 +332,7 @@ def _install_model_index(tag_name):
             return
 
     assets = rel.get("assets", [])
-    develop_asset = next((a for a in assets if "Develop" in a.get("name", "") and a.get("name", "").endswith(".zip")), None)
+    develop_asset = next((a for a in assets if "Develop" in a.get("name", "") and a.get("name", "").lower().endswith((".zip", ".7z", ".rar"))), None)
     if not develop_asset:
         print("[模型索引] 未找到 Develop.zip，跳过")
         return
@@ -440,7 +440,7 @@ def replace_extension(extracted_dir):
 
 def check_only():
     try:
-        with_zip, no_zip = get_versions()
+        with_zip, no_zip, _rels = get_versions()
         current = get_current_version()
         latest_ver = with_zip["version"] if with_zip else (no_zip["version"] if no_zip else current)
         latest_url = with_zip["html_url"] if with_zip else (no_zip["html_url"] if no_zip else "")
@@ -492,7 +492,7 @@ def main():
     current = get_current_version()
     print(f"当前版本：v{current}")
     try:
-        with_zip, no_zip = get_versions()
+        with_zip, no_zip, _releases = get_versions()
     except Exception as e:
         print(f"[错误] 无法获取版本信息：{e}")
         input("\n按 Enter 退出...")
@@ -535,11 +535,13 @@ def main():
         print("  请重新加载浏览器扩展：")
         print("  chrome://extensions → 点击 ↻ 刷新")
         print("=" * 50)
-        # 询问是否安装模型索引
-        print()
-        ans = input("是否安装模型索引组件 (Y/n): ").strip().lower()
-        if ans in ("", "y", "yes"):
-            _install_model_index(release["tag_name"])
+        # 询问是否安装模型索引（仅在 release 有 Develop 包时）
+        has_develop = any("Develop" in a.get("name", "") for rel in _releases for a in rel.get("assets", []))
+        if has_develop:
+            print()
+            ans = input("是否安装模型索引组件 (Y/n): ").strip().lower()
+            if ans in ("", "y", "yes"):
+                _install_model_index(release["tag_name"])
     except Exception as e:
         print(f"\n[错误] 更新失败：{e}")
         import traceback
