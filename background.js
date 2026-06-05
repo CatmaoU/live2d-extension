@@ -374,9 +374,16 @@ chrome.storage.local.get(['githubProxyEnabled', 'githubProxyUrl', 'ghProxyNodes'
 
 // ========== GitHub 代理拦截下载 ==========
 var _browser = typeof chrome !== 'undefined' ? chrome : (typeof browser !== 'undefined' ? browser : null);
+var _dlUrls = {};
 if (_browser && _browser.downloads) {
 _browser.downloads.onCreated.addListener(function(downloadItem) {
   var url = downloadItem.url || '';
+  // 防循环
+  if (_dlUrls[url]) return;
+  _dlUrls[url] = true;
+  setTimeout(function() { delete _dlUrls[url]; }, 5000);
+  // 忽略扩展自身的下载（如更新检查）
+  if (url.indexOf('live2d-extension') >= 0) return;
   
   // 如果定向代理开启，使用选中的节点
   if (_ghProxyEnabled && _ghProxyUrl) {

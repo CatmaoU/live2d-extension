@@ -2278,20 +2278,35 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (!el) return;
       el.textContent = '测速中...';
       var testUrl = url.replace(/\/+$/, '') + '/https://raw.githubusercontent.com/CatmaoU/live2d-extension/main/README.md';
-      // 用 Image 对象测速（不受 CSP connect-src 限制，只测延迟）
-      var img = new Image();
       var start = Date.now();
-      var timedOut = false;
-      var timer = setTimeout(function() { timedOut = true; img.src = ''; }, 15000);
-      img.onerror = function() {
-        clearTimeout(timer);
-        if (timedOut) return;
-        var ms = Date.now() - start;
-        el.textContent = ms + 'ms';
-        el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
-        updateGhSummary();
-      };
-      img.src = testUrl;
+      // 先用 fetch（得速度+延迟），失败降级到 Image（只延迟）
+      fetch(testUrl, { method: 'GET', mode: 'cors', signal: AbortSignal.timeout(6000) })
+        .then(function(r) {
+          var latencyMs = Date.now() - start;
+          return r.text().then(function(body) {
+            var totalMs = Date.now() - start;
+            var speedKB = totalMs > 0 ? (body.length / (totalMs / 1000)) / 1024 : 0;
+            var speedStr = speedKB >= 1024 ? (speedKB/1024).toFixed(1) + 'MB/s' : Math.round(speedKB) + 'KB/s';
+            el.textContent = latencyMs + 'ms | ' + speedStr;
+            el.style.color = speedKB >= 500 ? '#4CAF50' : speedKB >= 100 ? '#FF9800' : '#e06060';
+            updateGhSummary();
+          });
+        })
+        .catch(function() {
+          var img = new Image();
+          var start2 = Date.now();
+          var timedOut = false;
+          var timer = setTimeout(function() { timedOut = true; img.src = ''; }, 15000);
+          img.onerror = function() {
+            clearTimeout(timer);
+            if (timedOut) return;
+            var ms = Date.now() - start2;
+            el.textContent = ms + 'ms';
+            el.style.color = ms < 500 ? '#4CAF50' : ms < 1500 ? '#FF9800' : '#e06060';
+            updateGhSummary();
+          };
+          img.src = testUrl;
+        });
     });
   }
 
