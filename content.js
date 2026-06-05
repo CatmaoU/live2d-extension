@@ -223,10 +223,9 @@
             browserAPI.storage.local.remove('domainFilterList');
             hasBlacklist = true;
         }
-        // 仅当从未设置过默认值时添加 live.bilibili.com
-        if (!r.domainFilterDefaultsSet && !hasWhitelist && !hasBlacklist && !hasOldList) {
-            black = ['live.bilibili.com'];
-            browserAPI.storage.local.set({ domainFilterBlacklist: black, domainFilterDefaultsSet: true });
+        // 首次使用时标记已初始化
+        if (!r.domainFilterDefaultsSet) {
+            browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
         }
         var mode = r.domainFilterMode || 'blacklist';
         localStorage.setItem('live2d_domainFilterMode', mode);

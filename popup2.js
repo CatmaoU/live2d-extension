@@ -2513,10 +2513,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         _domainMode = r.domainFilterMode || 'blacklist';
         _domainWhitelist = r.domainFilterWhitelist || [];
         _domainBlacklist = blacklistFromStorage || [];
-        // 仅当从未设置过默认值时添加 live.bilibili.com
-        if (!r.domainFilterDefaultsSet && !r.domainFilterWhitelist && !blacklistFromStorage && !r.domainFilterList) {
-          _domainBlacklist = ['live.bilibili.com'];
-          browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist, domainFilterDefaultsSet: true });
+        // 首次使用时标记已初始化（不再添加默认域名）
+        if (!r.domainFilterDefaultsSet) {
+          browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
         }
         renderDomainFilter();
       });
