@@ -560,6 +560,15 @@ def main():
         return
     else:
         print("\n当前已是最新版本，无需更新。")
+        # 检查是否缺少模型索引（以 build.js 为标志）
+        build_js = BASE_DIR / "live2d-static-api" / "build.js"
+        if not build_js.exists():
+            print("检测到缺少模型索引组件。")
+            has_develop = any("Develop" in a.get("name", "") for rel in _releases for a in rel.get("assets", []))
+            if has_develop:
+                ans = input("是否安装模型索引组件 (Y/n): ").strip().lower()
+                if ans in ("", "y", "yes"):
+                    _install_model_index(with_zip["tag_name"] if with_zip else _releases[0].get("tag_name", ""))
         input("\n按 Enter 退出...")
         return
     if release.get("body"):
