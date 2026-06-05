@@ -1089,7 +1089,7 @@ async function silentCheckUpdate() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const config = await storage.get(['theme', 'followSystemTheme', 'autoUpdate', 'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey', 'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey', 'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey', 'atriApiKey', 'aiProvider', 'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit', 'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel', 'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel', 'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel', 'summaryRules']);
+  const config = await storage.get(['theme', 'followSystemTheme', 'autoUpdate', 'aiEnabled', 'aiApiKey', 'siliconflowApiKey', 'univibeApiKey', 'longcatApiKey', 'qwenApiKey', 'hunyuanApiKey', 'ernieApiKey', 'doubaoApiKey', 'sparkApiKey', 'zhipuApiKey', 'moonshotApiKey', 'minimaxApiKey', 'atriApiKey', 'aiProvider', 'characterName', 'characterLikes', 'characterRelation', 'characterProfile', 'characterLimit', 'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel', 'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel', 'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel', 'summaryRules', 'heartbeatInterval']);
   const followSystemThemeCheckbox = document.getElementById('followSystemTheme');
   const autoUpdateCheckbox = document.getElementById('autoUpdate');
   const checkUpdateBtn = document.getElementById('checkUpdateBtn');
@@ -2132,6 +2132,25 @@ document.addEventListener('DOMContentLoaded', async () => {
           connectStatus.textContent = '';
         }, 2000);
       }
+    });
+  }
+
+  // 心跳检测间隔设置
+  var heartbeatInput = document.getElementById('heartbeatInterval');
+  if (heartbeatInput) {
+    heartbeatInput.value = config.heartbeatInterval || 60;
+    heartbeatInput.addEventListener('change', function() {
+      var val = parseInt(heartbeatInput.value) || 60;
+      if (val < 0) val = 60;
+      if (val > 600) val = 600;
+      heartbeatInput.value = val;
+      storage.set({ heartbeatInterval: val });
+      // 同步到 localStorage
+      try {
+        var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+        s.heartbeatInterval = val;
+        localStorage.setItem('live2dExtensionSettings', JSON.stringify(s));
+      } catch(e) {}
     });
   }
 

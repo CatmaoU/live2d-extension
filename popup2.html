@@ -590,6 +590,14 @@
           <small>API 文档: <a href="https://ai.zkmjnic.tech/docs/getting-started" target="_blank">Getting Started</a></small>
           <small style="color: #666; margin-top: 5px;">Base URL: https://ai.zkmjnic.tech/v1</small>
         </div>
+
+        <div style="margin-top:12px;">
+          <label for="heartbeatInterval">心跳检测（秒）</label>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <input type="number" id="heartbeatInterval" min="10" max="600" value="60" style="width:60px; padding:4px; border:1px solid #ccc; border-radius:4px; font-size:12px; text-align:center;">
+            <small style="color:#888;">秒（默认60秒，设为0关闭）</small>
+          </div>
+        </div>
         
         <button type="button" id="connectBtn" class="connect-btn">连接并验证</button>
         <div id="connectStatus" class="connect-status"></div>
