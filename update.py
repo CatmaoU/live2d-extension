@@ -90,12 +90,17 @@ def get_versions():
         if not tag:
             continue
         assets = rel.get("assets", [])
-        has_zip = any(a.get("name", "").endswith((".zip", ".7z")) and "Develop" not in a.get("name", "") for a in assets)
-        # 优先选择 live2d-extension.7z，排除 Develop.zip
-        sorted_assets = sorted(
-            [a for a in assets if a.get("name", "").endswith((".zip", ".7z")) and "Develop" not in a.get("name", "")],
-            key=lambda a: 0 if "live2d-extension" in a.get("name", "") else 1
-        )
+        # 找出所有非 Develop 的压缩包（支持任意扩展名）
+        archive_exts = (".zip", ".7z", ".rar", ".tar.gz", ".tar", ".gz")
+        all_archives = [a for a in assets if any(a.get("name", "").lower().endswith(e) for e in archive_exts) and "Develop" not in a.get("name", "")]
+        has_zip = len(all_archives) > 0
+        # 排序：live2d-extension 优先 → 含 extension 其次 → 其他
+        def archive_priority(name):
+            n = name.lower()
+            if "live2d-extension" in n: return 0
+            if "extension" in n: return 1
+            return 2
+        sorted_assets = sorted(all_archives, key=lambda a: archive_priority(a.get("name", "")))
         info = {
             "version": tag,
             "zip_url": sorted_assets[0].get("browser_download_url") if sorted_assets else None,
@@ -232,6 +237,7 @@ def _is_archive(filename):
     return filename.lower().endswith(('.zip', '.7z'))
 
 def _extract_archive(archive_path, target_dir):
+    name = os.path.basename(archive_path).lower()
     ext = os.path.splitext(archive_path)[1].lower()
     if ext == '.zip':
         with zipfile.ZipFile(archive_path, "r") as zf:
@@ -245,8 +251,18 @@ def _extract_archive(archive_path, target_dir):
             print("  [警告] 未安装 py7zr，尝试作为 ZIP 解压...")
             with zipfile.ZipFile(archive_path, "r") as zf:
                 zf.extractall(target_dir)
+    elif name.endswith('.tar.gz') or name.endswith('.tar'):
+        import tarfile
+        mode = 'r:gz' if name.endswith('.gz') else 'r:'
+        with tarfile.open(archive_path, mode) as tf:
+            tf.extractall(target_dir)
     else:
-        raise Exception(f"不支持的压缩格式: {ext}")
+        # 兜底：当做 zip 试试
+        try:
+            with zipfile.ZipFile(archive_path, "r") as zf:
+                zf.extractall(target_dir)
+        except:
+            raise Exception(f"不支持的压缩格式: {ext}")
 
 def download_and_extract(zip_url, tag_name):
     """智能选择最快代理下载并解压"""
