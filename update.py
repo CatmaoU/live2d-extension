@@ -90,10 +90,15 @@ def get_versions():
         if not tag:
             continue
         assets = rel.get("assets", [])
-        has_zip = any(a.get("name", "").endswith((".zip", ".7z")) for a in assets)
+        has_zip = any(a.get("name", "").endswith((".zip", ".7z")) and "Develop" not in a.get("name", "") for a in assets)
+        # 优先选择 live2d-extension.7z，排除 Develop.zip
+        sorted_assets = sorted(
+            [a for a in assets if a.get("name", "").endswith((".zip", ".7z")) and "Develop" not in a.get("name", "")],
+            key=lambda a: 0 if "live2d-extension" in a.get("name", "") else 1
+        )
         info = {
             "version": tag,
-            "zip_url": next((a.get("browser_download_url") for a in assets if a.get("name", "").endswith((".zip", ".7z"))), None),
+            "zip_url": sorted_assets[0].get("browser_download_url") if sorted_assets else None,
             "html_url": rel.get("html_url", ""),
             "body": rel.get("body", ""),
             "tag_name": rel.get("tag_name", ""),
