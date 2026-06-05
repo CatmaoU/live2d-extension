@@ -2505,8 +2505,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function updateDomainFilterBtnText() {
       if (!domainFilterBtn) return;
       var modeLabel = _domainMode === 'whitelist' ? '白名单' : '黑名单';
-      var count = (_domainMode === 'whitelist' ? _domainWhitelist : _domainBlacklist).length;
-      domainFilterBtn.textContent = '域名过滤 [' + modeLabel + ' ' + count + ']';
+      domainFilterBtn.textContent = '域名过滤 [' + modeLabel + ']';
     }
 
     function loadDomainFilter() {
