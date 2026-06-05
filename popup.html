@@ -841,18 +841,18 @@
             </div>
             <div id="touchSubItems">
               <label class="param-row">
+                <input type="checkbox" id="hitAreaMotionCheckbox" checked> 动作
+              </label>
+              <label class="param-row" style="margin-top:8px;">
                 <input type="checkbox" id="hitAreaCheckbox"> 点击区域(碰撞箱)
               </label>
               <label class="param-row" style="margin-top:8px; display:flex; align-items:center; gap:6px; white-space:nowrap;">
-                <input type="checkbox" id="hitAreaSoundCheckbox" checked style="flex-shrink:0;"> 声音
+                <input type="checkbox" id="hitAreaSoundCheckbox" checked style="flex-shrink:0;"> 声音(仅限本页)
                 <span id="volumeRow" style="display:flex; align-items:center; gap:4px; margin-left:4px; font-size:12px; color:#888; flex:1;">
                   <input type="range" id="volumeSlider" min="0" max="100" value="50" style="flex:1; min-width:50px; height:4px;">
                   <input type="number" id="volumeInput" min="0" max="100" value="50" style="width:40px; padding:0 2px; border:1px solid #ccc; border-radius:3px; font-size:11px; text-align:center;">
                   <span>%</span>
                 </span>
-              </label>
-              <label class="param-row" style="margin-top:8px;">
-                <input type="checkbox" id="hitAreaMotionCheckbox" checked> 动作
               </label>
             </div>
             <div style="text-align:center; margin-top:16px; display:flex; gap:10px; justify-content:center;">
