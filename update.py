@@ -90,10 +90,10 @@ def get_versions():
         if not tag:
             continue
         assets = rel.get("assets", [])
-        has_zip = any(a.get("name", "").endswith(".zip") for a in assets)
+        has_zip = any(a.get("name", "").endswith((".zip", ".7z")) for a in assets)
         info = {
             "version": tag,
-            "zip_url": next((a.get("browser_download_url") for a in assets if a.get("name", "").endswith(".zip")), None),
+            "zip_url": next((a.get("browser_download_url") for a in assets if a.get("name", "").endswith((".zip", ".7z"))), None),
             "html_url": rel.get("html_url", ""),
             "body": rel.get("body", ""),
             "tag_name": rel.get("tag_name", ""),
@@ -223,13 +223,33 @@ def download_with_progress(url, target_path, desc="下载中"):
         sys.stdout.write("\n")
 
 
+def _is_archive(filename):
+    return filename.lower().endswith(('.zip', '.7z'))
+
+def _extract_archive(archive_path, target_dir):
+    ext = os.path.splitext(archive_path)[1].lower()
+    if ext == '.zip':
+        with zipfile.ZipFile(archive_path, "r") as zf:
+            zf.extractall(target_dir)
+    elif ext == '.7z':
+        try:
+            import py7zr
+            with py7zr.SevenZipFile(archive_path, 'r') as sz:
+                sz.extractall(target_dir)
+        except ImportError:
+            print("  [警告] 未安装 py7zr，尝试作为 ZIP 解压...")
+            with zipfile.ZipFile(archive_path, "r") as zf:
+                zf.extractall(target_dir)
+    else:
+        raise Exception(f"不支持的压缩格式: {ext}")
+
 def download_and_extract(zip_url, tag_name):
     """智能选择最快代理下载并解压"""
-    # 下载到临时文件
-    tmp_zip = Path(tempfile.mkdtemp(prefix="live2d_update_")) / "update.zip"
+    is_7z = zip_url.lower().endswith('.7z')
+    ext = '.7z' if is_7z else '.zip'
+    tmp_zip = Path(tempfile.mkdtemp(prefix="live2d_update_")) / f"update{ext}"
     print()
     
-    # 按速度顺序尝试所有代理，直到下载到有效的 ZIP
     proxy_prefix, fast_url = pick_fastest_proxy(zip_url, tag_name)
     all_urls = [(proxy_prefix or "直连", fast_url)]
     seen_urls = {fast_url}
@@ -251,7 +271,7 @@ def download_and_extract(zip_url, tag_name):
             break
         print(f"  尝试 {label}...")
         download_with_progress(url, tmp_zip, "下载更新包")
-        if zipfile.is_zipfile(tmp_zip):
+        if zipfile.is_zipfile(tmp_zip) or (is_7z and tmp_zip.stat().st_size > 1000):
             downloaded_ok = True
             break
     
@@ -259,11 +279,9 @@ def download_and_extract(zip_url, tag_name):
         tmp_zip.unlink()
         raise Exception("所有节点均下载失败，请检查网络")
     
-    # 解压
     print("[解压中] 正在解压更新包...")
     tmp_dir = tmp_zip.parent
-    with zipfile.ZipFile(tmp_zip, "r") as zf:
-        zf.extractall(tmp_dir)
+    _extract_archive(tmp_zip, tmp_dir)
     tmp_zip.unlink()
     
     items = list(tmp_dir.iterdir())
@@ -274,7 +292,7 @@ def download_and_extract(zip_url, tag_name):
 
 def replace_extension(extracted_dir):
     print("[替换中] 正在更新本地文件...")
-    exclude = {".git", "node_modules", "__pycache__", "live2d-static-api/assets"}
+    exclude = {".git", "node_modules", "__pycache__", "live2d-static-api/assets", "Develop.zip"}
     for item in BASE_DIR.iterdir():
         if item.name in exclude or item.name.startswith("."):
             continue
