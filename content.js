@@ -375,13 +375,9 @@
                 localStorage.setItem('live2dExtensionSettings', JSON.stringify(settingsData));
                 console.log('[Live2D] Model size updated to:', message.size);
                 
-                // 检查当前是否是 Cubism3 模式
-                if (settingsData.modelSource === 'local' && settingsData.useCubism3) {
-                    // 对于 Cubism3 模式，动态更新 canvas 大小
-                    updateCubism3Size(message.size);
-                } else {
-                    // 对于 Cubism2 模式，应用自定义样式
-                    applyCustomStyles();
+                // 直接重新加载模型（确保碰撞箱同步）
+                if (!_domainFiltered) {
+                    reloadLive2DModel();
                 }
                 
                 sendResponse({ success: true });
@@ -3811,6 +3807,16 @@
         // 清理 autoload 的初始化标志，允许重新加载
         try { window.__live2d_cubism3_initialized = false; } catch(e) {}
         try { window.__live2d_initialized = false; } catch(e) {}
+        // 移除旧元素，避免重复
+        var oldWaifu = document.getElementById('waifu');
+        if (oldWaifu) oldWaifu.remove();
+        var oldStyle = document.getElementById('live2d-cubism3-styles');
+        if (oldStyle) oldStyle.remove();
+        var oldHitOv = document.getElementById('live2d-hitarea-overlay');
+        if (oldHitOv) oldHitOv.remove();
+        if (window.live2d && window.live2d.releaseInstance) {
+            try { window.live2d.releaseInstance(); } catch(e) {}
+        }
         
         try {
             // 获取当前设置
