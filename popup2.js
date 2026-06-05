@@ -2525,7 +2525,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       browserAPI.storage.local.set({ domainFilterMode: _domainMode, domainFilterWhitelist: _domainWhitelist, domainFilterBlacklist: _domainBlacklist });
       chrome.tabs.query({}, function(tabs) {
         tabs.forEach(function(t) {
-          chrome.tabs.sendMessage(t.id, { action: 'domainFilterUpdate', mode: _domainMode, list: _domainList }).catch(function(){});
+          chrome.tabs.sendMessage(t.id, { action: 'domainFilterUpdate', mode: _domainMode, list: list }).catch(function(){});
         });
       });
     }
