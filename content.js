@@ -137,8 +137,11 @@
             }
             
             // 同步域名过滤
-            if (result.domainFilterMode) localStorage.setItem('live2d_domainFilterMode', result.domainFilterMode);
-            if (result.domainFilterList) localStorage.setItem('live2d_domainFilterList', JSON.stringify(result.domainFilterList));
+            var dfMode = result.domainFilterMode || 'blacklist';
+            var dfList = result.domainFilterList || [];
+            if (dfList.length === 0) dfList.push('live.bilibili.com');
+            localStorage.setItem('live2d_domainFilterMode', dfMode);
+            localStorage.setItem('live2d_domainFilterList', JSON.stringify(dfList));
             checkDomainFilter();
             
             // 发送自定义事件通知页面
@@ -198,8 +201,11 @@
     
     // 同步域名过滤设置
     browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r) {
-        if (r.domainFilterMode) localStorage.setItem('live2d_domainFilterMode', r.domainFilterMode);
-        if (r.domainFilterList) localStorage.setItem('live2d_domainFilterList', JSON.stringify(r.domainFilterList));
+        var mode = r.domainFilterMode || 'blacklist';
+        var list = r.domainFilterList || [];
+        if (list.length === 0) list.push('live.bilibili.com');
+        localStorage.setItem('live2d_domainFilterMode', mode);
+        localStorage.setItem('live2d_domainFilterList', JSON.stringify(list));
         checkDomainFilter();
     });
 
@@ -214,8 +220,11 @@
                 // 同步域名过滤设置
                 if (changes.domainFilterMode || changes.domainFilterList) {
                     browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r2) {
-                        if (r2.domainFilterMode) localStorage.setItem('live2d_domainFilterMode', r2.domainFilterMode);
-                        if (r2.domainFilterList) localStorage.setItem('live2d_domainFilterList', JSON.stringify(r2.domainFilterList));
+                        var m = r2.domainFilterMode || 'blacklist';
+                        var l = r2.domainFilterList || [];
+                        if (l.length === 0) l.push('live.bilibili.com');
+                        localStorage.setItem('live2d_domainFilterMode', m);
+                        localStorage.setItem('live2d_domainFilterList', JSON.stringify(l));
                         checkDomainFilter();
                     });
                 }

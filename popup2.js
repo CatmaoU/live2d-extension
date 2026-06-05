@@ -2504,9 +2504,16 @@ document.addEventListener('DOMContentLoaded', async () => {
       browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r) {
         _domainMode = r.domainFilterMode || 'blacklist';
         _domainList = r.domainFilterList || [];
+        // 首次使用时默认添加 live.bilibili.com
+        if (_domainList.length === 0 && !_domainListSet) {
+          _domainListSet = true;
+          _domainList.push('live.bilibili.com');
+          browserAPI.storage.local.set({ domainFilterList: _domainList });
+        }
         renderDomainFilter();
       });
     }
+    var _domainListSet = false;
     function saveDomainFilter() {
       browserAPI.storage.local.set({ domainFilterMode: _domainMode, domainFilterList: _domainList });
       // 通知 content script
