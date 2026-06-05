@@ -375,9 +375,11 @@
                 localStorage.setItem('live2dExtensionSettings', JSON.stringify(settingsData));
                 console.log('[Live2D] Model size updated to:', message.size);
                 
-                // 直接重新加载模型（确保碰撞箱同步）
-                if (!_domainFiltered) {
-                    reloadLive2DModel();
+                // 检查当前是否是 Cubism3 模式
+                if (settingsData.modelSource === 'local' && settingsData.useCubism3) {
+                    updateCubism3Size(message.size);
+                } else {
+                    applyCustomStyles();
                 }
                 
                 sendResponse({ success: true });
@@ -3200,6 +3202,17 @@
                 canvas.style.height = '100%';
             }
         });
+        
+        // 同步更新 SDK 的 deviceToScreen 矩阵
+        try {
+            var dts = window.live2d.getDeviceToScreen();
+            if (dts) {
+                dts._scaleX = 2 / canvasWidth;
+                dts._scaleY = -2 / canvasHeight;
+                dts._trX = -1;
+                dts._trY = 1;
+            }
+        } catch(e) {}
         
         // 更新按钮容器位置
         const buttonsEl = document.getElementById('waifu-buttons');
