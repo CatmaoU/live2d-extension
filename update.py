@@ -349,11 +349,16 @@ def _install_model_index(tag_name):
 
     # 解压到当前目录（覆盖模式，不删除已有文件）
     print("[模型索引] 正在解压...")
-    try:
-        import py7zr
-        with py7zr.SevenZipFile(tmp_zip, 'r') as sz:
-            sz.extractall(BASE_DIR)
-    except ImportError:
+    ext = os.path.splitext(str(tmp_zip))[1].lower()
+    if ext == '.7z':
+        try:
+            import py7zr
+            with py7zr.SevenZipFile(tmp_zip, 'r') as sz:
+                sz.extractall(BASE_DIR)
+        except ImportError:
+            with zipfile.ZipFile(tmp_zip, "r") as zf:
+                zf.extractall(BASE_DIR)
+    else:
         with zipfile.ZipFile(tmp_zip, "r") as zf:
             zf.extractall(BASE_DIR)
     tmp_zip.unlink()
