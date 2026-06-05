@@ -2743,6 +2743,22 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (hitAreaSoundCheckbox) {
     hitAreaSoundCheckbox.addEventListener('change', function() {
       sendToggle('TOGGLE_HITAREA_SOUND', hitAreaSoundCheckbox.checked);
+      if (!hitAreaSoundCheckbox.checked) {
+        // 关闭时保存当前音量并设为0
+        var prevVol = volumeSlider ? volumeSlider.value : 50;
+        localStorage.setItem('live2d_hitAreaVolumeBackup', prevVol);
+        sendVolume(0);
+        if (volumeSlider) volumeSlider.value = 0;
+        if (volumeInput) volumeInput.value = 0;
+      } else {
+        // 开启时恢复之前的音量
+        var savedVol = localStorage.getItem('live2d_hitAreaVolumeBackup');
+        var restoreVol = savedVol !== null ? parseInt(savedVol) : 50;
+        sendVolume(restoreVol);
+        if (volumeSlider) volumeSlider.value = restoreVol;
+        if (volumeInput) volumeInput.value = restoreVol;
+        localStorage.setItem('live2d_hitAreaVolume', restoreVol);
+      }
       updateVolumeRow();
     });
   }
