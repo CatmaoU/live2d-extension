@@ -242,9 +242,21 @@
             browserAPI.storage.local.remove('domainFilterList');
             hasBlacklist = true;
         }
-        // 首次使用时标记已初始化
+        // 首次使用时从 Whitelist.json 读取默认域名添加到黑名单
         if (!r.domainFilterDefaultsSet) {
-            browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
+            var wlUrl = browserAPI.runtime.getURL('live2d-moc3/Whitelist/Whitelist.json');
+            fetch(wlUrl).then(function(resp) { return resp.json(); }).then(function(defaults) {
+                if (Array.isArray(defaults) && defaults.length > 0) {
+                    defaults.forEach(function(d) {
+                        if (black.indexOf(d) < 0) black.push(d);
+                    });
+                    browserAPI.storage.local.set({ domainFilterBlacklist: black, domainFilterDefaultsSet: true });
+                } else {
+                    browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
+                }
+            }).catch(function() {
+                browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
+            });
         }
         var mode = r.domainFilterMode || 'blacklist';
         localStorage.setItem('live2d_domainFilterMode', mode);

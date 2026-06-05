@@ -2527,9 +2527,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         _domainMode = r.domainFilterMode || 'blacklist';
         _domainWhitelist = whitelistFromStorage ? whitelistFromStorage.slice() : [];
         _domainBlacklist = blacklistFromStorage ? blacklistFromStorage.slice() : [];
-        // 首次使用时标记已初始化（不再添加默认域名）
+        // 首次使用时从 Whitelist.json 读取默认域名添加到黑名单
         if (!r.domainFilterDefaultsSet) {
-          browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
+          var whitelistUrl = browserAPI.runtime.getURL('live2d-moc3/Whitelist/Whitelist.json');
+          fetch(whitelistUrl).then(function(resp) { return resp.json(); }).then(function(defaults) {
+            if (Array.isArray(defaults) && defaults.length > 0) {
+              defaults.forEach(function(d) {
+                if (_domainBlacklist.indexOf(d) < 0) _domainBlacklist.push(d);
+              });
+              browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist, domainFilterDefaultsSet: true });
+              renderDomainFilter();
+            } else {
+              browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
+            }
+          }).catch(function() {
+            browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
+          });
         }
         renderDomainFilter();
       });
