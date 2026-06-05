@@ -2487,6 +2487,142 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     if (pagePrev) pagePrev.addEventListener('click', function() { if (currentPage > 1) showPage(currentPage - 1); });
     if (pageNext) pageNext.addEventListener('click', function() { if (currentPage < 2) showPage(currentPage + 1); });
+    // ========== 域名过滤 ==========
+    var domainFilterBtn = document.getElementById('domainFilterBtn');
+    var domainFilterOverlay = document.getElementById('domainFilterOverlay');
+    var domainFilterClose = document.getElementById('domainFilterClose');
+    var domainModeWhitelist = document.getElementById('domainModeWhitelist');
+    var domainModeBlacklist = document.getElementById('domainModeBlacklist');
+    var domainFilterHint = document.getElementById('domainFilterHint');
+    var domainListEl = document.getElementById('domainList');
+    var domainInput = document.getElementById('domainInput');
+    var domainAddBtn = document.getElementById('domainAddBtn');
+    var _domainMode = 'blacklist';
+    var _domainList = [];
+
+    function loadDomainFilter() {
+      browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r) {
+        _domainMode = r.domainFilterMode || 'blacklist';
+        _domainList = r.domainFilterList || [];
+        renderDomainFilter();
+      });
+    }
+    function saveDomainFilter() {
+      browserAPI.storage.local.set({ domainFilterMode: _domainMode, domainFilterList: _domainList });
+      // 通知 content script
+      chrome.tabs.query({}, function(tabs) {
+        tabs.forEach(function(t) {
+          chrome.tabs.sendMessage(t.id, { action: 'domainFilterUpdate', mode: _domainMode, list: _domainList }).catch(function(){});
+        });
+      });
+    }
+    function renderDomainFilter() {
+      // 更新模式按钮样式
+      if (domainModeWhitelist) {
+        var isWhite = _domainMode === 'whitelist';
+        domainModeWhitelist.style.borderColor = isWhite ? '#667eea' : '#ccc';
+        domainModeWhitelist.style.background = isWhite ? '#667eea' : '#fff';
+        domainModeWhitelist.style.color = isWhite ? '#fff' : '#333';
+        domainModeBlacklist.style.borderColor = isWhite ? '#ccc' : '#667eea';
+        domainModeBlacklist.style.background = isWhite ? '#fff' : '#667eea';
+        domainModeBlacklist.style.color = isWhite ? '#333' : '#fff';
+      }
+      if (domainFilterHint) {
+        domainFilterHint.textContent = _domainMode === 'whitelist' ? '只有以下网站才显示看板娘：' : '以下网站不显示看板娘：';
+      }
+      // 渲染域名列表
+      if (domainListEl) {
+        domainListEl.innerHTML = '';
+        _domainList.forEach(function(d) {
+          var row = document.createElement('div');
+          row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 8px; margin-bottom:4px; background:#f5f5f5; border-radius:4px; font-size:12px;';
+          row.innerHTML = '<span>' + d + '</span><button class="domain-del" data-domain="' + d.replace(/"/g, '&quot;') + '" style="background:none; border:none; color:#e06060; cursor:pointer; font-size:14px;">×</button>';
+          domainListEl.appendChild(row);
+        });
+        // 删除事件
+        domainListEl.querySelectorAll('.domain-del').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var d = this.getAttribute('data-domain');
+            _domainList = _domainList.filter(function(x) { return x !== d; });
+            saveDomainFilter();
+            renderDomainFilter();
+          });
+        });
+      }
+    }
+    function addDomain(val) {
+      val = val.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+      if (!val) return;
+      if (_domainList.indexOf(val) >= 0) return;
+      _domainList.push(val);
+      saveDomainFilter();
+      renderDomainFilter();
+    }
+
+    if (domainFilterBtn) {
+      domainFilterBtn.addEventListener('click', function() {
+        loadDomainFilter();
+        if (domainFilterOverlay) {
+          domainFilterOverlay.style.display = 'flex';
+          // 弹出时获取当前标签页域名
+          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            if (tabs && tabs[0] && tabs[0].url) {
+              try {
+                var u = new URL(tabs[0].url);
+                domainInput.placeholder = u.hostname.replace(/^www\./, '');
+              } catch(e) {}
+            }
+          });
+        }
+      });
+    }
+    if (domainFilterClose) {
+      domainFilterClose.addEventListener('click', function() {
+        domainFilterOverlay.style.display = 'none';
+      });
+    }
+    if (domainFilterOverlay) {
+      domainFilterOverlay.addEventListener('click', function(e) {
+        if (e.target === domainFilterOverlay) domainFilterOverlay.style.display = 'none';
+      });
+    }
+    if (domainModeWhitelist) {
+      domainModeWhitelist.addEventListener('click', function() {
+        _domainMode = 'whitelist';
+        saveDomainFilter();
+        renderDomainFilter();
+      });
+    }
+    if (domainModeBlacklist) {
+      domainModeBlacklist.addEventListener('click', function() {
+        _domainMode = 'blacklist';
+        saveDomainFilter();
+        renderDomainFilter();
+      });
+    }
+    if (domainAddBtn && domainInput) {
+      domainAddBtn.addEventListener('click', function() {
+        var val = domainInput.value.trim();
+        if (!val) {
+          // 空则使用当前标签页域名
+          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            if (tabs && tabs[0] && tabs[0].url) {
+              try {
+                var u = new URL(tabs[0].url);
+                addDomain(u.hostname);
+              } catch(e) {}
+            }
+          });
+          return;
+        }
+        addDomain(val);
+        domainInput.value = '';
+      });
+      domainInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') domainAddBtn.click();
+      });
+    }
+
     var startPage = window.location.hash === '#page2' ? 2 : 1;
     showPage(startPage);
   })();

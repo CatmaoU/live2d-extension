@@ -23,7 +23,8 @@
                     // 模型选择字段
                     'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel',
                     'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel',
-                    'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel'
+                    'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel',
+                    'domainFilterMode', 'domainFilterList'
                 ], (data) => {
                     resolve(data || {});
                 });
@@ -135,6 +136,11 @@
                 console.log('[Live2D] Settings synced from browser.storage:', result);
             }
             
+            // 同步域名过滤
+            if (result.domainFilterMode) localStorage.setItem('live2d_domainFilterMode', result.domainFilterMode);
+            if (result.domainFilterList) localStorage.setItem('live2d_domainFilterList', JSON.stringify(result.domainFilterList));
+            checkDomainFilter();
+            
             // 发送自定义事件通知页面
             const event = new CustomEvent('live2dSettingsUpdated', { detail: result });
             document.dispatchEvent(event);
@@ -142,10 +148,47 @@
             console.log('[Live2D] Settings sync failed:', e);
         }
     }
+
+    // 域名过滤检查
+    function checkDomainFilter() {
+        try {
+            var mode = localStorage.getItem('live2d_domainFilterMode') || 'blacklist';
+            var list = JSON.parse(localStorage.getItem('live2d_domainFilterList') || '[]');
+            var host = window.location.hostname.toLowerCase();
+            var matched = list.some(function(d) { return host === d || host.endsWith('.' + d); });
+            if (mode === 'whitelist' && !matched) {
+                console.log('[Live2D] Domain not in whitelist, hiding waifu:', host);
+                removeWaifu();
+                return true;
+            }
+            if (mode === 'blacklist' && matched) {
+                console.log('[Live2D] Domain in blacklist, hiding waifu:', host);
+                removeWaifu();
+                return true;
+            }
+        } catch(e) {}
+        return false;
+    }
+
+    function removeWaifu() {
+        var el = document.getElementById('live2d-waifu');
+        if (el) el.style.display = 'none';
+        // 删除所有 canvas 和 waifu 相关元素
+        document.querySelectorAll('[class*=\"live2d\"], [id*=\"live2d\"], canvas.live2d-canvas').forEach(function(e) {
+            e.style.display = 'none';
+        });
+    }
     
     // 页面加载时同步设置
     syncSettingsFromStorage();
     
+    // 同步域名过滤设置
+    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r) {
+        if (r.domainFilterMode) localStorage.setItem('live2d_domainFilterMode', r.domainFilterMode);
+        if (r.domainFilterList) localStorage.setItem('live2d_domainFilterList', JSON.stringify(r.domainFilterList));
+        checkDomainFilter();
+    });
+
     // 定期同步设置（每 5 秒，减少日志频率）
     setInterval(syncSettingsFromStorage, 5000);
 
@@ -154,6 +197,14 @@
         browserAPI.storage.onChanged.addListener((changes, areaName) => {
             if (areaName === 'local') {
                 syncSettingsFromStorage();
+                // 同步域名过滤设置
+                if (changes.domainFilterMode || changes.domainFilterList) {
+                    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r2) {
+                        if (r2.domainFilterMode) localStorage.setItem('live2d_domainFilterMode', r2.domainFilterMode);
+                        if (r2.domainFilterList) localStorage.setItem('live2d_domainFilterList', JSON.stringify(r2.domainFilterList));
+                        checkDomainFilter();
+                    });
+                }
                 // 同步模型按键映射到页面 localStorage
                 if (changes.live2dModelKeyBindings && changes.live2dModelKeyBindings.newValue) {
                     try { localStorage.setItem('live2dModelKeyBindings', JSON.stringify(changes.live2dModelKeyBindings.newValue)); } catch(e) {}
@@ -174,6 +225,13 @@
             mouseCursorSize = message.size;
             console.log('[Live2D] Mouse cursor size updated to:', mouseCursorSize);
             initMouseCursor();
+            sendResponse({ success: true });
+        } else if (message.action === 'domainFilterUpdate') {
+            try {
+                localStorage.setItem('live2d_domainFilterMode', message.mode);
+                localStorage.setItem('live2d_domainFilterList', JSON.stringify(message.list));
+                checkDomainFilter();
+            } catch(e) {}
             sendResponse({ success: true });
         } else if (message.type === 'getSettings') {
             // 返回 AI 相关设置和角色信息
