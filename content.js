@@ -166,13 +166,21 @@
                 : JSON.parse(localStorage.getItem('live2d_domainFilterBlacklist') || '[]');
             var host = window.location.hostname.toLowerCase();
             var matched = list.some(function(d) { return host === d || host.endsWith('.' + d); });
-            if (mode === 'whitelist' && !matched) {
-                console.log('[Live2D] Domain not in whitelist, blocking:', host);
-                nowBlocked = true;
+            if (mode === 'whitelist') {
+                if (!matched) {
+                    console.log('[Live2D] Domain not in whitelist, blocking:', host);
+                    nowBlocked = true;
+                } else {
+                    console.log('[Live2D] Domain in whitelist, allowing:', host);
+                }
             }
-            if (mode === 'blacklist' && matched) {
-                console.log('[Live2D] Domain in blacklist, blocking:', host);
-                nowBlocked = true;
+            if (mode === 'blacklist') {
+                if (matched) {
+                    console.log('[Live2D] Domain in blacklist, blocking:', host);
+                    nowBlocked = true;
+                } else {
+                    console.log('[Live2D] Domain not in blacklist, allowing:', host);
+                }
             }
         } catch(e) {}
         _domainFiltered = nowBlocked;
@@ -181,8 +189,8 @@
             return true;
         }
         // 之前被屏蔽而现在解除了 → 重新加载看板娘
-        if (wasFiltered && !_domainFiltered) {
-            console.log('[Live2D] Domain filter removed, reloading waifu');
+        if (wasFiltered) {
+            console.log('[Live2D] Domain filter removed, reloading waifu. mode:', localStorage.getItem('live2d_domainFilterMode'));
             reloadLive2DModel();
         }
         return false;
