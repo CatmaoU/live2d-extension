@@ -248,9 +248,9 @@ def _extract_archive(archive_path, target_dir):
             with py7zr.SevenZipFile(archive_path, 'r') as sz:
                 sz.extractall(target_dir)
         except ImportError:
-            print("  [警告] 未安装 py7zr，尝试作为 ZIP 解压...")
-            with zipfile.ZipFile(archive_path, "r") as zf:
-                zf.extractall(target_dir)
+            print("  [警告] 未安装 py7zr，此更新包需要 py7zr 解压")
+            print("  请运行: pip install py7zr")
+            raise Exception("需要 py7zr 库来解压 .7z 文件")
     elif name.endswith('.tar.gz') or name.endswith('.tar'):
         import tarfile
         mode = 'r:gz' if name.endswith('.gz') else 'r:'
