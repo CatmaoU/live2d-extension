@@ -244,7 +244,7 @@
         }
         // 首次使用时从 Whitelist.json 读取默认域名添加到黑名单
         if (!r.domainFilterDefaultsSet) {
-            var wlUrl = browserAPI.runtime.getURL('live2d-moc3/blacklist/blacklist.json');
+            var wlUrl = browserAPI.runtime.getURL('live2d-moc3/rule/blacklist.json');
             fetch(wlUrl).then(function(resp) { return resp.json(); }).then(function(defaults) {
                 if (Array.isArray(defaults) && defaults.length > 0) {
                     defaults.forEach(function(d) {
