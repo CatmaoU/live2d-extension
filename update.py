@@ -561,8 +561,8 @@ def main():
     else:
         print("\n当前已是最新版本，无需更新。")
         # 检查是否缺少模型索引（以 build.js 为标志）
-        build_js = BASE_DIR / "live2d-static-api" / "build.js"
-        if not build_js.exists():
+        model_list = BASE_DIR / "live2d-static-api" / "indexes" / "model_list.json"
+        if not model_list.exists():
             print("检测到缺少模型索引组件。")
             has_develop = any("Develop" in a.get("name", "") for rel in _releases for a in rel.get("assets", []))
             if has_develop:
