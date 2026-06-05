@@ -161,11 +161,13 @@
             if (mode === 'whitelist' && !matched) {
                 console.log('[Live2D] Domain not in whitelist, blocking:', host);
                 _domainFiltered = true;
+                removeWaifu();
                 return true;
             }
             if (mode === 'blacklist' && matched) {
                 console.log('[Live2D] Domain in blacklist, blocking:', host);
                 _domainFiltered = true;
+                removeWaifu();
                 return true;
             }
         } catch(e) {}
