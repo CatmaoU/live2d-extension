@@ -617,6 +617,15 @@ document.addEventListener('DOMContentLoaded', async () => {
    themeToggle.addEventListener('click', async () => {
      const isDark = document.body.classList.toggle('dark-theme');
      await storage.set({ theme: isDark ? 'dark' : 'light' });
+     // 手动切换主题时关闭跟随系统主题
+     const followCb = document.getElementById('followSystemTheme');
+     if (followCb && followCb.checked) {
+       followCb.checked = false;
+       await storage.set({ followSystemTheme: false });
+       const s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+       s.followSystemTheme = false;
+       localStorage.setItem('live2dExtensionSettings', JSON.stringify(s));
+     }
      // 同步到 localStorage
      const settings = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
      settings.theme = isDark ? 'dark' : 'light';
