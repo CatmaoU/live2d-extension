@@ -535,27 +535,20 @@ def main():
     current = get_current_version()
     print(f"当前版本：v{current}")
     
-    # 检测模型索引是否缺失（build.js 不存在则提示安装）
+    # 检测模型索引是否缺失（先在 releases 中查 Develop 包）
     build_js = BASE_DIR / "live2d-static-api" / "build.js"
     if not build_js.exists():
-        print("\n[检测] 缺少模型索引组件 (build.js)")
         try:
             _, _, _rels = get_versions()
-            # 列出所有可用资产名，方便调试
-            all_names = []
-            for rel in _rels:
-                for a in rel.get("assets", []):
-                    all_names.append(a.get("name", ""))
-            has_dev = any("Develop" in n for n in all_names)
+            has_dev = any("Develop" in a.get("name", "") for rel in _rels for a in rel.get("assets", []))
             if has_dev:
+                print("\n[检测] 缺少模型索引组件")
                 ans = input("是否下载并安装模型索引？(Y/n): ").strip().lower()
                 if ans in ("", "y", "yes"):
                     try:
                         _install_model_index(_rels[0].get("tag_name", ""))
                     except Exception as e:
                         print(f"[错误] 安装失败：{e}")
-            else:
-                print(f"  [跳过] releases 中未找到 Develop 包 (共 {len(all_names)} 个资产)")
         except Exception as e:
             print(f"[错误] 无法检查模型索引更新：{e}")
     
