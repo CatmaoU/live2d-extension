@@ -1427,6 +1427,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     await storage.set({ size: val });
   });
 
+  // 重置大小按钮
+  var sizeResetBtn = document.getElementById('sizeResetBtn');
+  if (sizeResetBtn) {
+    sizeResetBtn.addEventListener('click', function() {
+      var defaultSize = 100;
+      sizeRangeInput.value = defaultSize;
+      sizeNumberInput.value = defaultSize;
+      localStorage.setItem('live2dExtensionSettings', JSON.stringify(Object.assign(JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}'), { size: defaultSize })));
+      storage.set({ size: defaultSize });
+      browserAPI.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+        if (tabs[0]) {
+          browserAPI.tabs.sendMessage(tabs[0].id, { type: 'updateModelSize', size: defaultSize }).catch(function(){});
+        }
+      });
+    });
+  }
+
   function showAchievement(title, message) {
     browserAPI.tabs.query({ active: true, currentWindow: true }, (tabs) => {
       if (tabs[0]) {
