@@ -2508,6 +2508,12 @@ document.addEventListener('DOMContentLoaded', async () => {
       domainFilterBtn.textContent = '域名过滤 [' + modeLabel + ']';
     }
 
+    // 加载时立即更新按钮（无需等待点击弹窗）
+    browserAPI.storage.local.get('domainFilterMode', function(r) {
+      _domainMode = r.domainFilterMode || 'blacklist';
+      updateDomainFilterBtnText();
+    });
+
     function loadDomainFilter() {
       browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList', 'domainFilterDefaultsSet'], function(r) {
         var blacklistFromStorage = r.domainFilterBlacklist;
