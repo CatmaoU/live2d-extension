@@ -24,7 +24,7 @@
                     'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel',
                     'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel',
                     'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel',
-                    'domainFilterMode', 'domainFilterList'
+                    'domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist'
                 ], (data) => {
                     resolve(data || {});
                 });
@@ -138,10 +138,12 @@
             
             // 同步域名过滤
             var dfMode = result.domainFilterMode || 'blacklist';
-            var dfList = result.domainFilterList || [];
-            if (dfList.length === 0) dfList.push('live.bilibili.com');
+            var dfWhite = result.domainFilterWhitelist || [];
+            var dfBlack = result.domainFilterBlacklist || [];
+            if (dfBlack.length === 0 && dfMode === 'blacklist') dfBlack.push('live.bilibili.com');
             localStorage.setItem('live2d_domainFilterMode', dfMode);
-            localStorage.setItem('live2d_domainFilterList', JSON.stringify(dfList));
+            localStorage.setItem('live2d_domainFilterWhitelist', JSON.stringify(dfWhite));
+            localStorage.setItem('live2d_domainFilterBlacklist', JSON.stringify(dfBlack));
             checkDomainFilter();
             
             // 发送自定义事件通知页面
@@ -158,7 +160,9 @@
     function checkDomainFilter() {
         try {
             var mode = localStorage.getItem('live2d_domainFilterMode') || 'blacklist';
-            var list = JSON.parse(localStorage.getItem('live2d_domainFilterList') || '[]');
+            var list = mode === 'whitelist' 
+                ? JSON.parse(localStorage.getItem('live2d_domainFilterWhitelist') || '[]')
+                : JSON.parse(localStorage.getItem('live2d_domainFilterBlacklist') || '[]');
             var host = window.location.hostname.toLowerCase();
             var matched = list.some(function(d) { return host === d || host.endsWith('.' + d); });
             if (mode === 'whitelist' && !matched) {
@@ -200,12 +204,14 @@
     syncSettingsFromStorage();
     
     // 同步域名过滤设置
-    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r) {
+    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist'], function(r) {
         var mode = r.domainFilterMode || 'blacklist';
-        var list = r.domainFilterList || [];
-        if (list.length === 0) list.push('live.bilibili.com');
+        var white = r.domainFilterWhitelist || [];
+        var black = r.domainFilterBlacklist || [];
+        if (black.length === 0 && mode === 'blacklist') black.push('live.bilibili.com');
         localStorage.setItem('live2d_domainFilterMode', mode);
-        localStorage.setItem('live2d_domainFilterList', JSON.stringify(list));
+        localStorage.setItem('live2d_domainFilterWhitelist', JSON.stringify(white));
+        localStorage.setItem('live2d_domainFilterBlacklist', JSON.stringify(black));
         checkDomainFilter();
     });
 
@@ -218,13 +224,15 @@
             if (areaName === 'local') {
                 syncSettingsFromStorage();
                 // 同步域名过滤设置
-                if (changes.domainFilterMode || changes.domainFilterList) {
-                    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r2) {
+                if (changes.domainFilterMode || changes.domainFilterWhitelist || changes.domainFilterBlacklist) {
+                    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist'], function(r2) {
                         var m = r2.domainFilterMode || 'blacklist';
-                        var l = r2.domainFilterList || [];
-                        if (l.length === 0) l.push('live.bilibili.com');
+                        var w = r2.domainFilterWhitelist || [];
+                        var b = r2.domainFilterBlacklist || [];
+                        if (b.length === 0 && m === 'blacklist') b.push('live.bilibili.com');
                         localStorage.setItem('live2d_domainFilterMode', m);
-                        localStorage.setItem('live2d_domainFilterList', JSON.stringify(l));
+                        localStorage.setItem('live2d_domainFilterWhitelist', JSON.stringify(w));
+                        localStorage.setItem('live2d_domainFilterBlacklist', JSON.stringify(b));
                         checkDomainFilter();
                     });
                 }
@@ -252,7 +260,8 @@
         } else if (message.action === 'domainFilterUpdate') {
             try {
                 localStorage.setItem('live2d_domainFilterMode', message.mode);
-                localStorage.setItem('live2d_domainFilterList', JSON.stringify(message.list));
+                var listKey = message.mode === 'whitelist' ? 'live2d_domainFilterWhitelist' : 'live2d_domainFilterBlacklist';
+                localStorage.setItem(listKey, JSON.stringify(message.list));
                 checkDomainFilter();
             } catch(e) {}
             sendResponse({ success: true });

@@ -2498,31 +2498,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     var domainInput = document.getElementById('domainInput');
     var domainAddBtn = document.getElementById('domainAddBtn');
     var _domainMode = 'blacklist';
-    var _domainList = [];
+    var _domainWhitelist = [];
+    var _domainBlacklist = [];
 
     function loadDomainFilter() {
-      browserAPI.storage.local.get(['domainFilterMode', 'domainFilterList'], function(r) {
+      browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist'], function(r) {
         _domainMode = r.domainFilterMode || 'blacklist';
-        _domainList = r.domainFilterList || [];
-        // 首次使用时默认添加 live.bilibili.com
-        if (_domainList.length === 0 && !_domainListSet) {
-          _domainListSet = true;
-          _domainList.push('live.bilibili.com');
-          browserAPI.storage.local.set({ domainFilterList: _domainList });
+        _domainWhitelist = r.domainFilterWhitelist || [];
+        _domainBlacklist = r.domainFilterBlacklist || [];
+        // 首次使用时默认添加 live.bilibili.com 到黑名单
+        if (_domainBlacklist.length === 0 && _domainMode === 'blacklist') {
+          _domainBlacklist.push('live.bilibili.com');
+          browserAPI.storage.local.set({ domainFilterBlacklist: _domainBlacklist });
         }
         renderDomainFilter();
       });
     }
-    var _domainListSet = false;
     function saveDomainFilter() {
-      browserAPI.storage.local.set({ domainFilterMode: _domainMode, domainFilterList: _domainList });
-      // 通知 content script
+      var list = _domainMode === 'whitelist' ? _domainWhitelist : _domainBlacklist;
+      browserAPI.storage.local.set({ domainFilterMode: _domainMode, domainFilterWhitelist: _domainWhitelist, domainFilterBlacklist: _domainBlacklist });
       chrome.tabs.query({}, function(tabs) {
         tabs.forEach(function(t) {
           chrome.tabs.sendMessage(t.id, { action: 'domainFilterUpdate', mode: _domainMode, list: _domainList }).catch(function(){});
         });
       });
     }
+    function getActiveDomainList() {
+      return _domainMode === 'whitelist' ? _domainWhitelist : _domainBlacklist;
+    }
+
     function renderDomainFilter() {
       // 更新模式按钮样式
       if (domainModeWhitelist) {
@@ -2539,8 +2543,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
       // 渲染域名列表
       if (domainListEl) {
+        var list = getActiveDomainList();
         domainListEl.innerHTML = '';
-        _domainList.forEach(function(d) {
+        list.forEach(function(d) {
           var row = document.createElement('div');
           row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding:6px 8px; margin-bottom:4px; background:#f5f5f5; border-radius:4px; font-size:12px;';
           row.innerHTML = '<span>' + d + '</span><button class="domain-del" data-domain="' + d.replace(/"/g, '&quot;') + '" style="background:none; border:none; color:#e06060; cursor:pointer; font-size:14px;">×</button>';
@@ -2550,7 +2555,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         domainListEl.querySelectorAll('.domain-del').forEach(function(btn) {
           btn.addEventListener('click', function() {
             var d = this.getAttribute('data-domain');
-            _domainList = _domainList.filter(function(x) { return x !== d; });
+            var lst = getActiveDomainList();
+            var idx = lst.indexOf(d);
+            if (idx >= 0) lst.splice(idx, 1);
             saveDomainFilter();
             renderDomainFilter();
           });
@@ -2560,8 +2567,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     function addDomain(val) {
       val = val.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
       if (!val) return;
-      if (_domainList.indexOf(val) >= 0) return;
-      _domainList.push(val);
+      var lst = getActiveDomainList();
+      if (lst.indexOf(val) >= 0) return;
+      lst.push(val);
       saveDomainFilter();
       renderDomainFilter();
     }
@@ -2596,6 +2604,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (domainModeWhitelist) {
       domainModeWhitelist.addEventListener('click', function() {
         _domainMode = 'whitelist';
+        if (_domainWhitelist.length === 0) _domainWhitelist.push('live.bilibili.com');
         saveDomainFilter();
         renderDomainFilter();
       });
@@ -2603,6 +2612,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (domainModeBlacklist) {
       domainModeBlacklist.addEventListener('click', function() {
         _domainMode = 'blacklist';
+        if (_domainBlacklist.length === 0) _domainBlacklist.push('live.bilibili.com');
         saveDomainFilter();
         renderDomainFilter();
       });
