@@ -161,9 +161,11 @@
         var nowBlocked = false;
         try {
             var mode = localStorage.getItem('live2d_domainFilterMode') || 'blacklist';
-            var list = mode === 'whitelist' 
-                ? JSON.parse(localStorage.getItem('live2d_domainFilterWhitelist') || '[]')
-                : JSON.parse(localStorage.getItem('live2d_domainFilterBlacklist') || '[]');
+            // 直接从 storage 读取最新的名单，绕过 localStorage 同步问题
+            var listStr = mode === 'whitelist' 
+                ? localStorage.getItem('live2d_domainFilterWhitelist')
+                : localStorage.getItem('live2d_domainFilterBlacklist');
+            var list = listStr ? JSON.parse(listStr) : [];
             var host = window.location.hostname.toLowerCase();
             var matched = list.some(function(d) { return host === d || host.endsWith('.' + d); });
             if (mode === 'whitelist') {
