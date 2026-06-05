@@ -584,6 +584,10 @@
                 sendResponse({ success: true });
             } else if (message.type === 'TOGGLE_HITAREA_SOUND') {
                 localStorage.setItem('live2d_hitAreaSound', message.enabled ? 'true' : 'false');
+                // 关闭时立即停止当前播放的音频
+                if (!message.enabled && window.__live2d_lastAudio) {
+                    try { window.__live2d_lastAudio.pause(); window.__live2d_lastAudio = null; } catch(e) {}
+                }
                 sendResponse({ success: true });
             } else if (message.type === 'SET_HITAREA_VOLUME') {
                 localStorage.setItem('live2d_hitAreaVolume', String(message.volume));
