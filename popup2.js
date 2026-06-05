@@ -2619,8 +2619,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (domainModeWhitelist) {
       domainModeWhitelist.addEventListener('click', function() {
         _domainMode = 'whitelist';
-        saveDomainFilter();
-        renderDomainFilter();
+        // 白名单为空时自动添加当前域名，防止全部被屏蔽
+        if (_domainWhitelist.length === 0) {
+          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+            if (tabs && tabs[0] && tabs[0].url) {
+              try {
+                var u = new URL(tabs[0].url);
+                var host = u.hostname.replace(/^www\./, '');
+                if (host) { _domainWhitelist.push(host); }
+              } catch(e) {}
+            }
+            saveDomainFilter();
+            renderDomainFilter();
+          });
+        } else {
+          saveDomainFilter();
+          renderDomainFilter();
+        }
       });
     }
     if (domainModeBlacklist) {
