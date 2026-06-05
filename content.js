@@ -24,7 +24,8 @@
                     'deepseekModel', 'siliconflowModel', 'univibeModel', 'longcatModel',
                     'qwenModel', 'hunyuanModel', 'ernieModel', 'doubaoModel',
                     'sparkModel', 'zhipuModel', 'moonshotModel', 'minimaxModel', 'atriModel',
-                    'domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist'
+                    'domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist',
+                    'heartbeatInterval'
                 ], (data) => {
                     resolve(data || {});
                 });
@@ -125,6 +126,9 @@
             }
             if (result.summaryRules !== undefined) {
                 settings.summaryRules = result.summaryRules;
+            }
+            if (result.heartbeatInterval !== undefined) {
+                settings.heartbeatInterval = result.heartbeatInterval;
             }
             
             localStorage.setItem('live2dExtensionSettings', JSON.stringify(settings));
