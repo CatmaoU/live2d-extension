@@ -334,7 +334,7 @@ def _install_model_index(tag_name):
     assets = rel.get("assets", [])
     develop_asset = next((a for a in assets if "Develop" in a.get("name", "") and a.get("name", "").lower().endswith((".zip", ".7z", ".rar"))), None)
     if not develop_asset:
-        print("[模型索引] 未找到 Develop.zip，跳过")
+        print("[模型索引] 未找到 Develop 包，跳过")
         return
 
     dev_url = develop_asset.get("browser_download_url")
