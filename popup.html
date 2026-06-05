@@ -834,13 +834,13 @@
         <div id="modelParamOverlay" class="param-overlay" style="display:none;">
           <div class="param-box">
             <div class="param-title">模型参数</div>
+            <label class="param-row" style="margin-bottom:8px;">
+              <input type="checkbox" id="hitAreaCheckbox"> 点击区域(碰撞箱)
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:inherit; margin-bottom:8px;">
+              <input type="checkbox" id="touchCheckbox" checked style="margin:0;"> 触摸
+            </label>
             <div id="touchSubItems">
-              <label class="param-row" style="margin-bottom:8px;">
-                <input type="checkbox" id="hitAreaCheckbox"> 点击区域(碰撞箱)
-              </label>
-              <label style="display:flex; align-items:center; gap:6px; cursor:pointer; color:inherit; margin-bottom:8px;">
-                <input type="checkbox" id="touchCheckbox" checked style="margin:0;"> 触摸
-              </label>
               <label class="param-row" style="margin-bottom:8px;">
                 <input type="checkbox" id="hitAreaMotionCheckbox" checked> 动作
               </label>
