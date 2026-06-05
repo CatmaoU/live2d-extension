@@ -272,25 +272,22 @@
       border-radius:0 8px 8px 0;
       background:rgba(220,220,255,0.6);
       color:#5568d0; font-size:20px; font-weight:700;
-      box-shadow:1px 1px 4px rgba(0,0,0,0.1);
       transition:all 0.2s;
     }
     .page-side-right::before {
       border-radius:8px 0 0 8px;
-      box-shadow:-1px 1px 4px rgba(0,0,0,0.08);
     }
     .page-side-left::before { content:'<'; font-size:20px; font-weight:700; }
     .page-side-right::before { content:'>'; font-size:20px; font-weight:700; }
     .page-side:hover::before {
       background:#667eea;
-      color:#fff; box-shadow:1px 1px 8px rgba(102,126,234,0.4);
+      color:#fff;
     }
     .page-side:disabled, .page-side[disabled] {
       opacity:0 !important; pointer-events:none !important;
     }
     body.dark-theme .page-side::before {
       background:rgba(60,60,100,0.3);
-      box-shadow:1px 1px 4px rgba(0,0,0,0.3);
       color:#9090d0;
     }
     body.dark-theme .page-side:hover::before {
