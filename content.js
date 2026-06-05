@@ -3207,10 +3207,10 @@
         try {
             var dts = window.live2d.getDeviceToScreen();
             if (dts) {
-                dts._scaleX = 2 / canvasWidth;
-                dts._scaleY = -2 / canvasHeight;
-                dts._trX = -1;
-                dts._trY = 1;
+                dts._scaleX = canvasWidth / 2;
+                dts._scaleY = -canvasHeight / 2;
+                dts._trX = canvasWidth / 2;
+                dts._trY = canvasHeight / 2;
             }
         } catch(e) {}
         
