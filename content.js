@@ -176,8 +176,15 @@
     function removeWaifu() {
         var el = document.getElementById('live2d-waifu');
         if (el) el.style.display = 'none';
+        // 主容器 #waifu（autoload-cubism3.js 创建，包含按钮/输入框/气泡）
+        var waifu = document.getElementById('waifu');
+        if (waifu) waifu.style.display = 'none';
         var tips = document.getElementById('waifu-tips');
         if (tips) tips.style.display = 'none';
+        var btns = document.getElementById('waifu-buttons');
+        if (btns) btns.style.display = 'none';
+        var chat = document.getElementById('waifu-chat');
+        if (chat) chat.style.display = 'none';
         // 删除所有 canvas 和 waifu 相关元素
         document.querySelectorAll('[class*=\"live2d\"], [id*=\"live2d\"], canvas.live2d-canvas').forEach(function(e) {
             e.style.display = 'none';
