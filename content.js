@@ -204,10 +204,17 @@
     syncSettingsFromStorage();
     
     // 同步域名过滤设置
-    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist'], function(r) {
-        var mode = r.domainFilterMode || 'blacklist';
+    browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList'], function(r) {
+        // 迁移旧数据
+        var oldList = r.domainFilterList || [];
         var white = r.domainFilterWhitelist || [];
         var black = r.domainFilterBlacklist || [];
+        if (oldList.length > 0 && white.length === 0 && black.length === 0) {
+            black = oldList.slice();
+            browserAPI.storage.local.set({ domainFilterBlacklist: black });
+            browserAPI.storage.local.remove('domainFilterList');
+        }
+        var mode = r.domainFilterMode || 'blacklist';
         if (black.length === 0 && mode === 'blacklist') black.push('live.bilibili.com');
         localStorage.setItem('live2d_domainFilterMode', mode);
         localStorage.setItem('live2d_domainFilterWhitelist', JSON.stringify(white));
