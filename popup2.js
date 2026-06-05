@@ -2512,15 +2512,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     function loadDomainFilter() {
       browserAPI.storage.local.get(['domainFilterMode', 'domainFilterWhitelist', 'domainFilterBlacklist', 'domainFilterList', 'domainFilterDefaultsSet'], function(r) {
         var blacklistFromStorage = r.domainFilterBlacklist;
+        var whitelistFromStorage = r.domainFilterWhitelist;
         // 迁移旧版 domainFilterList 到新格式
-        if (r.domainFilterList && r.domainFilterList.length > 0 && (!r.domainFilterWhitelist || r.domainFilterWhitelist.length === 0) && (!blacklistFromStorage || blacklistFromStorage.length === 0)) {
+        if (r.domainFilterList && r.domainFilterList.length > 0 && (!whitelistFromStorage || whitelistFromStorage.length === 0) && (!blacklistFromStorage || blacklistFromStorage.length === 0)) {
           blacklistFromStorage = r.domainFilterList.slice();
           browserAPI.storage.local.set({ domainFilterBlacklist: blacklistFromStorage, domainFilterDefaultsSet: true });
           browserAPI.storage.local.remove('domainFilterList');
         }
         _domainMode = r.domainFilterMode || 'blacklist';
-        _domainWhitelist = r.domainFilterWhitelist || [];
-        _domainBlacklist = blacklistFromStorage || [];
+        _domainWhitelist = whitelistFromStorage ? whitelistFromStorage.slice() : [];
+        _domainBlacklist = blacklistFromStorage ? blacklistFromStorage.slice() : [];
         // 首次使用时标记已初始化（不再添加默认域名）
         if (!r.domainFilterDefaultsSet) {
           browserAPI.storage.local.set({ domainFilterDefaultsSet: true });
@@ -2619,23 +2620,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (domainModeWhitelist) {
       domainModeWhitelist.addEventListener('click', function() {
         _domainMode = 'whitelist';
-        // 白名单为空时自动添加当前域名，防止全部被屏蔽
-        if (_domainWhitelist.length === 0) {
-          chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-            if (tabs && tabs[0] && tabs[0].url) {
-              try {
-                var u = new URL(tabs[0].url);
-                var host = u.hostname.replace(/^www\./, '');
-                if (host) { _domainWhitelist.push(host); }
-              } catch(e) {}
-            }
-            saveDomainFilter();
-            renderDomainFilter();
-          });
-        } else {
-          saveDomainFilter();
-          renderDomainFilter();
-        }
+        saveDomainFilter();
+        renderDomainFilter();
       });
     }
     if (domainModeBlacklist) {
