@@ -166,8 +166,17 @@
                 ? localStorage.getItem('live2d_domainFilterWhitelist')
                 : localStorage.getItem('live2d_domainFilterBlacklist');
             var list = listStr ? JSON.parse(listStr) : [];
+            var currentUrl = window.location.href;
             var host = window.location.hostname.toLowerCase();
-            var matched = list.some(function(d) { return host === d || host.endsWith('.' + d); });
+            var matched = list.some(function(d) {
+                var entry = d.toLowerCase();
+                // 包含路径的条目（如 www.bilibili.com/video）→ 匹配 URL 前缀
+                if (entry.indexOf('/') >= 0) {
+                    return currentUrl.toLowerCase().indexOf(entry) >= 0;
+                }
+                // 纯域名 → 完全匹配或子域名
+                return host === entry || host.endsWith('.' + entry);
+            });
             if (mode === 'whitelist') {
                 if (!matched) {
                     console.log('[Live2D] Domain not in whitelist, blocking:', host);

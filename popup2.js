@@ -2586,8 +2586,10 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     }
     function addDomain(val) {
-      val = val.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '').replace(/^www\./, '');
+      val = val.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '');
       if (!val) return;
+      // 保留路径（如 bilibili.com/video），纯域名去掉尾部斜杠
+      if (val.indexOf('/') < 0) val = val.replace(/\/+$/, '');
       var lst = getActiveDomainList();
       if (lst.indexOf(val) >= 0) return;
       lst.push(val);
