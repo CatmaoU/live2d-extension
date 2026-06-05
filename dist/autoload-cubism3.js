@@ -3482,10 +3482,13 @@
                                                         // 用和线框相同的变换计算画布像素坐标
                                                         var mm2 = mI2.getModelMatrix();
                                                         var dts2 = typeof window.live2d.getDeviceToScreen === 'function' ? window.live2d.getDeviceToScreen() : null;
-                                                        var cpx1 = dts2 ? dts2.invertTransformX(mm2.transformX(nx2)) : nx2;
-                                                        var cpy1 = dts2 ? dts2.invertTransformY(mm2.transformY(ny2)) : ny2;
-                                                        var cpx2 = dts2 ? dts2.invertTransformX(mm2.transformX(ux2)) : ux2;
-                                                        var cpy2 = dts2 ? dts2.invertTransformY(mm2.transformY(uy2)) : uy2;
+                                                        var live2dCanvas = document.getElementById('live2d');
+                                                        var scaleFix = live2dCanvas ? live2dCanvas.width / 450 : 1;
+                                                        if (scaleFix < 0.1) scaleFix = 1;
+                                                        var cpx1 = dts2 ? dts2.invertTransformX(mm2.transformX(nx2)) * scaleFix : nx2;
+                                                        var cpy1 = dts2 ? dts2.invertTransformY(mm2.transformY(ny2)) * scaleFix : ny2;
+                                                        var cpx2 = dts2 ? dts2.invertTransformX(mm2.transformX(ux2)) * scaleFix : ux2;
+                                                        var cpy2 = dts2 ? dts2.invertTransformY(mm2.transformY(uy2)) * scaleFix : uy2;
                                                         var minPx = Math.min(cpx1, cpx2), maxPx = Math.max(cpx1, cpx2);
                                                         var minPy = Math.min(cpy1, cpy2), maxPy = Math.max(cpy1, cpy2);
                                                         console.log('[HitArea] px:', drawId2, 'rect:', minPx.toFixed(0), maxPx.toFixed(0), minPy.toFixed(0), maxPy.toFixed(0), 'click:', px.toFixed(0), py.toFixed(0));
@@ -3977,6 +3980,11 @@
                     var cy1 = dts && dts.invertTransformY ? dts.invertTransformY(ndy1) : ndy1;
                     var cx2 = dts && dts.invertTransformX ? dts.invertTransformX(ndx2) : ndx2;
                     var cy2 = dts && dts.invertTransformY ? dts.invertTransformY(ndy2) : ndy2;
+                    // 缩放修正
+                    var ovCanvas = document.getElementById('live2d');
+                    var sf = ovCanvas ? ovCanvas.width / 450 : 1;
+                    if (sf < 0.1) sf = 1;
+                    cx1 *= sf; cy1 *= sf; cx2 *= sf; cy2 *= sf;
                     
                     ctx.strokeStyle = 'rgba(255,100,100,0.8)';
                     ctx.lineWidth = 1.5;
