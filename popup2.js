@@ -1408,9 +1408,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
   
-  // 初始化跟随系统主题开关
+  // 初始化跟随系统主题开关（读取最新 storage 确保同步）
   if (followSystemThemeCheckbox) {
-    followSystemThemeCheckbox.checked = config.followSystemTheme || false;
+    browserAPI.storage.local.get('followSystemTheme', function(r) {
+      var val = r.followSystemTheme;
+      if (val === undefined) val = config.followSystemTheme || false;
+      followSystemThemeCheckbox.checked = val;
+    });
   }
   
   // 初始化自动更新开关
