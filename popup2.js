@@ -2673,6 +2673,30 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (e.key === 'Enter') domainAddBtn.click();
       });
     }
+    // 重置按钮
+    var domainResetBtn = document.getElementById('domainResetBtn');
+    if (domainResetBtn) {
+      domainResetBtn.addEventListener('click', function() {
+        if (!confirm('重置将清空当前名单并恢复为默认设置，确定吗？')) return;
+        var url = _domainMode === 'whitelist' 
+          ? browserAPI.runtime.getURL('live2d-moc3/rule/Whitelist.json')
+          : browserAPI.runtime.getURL('live2d-moc3/rule/blacklist.json');
+        fetch(url).then(function(r) { return r.json(); }).then(function(defaults) {
+          var lst = getActiveDomainList();
+          lst.length = 0;
+          if (Array.isArray(defaults)) {
+            defaults.forEach(function(d) { lst.push(d); });
+          }
+          saveDomainFilter();
+          renderDomainFilter();
+        }).catch(function() {
+          var lst = getActiveDomainList();
+          lst.length = 0;
+          saveDomainFilter();
+          renderDomainFilter();
+        });
+      });
+    }
 
     var startPage = window.location.hash === '#page2' ? 2 : 1;
     showPage(startPage);
