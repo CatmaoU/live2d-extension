@@ -1462,30 +1462,32 @@
                 console.log('[Live2D AI] 自动重连已启动');
             }
             
-            // AI 连接心跳检测（每 60 秒检查一次连接是否有效）
+            // AI 连接心跳检测
             if (settings.aiEnabled) {
-                setInterval(function() {
-                    if (!window.Live2DAI || !window.Live2DAI.isConnected) return;
-                    // 发一个简单请求看 API 是否可达
-                    var key = settings.aiApiKey || settings.siliconflowApiKey || '';
-                    var heartbeatUrl = (settings.aiApiBaseUrl || 'https://api.deepseek.com').replace(/\/+$/, '') + '/v1/models';
-                    fetch(heartbeatUrl, { method: 'GET', headers: { 'Authorization': 'Bearer ' + key }, signal: AbortSignal.timeout(10000) }).then(function(r) {
-                        if (!r.ok) throw new Error();
-                    }).catch(function() {
-                        console.log('[Live2D AI] 心跳检测失败，标记为断开');
-                        window.Live2DAI.isConnected = false;
-                        try {
-                            var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
-                            s.aiConnected = false;
-                            localStorage.setItem('live2dExtensionSettings', JSON.stringify(s));
-                            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-                                chrome.storage.local.set({ aiConnected: false });
-                            }
-                        } catch(e) {}
-                        var stEl = document.getElementById('aiConnectionStatus');
-                        if (stEl) { stEl.textContent = '未连接'; stEl.style.color = '#dc3545'; }
-                    });
-                }, 60000);
+                var hbInterval = (parseInt(settings.heartbeatInterval) || 60) * 1000;
+                if (hbInterval > 0) {
+                    setInterval(function() {
+                        if (!window.Live2DAI || !window.Live2DAI.isConnected) return;
+                        var key = settings.aiApiKey || settings.siliconflowApiKey || '';
+                        var heartbeatUrl = (settings.aiApiBaseUrl || 'https://api.deepseek.com').replace(/\/+$/, '') + '/v1/models';
+                        fetch(heartbeatUrl, { method: 'GET', headers: { 'Authorization': 'Bearer ' + key }, signal: AbortSignal.timeout(10000) }).then(function(r) {
+                            if (!r.ok) throw new Error();
+                        }).catch(function() {
+                            console.log('[Live2D AI] 心跳检测失败，标记为断开');
+                            window.Live2DAI.isConnected = false;
+                            try {
+                                var s = JSON.parse(localStorage.getItem('live2dExtensionSettings') || '{}');
+                                s.aiConnected = false;
+                                localStorage.setItem('live2dExtensionSettings', JSON.stringify(s));
+                                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                                    chrome.storage.local.set({ aiConnected: false });
+                                }
+                            } catch(e) {}
+                            var stEl = document.getElementById('aiConnectionStatus');
+                            if (stEl) { stEl.textContent = '未连接'; stEl.style.color = '#dc3545'; }
+                        });
+                    }, hbInterval);
+                }
             }
 
             let cubism3Model = settings.cubism3Model || '';
