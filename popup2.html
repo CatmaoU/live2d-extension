@@ -255,10 +255,10 @@
     }
     /* 分页两侧 - 整条可点击区域，悬停显示箭头 */
     .page-side {
-      position:fixed; top:0; bottom:0; width:36px;
+      position:fixed; top:0; bottom:0; width:44px;
       z-index:999; cursor:pointer;
       display:flex; align-items:center; justify-content:center;
-      opacity:0; transition:opacity 0.2s;
+      opacity:0; transition:opacity 0.25s;
     }
     .container:hover .page-side {
       opacity:1;
@@ -268,22 +268,34 @@
     .page-side::before {
       content:''; display:flex;
       align-items:center; justify-content:center;
-      width:28px; height:60px;
-      border-radius:0 6px 6px 0;
-      background:rgba(102,126,234,0.08);
-      color:#667eea; font-size:16px;
+      width:32px; height:70px;
+      border-radius:0 8px 8px 0;
+      background:rgba(102,126,234,0.12);
+      color:#5568d0; font-size:20px; font-weight:700;
+      box-shadow:1px 1px 4px rgba(0,0,0,0.08);
       transition:all 0.2s;
     }
     .page-side-right::before {
-      border-radius:6px 0 0 6px;
+      border-radius:8px 0 0 8px;
+      box-shadow:-1px 1px 4px rgba(0,0,0,0.08);
     }
-    .page-side-left::before { content:'<'; font-size:18px; }
-    .page-side-right::before { content:'>'; font-size:18px; }
+    .page-side-left::before { content:'<'; font-size:20px; font-weight:700; }
+    .page-side-right::before { content:'>'; font-size:20px; font-weight:700; }
     .page-side:hover::before {
-      background:rgba(102,126,234,0.2);
+      background:rgba(102,126,234,0.25);
+      color:#4458c0; box-shadow:1px 1px 6px rgba(102,126,234,0.25);
     }
     .page-side:disabled, .page-side[disabled] {
       opacity:0 !important; pointer-events:none !important;
+    }
+    body.dark-theme .page-side::before {
+      background:rgba(60,60,100,0.3);
+      box-shadow:1px 1px 4px rgba(0,0,0,0.3);
+      color:#9090d0;
+    }
+    body.dark-theme .page-side:hover::before {
+      background:rgba(102,126,234,0.25);
+      color:#b0b0ff;
     }
     .page-indicator {
       position:fixed; left:50%; bottom:12px; transform:translateX(-50%);
