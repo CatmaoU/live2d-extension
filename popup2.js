@@ -2573,7 +2573,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         domainModeBlacklist.style.color = isWhite ? '#333' : '#fff';
       }
       if (domainFilterHint) {
-        domainFilterHint.textContent = _domainMode === 'whitelist' ? '只有以下网站才显示看板娘：' : '以下网站不显示看板娘：';
+        domainFilterHint.textContent = _domainMode === 'whitelist' ? '只有以下网站才显示看板娘：' : '以下网站不显示看板娘(支持子域名)：';
       }
       // 渲染域名列表
       if (domainListEl) {
